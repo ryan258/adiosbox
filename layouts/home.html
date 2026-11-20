@@ -1,0 +1,85 @@
+{{- $experiment := hugo.Data.experiment -}}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Ryan's AI playground. Open a small experiment, see the prompt, and try it with your own OpenRouter key.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://openrouter.ai; img-src 'self'; base-uri 'none'; form-action 'none'">
+  {{ if eq hugo.Environment "staging" }}<meta name="robots" content="noindex">{{ end }}
+  <link rel="canonical" href="{{ .Permalink }}">
+  <title>Adiosbox — Ryan's AI playground</title>
+  <link rel="icon" href="{{ "mark.svg" | relURL }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ "styles.css" | relURL }}">
+  <script type="module" src="{{ "app.js" | relURL }}"></script>
+</head>
+<body>
+  <a class="skip-link" href="#notes">Skip to the notes</a>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="wordmark" href="{{ .RelPermalink }}"><img src="{{ "mark.svg" | relURL }}" alt="" width="32" height="32"> Adiosbox</a>
+      <a class="header-link" href="#{{ $experiment.slug }}">Try the example</a>
+    </div>
+  </header>
+  <main class="shell">
+    <section class="intro" aria-labelledby="page-title">
+      <h1 id="page-title">Ryan’s AI playground<span>.</span></h1>
+      <p>Open an experiment, see the prompt behind it, and run it with your own OpenRouter key.</p>
+    </section>
+
+    <section id="{{ $experiment.slug }}" class="experiment" aria-labelledby="experiment-title">
+      <header class="experiment-header">
+        <div>
+          <h2 id="experiment-title">{{ $experiment.title }}</h2>
+          <p>{{ $experiment.description }}</p>
+        </div>
+        <button type="button" class="secondary" id="share">Copy example link</button>
+        <p id="share-status" class="status share-status" role="status"></p>
+      </header>
+      <div class="workbench">
+        <form id="experiment-form" class="inputs" autocomplete="off" data-model="{{ $experiment.model }}" novalidate>
+          <noscript><p>This example needs JavaScript to run. You can still read the prompt and sample result.</p></noscript>
+          <div class="label-row">
+            <label for="notes">Your notes</label>
+            <button class="text-button" type="button" id="load-sample" data-notes="{{ $experiment.sampleNotes }}">Load sample notes</button>
+          </div>
+          <textarea id="notes" rows="6" maxlength="8000" required placeholder="Paste or dictate a few rough notes…">{{ $experiment.sampleNotes }}</textarea>
+
+          <details class="prompt-editor" id="prompt">
+            <summary>View or edit the prompt</summary>
+            <label for="instructions">Instructions for the model</label>
+            <textarea id="instructions" rows="6" maxlength="4000" required>{{ $experiment.instructions }}</textarea>
+          </details>
+
+          <div class="label-row key-label">
+            <label for="api-key">OpenRouter API key</label>
+            <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">Get a key</a>
+          </div>
+          <div class="key-row">
+            <input id="api-key" type="password" maxlength="512" autocomplete="off" autocapitalize="off" spellcheck="false" required aria-describedby="key-help">
+            <button class="secondary" type="button" id="clear-key">Clear key</button>
+          </div>
+          <p id="key-help" class="help">The key stays on this page until you reload or clear it. Running sends your key, notes, and instructions directly to OpenRouter.</p>
+
+          <div class="actions">
+            <button class="primary" id="run" type="submit">Run example</button>
+            <button class="secondary" id="cancel" type="button" hidden>Cancel</button>
+            <span class="help">Uses the OpenRouter free model router.</span>
+          </div>
+          <p class="status" id="run-status" role="status"></p>
+        </form>
+
+        <section class="output" aria-labelledby="result-title">
+          <div class="label-row">
+            <h3 id="result-title">Sample result</h3>
+            <button type="button" class="text-button" id="copy-result">Copy result</button>
+          </div>
+          <p id="result-meta" class="help">Written for the sample notes. No key needed.</p>
+          <div id="result" class="result" tabindex="0" aria-labelledby="result-title">{{ $experiment.sampleResult }}</div>
+          <p class="status" id="copy-status" role="status"></p>
+        </section>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

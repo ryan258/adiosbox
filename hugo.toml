@@ -1,0 +1,4 @@
+baseURL = 'https://adiosbox.com/'
+locale = 'en-us'
+title = 'Adiosbox'
+disableKinds = ['taxonomy', 'term', 'RSS']
