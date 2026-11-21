@@ -16,7 +16,7 @@
   --ink: #1e2321;
   --muted: #535c56;
   --line: #cdd5c8;
-  --field: #8f9b92;
+  --field: #65736a;
   --tint: #e2e9f5;
   --tint-line: #b7c7e3;
   --accent: #1f4fa8;
@@ -127,6 +127,12 @@ input { min-width: 0; }
 .result[data-source] code { font-family: ui-monospace, monospace; font-size: .9em; padding: .05em .3em; border-radius: .25rem; background: var(--wash); }
 .result[data-source] pre { padding: .75rem; border-radius: .2rem; background: var(--wash); white-space: pre; overflow-x: auto; }
 .result[data-source] pre code { padding: 0; background: none; }
+.raw-result { border-top: 1px solid var(--line); }
+.raw-result summary { cursor: pointer; color: var(--accent); padding-block: .45rem; }
+.raw-result pre { max-height: 20rem; }
+.catalog-filter { margin-block: .75rem 1rem; max-width: 28rem; }
+.catalog-filter label { display: block; font-weight: 700; }
+[data-part="run-budget"], [data-part="pickup-budget"], [data-part="repair-budget"] { margin-top: .45rem; overflow-wrap: anywhere; }
 .result[data-source] blockquote { padding-inline-start: .85rem; border-inline-start: 3px solid var(--line); color: var(--muted); }
 .result[data-source] hr { border: 0; border-top: 1px solid var(--line); }
 .result[data-source] .md-table { overflow-x: auto; }

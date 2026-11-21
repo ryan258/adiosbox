@@ -60,6 +60,7 @@
           {{ if $experiment.chain }}
           <p class="help">Step 2 sees your input plus whatever step 1 wrote. Two calls in all.</p>
           {{ end }}
+          <p class="help" data-part="run-budget"></p>
           <div class="actions">
             {{ if $experiment.factTest }}
             <button class="primary" data-part="run" type="submit">Run both versions</button>
@@ -84,7 +85,7 @@
           <summary>Download both results</summary>
           <div class="more-panel">{{ partial "export-actions.html" (dict "scope" "pair" "label" "both") }}</div>
         </details>
-        {{ if or $experiment.comparison $experiment.factTest }}<p class="help versus-note"><mark>Highlighted</mark> lines differ between the two results.</p>{{ end }}
+        {{ if or $experiment.comparison $experiment.factTest }}<p class="help versus-note"><mark>Highlighted</mark> text differs at that position.</p>{{ end }}
         <div class="comparison-results">
           {{ if $experiment.factTest }}
           {{ partial "experiment-result.html" (dict "slug" $experiment.slug "sample" $experiment.sampleResult "suffix" "" "heading" "Baseline" "label" "baseline" "sampleNote" "Written baseline sample") }}

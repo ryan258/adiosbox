@@ -1,4 +1,7 @@
 const prefix = 'adiosbox.case.1.';
+const draftKey = 'adiosbox.draft.1';
+const draftSetting = 'adiosbox.keep-draft.1';
+const draftId = '00000000-0000-4000-8000-000000000000';
 const format = 'adiosbox-cases';
 const schemaVersion = 1;
 const fieldName = /^(?:notes|instructions(?:-b)?|minutes|(?:role|fact):[A-Za-z][A-Za-z0-9-]*)$/;
@@ -21,7 +24,7 @@ export function cleanCase(value) {
     !fieldName.test(name) || typeof value !== 'string' || value.length > 8000)) {
     throw new Error('A saved input or model field has an invalid format.');
   }
-  if ([value.name, value.expected, value.model, ...fields.map(([, content]) => content)]
+  if ([value.name, value.expected, value.model, value.revision, value.graphRevision, ...fields.map(([, content]) => content)]
     .some(content => keyPattern.test(content))) {
     throw new Error('Remove the OpenRouter key from the case before saving or importing.');
   }
@@ -70,8 +73,23 @@ export function setupCases(experiments, model, openExperiment) {
   const saveStatus = get('save-case-status');
   const graphRevision = document.body.dataset.graphRevision || '';
   const recentChecks = new WeakMap();
+  const openedCases = new WeakMap();
+  const saveSubmit = get('case-save-submit');
+  const saveCopy = get('case-save-copy');
+  const keepDraft = get('keep-draft');
+  const draftOpen = get('draft-open');
+  const draftStatus = get('draft-status');
   let records = [];
   let saving;
+
+  function openLibraryFromLink() {
+    if (window.location.hash === '#saved-cases') library.open = true;
+  }
+  document.querySelectorAll('a[href="#saved-cases"]').forEach(link => {
+    link.addEventListener('click', () => { library.open = true; });
+  });
+  window.addEventListener('hashchange', openLibraryFromLink);
+  openLibraryFromLink();
 
   function show(element, message, error = false) {
     element.textContent = message;
@@ -96,6 +114,11 @@ export function setupCases(experiments, model, openExperiment) {
   function revisionFor(experiment) {
     const source = byId.get(experiment.dataset.labGraph);
     return [experiment.dataset.caseRevision, source?.dataset.caseRevision].filter(Boolean).join(':');
+  }
+
+  function graphRevisionFor(experiment) {
+    return experiment.hasAttribute('data-graph') ||
+      ['repair', 'evidence', 'stop', 'cost'].includes(experiment.dataset.lab) ? graphRevision : '';
   }
 
   function selectedCase() {
@@ -139,8 +162,11 @@ export function setupCases(experiments, model, openExperiment) {
     experiment.addEventListener('fact-checked', event => recentChecks.set(experiment, event.detail));
     experiment.querySelector('[data-case-save]')?.addEventListener('click', () => {
       saving = experiment;
-      caseName.value = experiment.querySelector('h2').textContent;
+      const opened = openedCases.get(experiment);
+      caseName.value = opened?.name ?? experiment.querySelector('h2').textContent;
       expected.value = experiment.dataset.caseExpected || '';
+      saveSubmit.textContent = opened ? 'Update case' : 'Save case';
+      saveCopy.hidden = !opened;
       get('save-case-source').textContent = experiment.querySelector('h2').textContent;
       show(saveStatus, '');
       dialog.showModal();
@@ -157,6 +183,7 @@ export function setupCases(experiments, model, openExperiment) {
       return;
     }
     let record;
+    const opened = event.submitter === saveCopy ? null : openedCases.get(saving);
     try {
       const setup = readCaseSetup(saving, model.value);
       const lastRun = recentChecks.get(saving);
@@ -164,13 +191,12 @@ export function setupCases(experiments, model, openExperiment) {
       record = cleanCase({
         ...setup,
         receipt,
-        id: crypto.randomUUID(),
+        id: opened?.id ?? crypto.randomUUID(),
         experiment: saving.id,
         name: caseName.value.trim(),
         expected: expected.value.trim(),
         revision: revisionFor(saving),
-        graphRevision: saving.hasAttribute('data-graph') ||
-          ['repair', 'evidence', 'stop', 'cost'].includes(saving.dataset.lab) ? graphRevision : '',
+        graphRevision: graphRevisionFor(saving),
         savedAt: Date.now(),
       });
     } catch (error) {
@@ -178,56 +204,132 @@ export function setupCases(experiments, model, openExperiment) {
       return;
     }
     try {
+      if (opened) {
+        const stored = localStorage.getItem(prefix + opened.id);
+        if (!stored || JSON.stringify(cleanCase(JSON.parse(stored))) !== JSON.stringify(opened)) {
+          show(saveStatus, 'This case changed in storage. Reopen it or save as a new case.', true);
+          return;
+        }
+      }
       localStorage.setItem(prefix + record.id, JSON.stringify(record));
     } catch {
       show(saveStatus, 'The browser could not save this case. Check storage access or export older cases to free space.', true);
       return;
     }
+    openedCases.set(saving, record);
     saving.dataset.caseExpected = record.expected;
     saving = undefined;
     dialog.close();
     refresh(record.id);
     library.open = true;
-    show(libraryStatus, `Saved ${record.name}.`);
+    show(libraryStatus, `${opened ? 'Updated' : 'Saved'} ${record.name}.`);
   });
 
   get('save-case-cancel').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => { if (!dialog.open) saving = undefined; });
   select.addEventListener('change', describeSelection);
 
-  get('case-open').addEventListener('click', () => {
-    const record = selectedCase();
+  function restore(record, status, draft = false) {
     const experiment = byId.get(record?.experiment);
     if (!experiment) return;
     if (experiment.querySelector('[data-part="run"]')?.disabled) {
-      show(libraryStatus, 'Finish or cancel the running experiment before opening this case.', true);
+      show(status, 'Finish or cancel the running experiment before restoring this setup.', true);
       return;
     }
     const fields = workbenchFields(experiment);
     const edited = [...fields].some(([name, field]) =>
       field.value !== field.defaultValue && field.value !== record.fields[name]);
-    if (edited && !window.confirm('Replace the current workbench input with this saved case?')) return;
+    if (edited && !window.confirm('Replace the current workbench input with this saved setup?')) return;
     for (const [name, field] of fields) field.value = record.fields[name] ?? field.defaultValue;
     model.value = record.model;
+    model.dispatchEvent(new Event('change'));
+    if (draft) openedCases.delete(experiment);
+    else openedCases.set(experiment, record);
     experiment.dataset.caseExpected = record.expected;
     const revisionChanged = record.revision !== revisionFor(experiment) ||
       (Boolean(record.graphRevision) && record.graphRevision !== graphRevision);
     const context = experiment.querySelector('[data-case-context]');
     context.textContent = [
-      `Opened ${record.name}.`,
+      draft ? 'Restored your latest draft.' : `Opened ${record.name}.`,
       record.expected && experiment.dataset.lab !== 'cold' && `Expected behavior · ${record.expected}`,
       record.receipt && `Saved run · ${record.receipt.filter(Boolean).length} of 3 checks passed.`,
       revisionChanged && 'This case was saved with a different experiment revision. A new run uses the current version.',
     ].filter(Boolean).join('\n');
     context.hidden = false;
     recentChecks.delete(experiment);
-    experiment.dispatchEvent(new CustomEvent('case-restored', { detail: record }));
-    show(libraryStatus, `Opened ${record.name}.`);
+    experiment.dispatchEvent(new CustomEvent('case-restored', { detail: draft ? { draft: true } : record }));
+    show(status, draft ? 'Restored your latest draft.' : `Opened ${record.name}.`);
     const coldForm = experiment.querySelector('[data-part="cold-form"]');
     const firstField = coldForm && !coldForm.hidden
       ? experiment.querySelector('[data-part="cold-next"]') : fields.get('notes');
     openExperiment(experiment, firstField);
+  }
+
+  get('case-open').addEventListener('click', () => restore(selectedCase(), libraryStatus));
+
+  function readDraft() {
+    const saved = localStorage.getItem(draftKey);
+    return saved && cleanCase(JSON.parse(saved));
+  }
+
+  function refreshDraft() {
+    try {
+      keepDraft.checked = localStorage.getItem(draftSetting) === 'yes';
+      const draft = keepDraft.checked && readDraft();
+      draftOpen.disabled = !draft || !byId.has(draft.experiment);
+      show(draftStatus, draft ? `Latest draft · ${draft.name}` : '');
+    } catch {
+      draftOpen.disabled = true;
+      show(draftStatus, 'The browser could not read the last draft.', true);
+    }
+  }
+
+  function keepSetup(experiment) {
+    if (!keepDraft.checked) return;
+    try {
+      const record = cleanCase({
+        ...readCaseSetup(experiment, model.value),
+        id: draftId, experiment: experiment.id, savedAt: Date.now(),
+        name: experiment.querySelector('h2').textContent,
+        expected: experiment.dataset.caseExpected || '',
+        revision: revisionFor(experiment), graphRevision: graphRevisionFor(experiment),
+      });
+      localStorage.setItem(draftKey, JSON.stringify(record));
+      draftOpen.disabled = false;
+      const message = `Latest draft · ${record.name}`;
+      if (draftStatus.textContent !== message) show(draftStatus, message);
+    } catch (error) {
+      show(draftStatus, `Draft could not be kept. ${error.message}`, true);
+    }
+  }
+
+  keepDraft.addEventListener('change', () => {
+    try {
+      if (keepDraft.checked) localStorage.setItem(draftSetting, 'yes');
+      else {
+        localStorage.removeItem(draftSetting);
+        localStorage.removeItem(draftKey);
+      }
+      refreshDraft();
+    } catch {
+      keepDraft.checked = false;
+      show(draftStatus, 'The browser could not change draft recovery.', true);
+    }
   });
+  draftOpen.addEventListener('click', () => {
+    try {
+      restore(readDraft(), draftStatus, true);
+    } catch {
+      show(draftStatus, 'The browser could not restore the draft.', true);
+    }
+  });
+  for (const experiment of experiments) {
+    const fields = new Set(workbenchFields(experiment).values());
+    for (const name of ['input', 'change']) experiment.addEventListener(name, event => {
+      if (fields.has(event.target)) keepSetup(experiment);
+    });
+    for (const name of ['input-handoff', 'setup-changed']) experiment.addEventListener(name, () => keepSetup(experiment));
+  }
 
   get('case-delete').addEventListener('click', () => {
     const record = selectedCase();
@@ -282,6 +384,8 @@ export function setupCases(experiments, model, openExperiment) {
 
   window.addEventListener('storage', event => {
     if (event.key === null || event.key.startsWith(prefix)) refresh();
+    if (event.key === null || event.key === draftKey || event.key === draftSetting) refreshDraft();
   });
   refresh();
+  refreshDraft();
 }

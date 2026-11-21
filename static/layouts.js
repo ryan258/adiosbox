@@ -329,14 +329,38 @@ function build(element, blocks, source) {
 
 export function renderResult(element, text) {
   element.classList.remove('lay');
-  renderMarkdown(element, text, build);
+  try {
+    renderMarkdown(element, text, build);
+  } catch {
+    // A formatting error should still leave the response readable and available for export.
+    element.classList.remove('lay');
+    const raw = el('pre', '', String(text ?? ''));
+    element.replaceChildren(raw);
+    return;
+  }
+  if (!element.dataset.source) return;
+  const details = el('details', 'raw-result');
+  const summary = el('summary', '', 'Raw text');
+  const raw = el('pre', '', element.dataset.source);
+  raw.tabIndex = 0;
+  details.append(summary, raw);
+  element.append(details);
+}
+
+export function formatWrittenResults(container) {
+  for (const element of container.querySelectorAll('[data-handoff-text]:not([data-source])')) {
+    if (element.textContent.trim()) renderResult(element, element.textContent.trim());
+  }
+  for (const trace of container.querySelectorAll('.graph-trace')) layoutTrace(trace);
+  if (container.matches('.graph-trace')) layoutTrace(container);
 }
 
 // A/B and fact tests: mark each line, row, or field that the other result doesn't share.
-const comparable = text => text.toLowerCase().replace(/\s+/g, ' ').replace(/[.。]$/, '').trim();
+const comparable = text => text.replace(/\s+/g, ' ').trim();
 function leaves(element) {
-  return [...element.querySelectorAll('li, tr, .lay-fields > div, .lay-keyed > div, p')]
-    .filter(node => !node.querySelector('li, tr, p'));
+  const selector = 'li, tr, .lay-fields > div, .lay-keyed > div, p, h5, h6, pre';
+  return [...element.querySelectorAll(selector)]
+    .filter(node => !node.closest('.raw-result') && !node.querySelector(selector));
 }
 export function markDifferences(results) {
   for (const result of results) {
@@ -344,11 +368,11 @@ export function markDifferences(results) {
     result.querySelectorAll('.diff-note').forEach(node => node.remove());
   }
   if (results.length !== 2 || !results.every(result => result.dataset.source)) return;
-  const [first, second] = results.map(result => new Set(leaves(result).map(node => comparable(node.textContent))));
+  const pair = results.map(leaves);
+  const texts = pair.map(nodes => nodes.map(node => comparable(node.textContent)));
   results.forEach((result, index) => {
-    const other = index ? first : second;
-    for (const node of leaves(result)) {
-      if (other.has(comparable(node.textContent))) continue;
+    for (const [position, node] of pair[index].entries()) {
+      if (texts[1 - index][position] === texts[index][position]) continue;
       node.classList.add('is-different');
       (node.tagName === 'TR' ? node.lastElementChild : node).append(el('span', 'visually-hidden diff-note', ' (differs from the other result)'));
     }
@@ -377,13 +401,14 @@ export function layoutTrace(trace) {
   const groups = { branch: [], child: [] };
   for (const entry of entries) {
     const title = entry.querySelector('[data-handoff-title]')?.textContent.trim() ?? '';
-    let kind = stepKind(title);
-    if (flow === 'tree' && kind === 'step') kind = afterDecision ? 'child' : 'branch';
+    const explicit = entry.dataset.stepKind;
+    let kind = explicit || stepKind(title);
+    if (!explicit && flow === 'tree' && kind === 'step') kind = afterDecision ? 'child' : 'branch';
     if (flow === 'tree' && /^search decision/i.test(title)) {
       afterDecision = true;
       // The pruning step's own reply sits just before its decision; it isn't a fourth branch.
       const prune = entry.previousElementSibling;
-      if (prune?.dataset.kind === 'branch' && groups.branch.length > 3) {
+      if (!prune?.dataset.stepKind && prune?.dataset.kind === 'branch' && groups.branch.length > 3) {
         prune.dataset.kind = 'step';
         groups.branch.splice(groups.branch.indexOf(prune), 1);
       }
@@ -394,6 +419,8 @@ export function layoutTrace(trace) {
     groups[kind]?.push(entry);
   }
   // The tree's last descendant is its finished answer.
-  if (flow === 'tree' && groups.child.length > 1) groups.child.pop().dataset.kind = 'final';
+  if (flow === 'tree' && groups.child.length > 1 && groups.child.every(entry => !entry.dataset.stepKind)) {
+    groups.child.pop().dataset.kind = 'final';
+  }
   for (const group of Object.values(groups)) if (group.length === 1) group[0].dataset.wide = '';
 }

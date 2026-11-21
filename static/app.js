@@ -3,27 +3,33 @@ import { readCaseSetup, setupCases } from './cases.js';
 import { checkFactPair, compareFactChecks, prepareFactInputs, sameFactScenario } from './fact-test.js';
 import { appendRunRecord, runRecordText, setupHandoff } from './handoff.js';
 import { setupLab } from './comparison-lab.js';
-import { setupCallTrace, traceBody } from './call-trace.js';
+import { redactTraceText, setupCallTrace, traceBody } from './call-trace.js';
 import { sourceText } from './markdown.js';
-import { layoutTrace, renderResult } from './layouts.js';
+import { formatWrittenResults, renderResult } from './layouts.js';
+import { receipts, withCallDeadline } from './run-state.js';
 import {
-  CompletionError, completionBody, describeModel, readCompletion, withFreeRetries,
+  CompletionError, completionBody, describeModel, freeRetryLimit, isFreeModel, readCompletion, withFreeRetries,
 } from './completion-options.js';
 
 const local = document.body.hasAttribute('data-local-openrouter');
-const modelIdPattern = /^[\w.-]+\/[\w.:@+-]+$/;
+const modelIdPattern = /^(?=.{1,200}$)[\w.-]+\/[\w.:@+-]+$/;
 const endpoint = local ? '/api/complete' : 'https://openrouter.ai/api/v1/chat/completions';
 const model = document.getElementById('model');
-document.querySelectorAll('[data-model-picker]').forEach(setupModelPicker);
-// Format the written samples before any workbench keeps a copy of them.
-document.querySelectorAll('[data-handoff-text]').forEach(element => renderResult(element, element.textContent.trim()));
-document.querySelectorAll('.graph-trace').forEach(layoutTrace);
+document.querySelectorAll('#setup [data-model-picker]').forEach(setupModelPicker);
 
 const key = document.getElementById('api-key');
 const connectionStatus = document.getElementById('connection-status');
 const experiments = [...document.querySelectorAll('[data-experiment]')];
 const catalogLinks = document.querySelectorAll('.experiment-list a');
 const callTrace = setupCallTrace(copy);
+const initializedPanels = new WeakSet();
+
+function makeRunStatus(element, selections, base, recovery = '') {
+  const modelIds = [...new Set(selections)];
+  const retry = modelIds.some(isFreeModel) ? ` Up to ${freeRetryLimit} extra automatic retries for free models.` : '';
+  const labels = modelIds.map(id => isFreeModel(id) ? id : `${id || 'Choose a model'} (may use credits)`);
+  element.textContent = `${base} Models: ${labels.join(', ')}.${retry}${recovery ? ' ' + recovery : ''}`;
+}
 
 function chooseModel(override, defaultId) {
   const value = override?.value.trim();
@@ -31,9 +37,10 @@ function chooseModel(override, defaultId) {
 }
 
 function revealField(experiment, field) {
-  const details = field.closest('details');
-  if (details && experiment.contains(details)) details.open = true;
-  field.focus();
+  for (let parent = field?.parentElement; parent && experiment.contains(parent); parent = parent.parentElement) {
+    if (parent.matches('details')) parent.open = true;
+  }
+  field?.focus();
 }
 
 function setStatus(element, message, error = false) {
@@ -56,13 +63,20 @@ function complete(options) {
 }
 
 async function completeOnce({
-  input, prompt, modelId, apiKey, signal, includeUsage = false, experiment, step, provider, enforceTeachbackSchema,
+  input, prompt, modelId, apiKey, signal, includeUsage = false, experiment, step, provider, enforceTeachbackSchema, visibility,
 }) {
   signal.throwIfAborted();
+  if (!prompt.trim() || prompt.length > 4000 || !input.trim() || input.length > 8000) {
+    throw new CompletionError('Use a prompt of up to 4,000 characters and an input of up to 8,000 characters.');
+  }
   const headers = { 'Content-Type': 'application/json' };
   if (!local) headers.Authorization = `Bearer ${apiKey}`;
   const body = JSON.stringify(completionBody({ modelId, prompt, input, includeUsage, provider, enforceTeachbackSchema }));
-  const finishTrace = callTrace.start(experiment, step, local ? null : traceBody(body, apiKey));
+  if (new TextEncoder().encode(body).length > 64 * 1024) {
+    throw new CompletionError('The full request is too large. Shorten the input or prompt.');
+  }
+  const request = traceBody(body, apiKey);
+  const finishTrace = callTrace.start(experiment, step, local ? null : request, visibility);
   let response;
   let responseText;
   try {
@@ -101,9 +115,15 @@ async function completeOnce({
   signal.throwIfAborted();
   // The trace's state is the HTTP result; outcome says how the completion itself ended.
   try {
-    const result = readCompletion(response, responseText, { modelId, provider, includeUsage, local });
+    const result = readCompletion(response, redactTraceText(responseText, apiKey), { modelId, provider, includeUsage, local });
     finishTrace({ outcome: result.truncated ? 'truncated' : 'completed' });
-    return result;
+    return { ...result, receipt: {
+      request: tracedResponse.request ?? request,
+      reportedModel: result.reportedModel || null,
+      reportedProvider: result.reportedProvider || null,
+      outcome: result.truncated ? 'truncated' : 'completed',
+      usage: result.usage ?? null,
+    } };
   } catch (error) {
     if (!signal.aborted) finishTrace({ outcome: 'failed', error: error.message, retryable: error.retryable === true });
     throw error;
@@ -141,9 +161,22 @@ function setupExperiment(experiment) {
   // When step 2 fails, its input is kept so the run can pick up there with a different model or prompt.
   const pickupButton = part('pickup');
   let pickupState;
+  const sourceInputs = () => JSON.stringify([notes.value, variants[0]?.instructions.value,
+    ...[...factFields.values()].map(field => field.value)]);
+  const runBudget = part('run-budget');
+  function budget() {
+    const selected = pickupState ? [variants[1]] : variants;
+    const base = pickupState ? 'Pick-up sends one call.' : chain || factTest ? 'Two base calls.'
+      : comparisonStatus ? 'One base call per arm.' : 'One base call.';
+    makeRunStatus(runBudget, selected.map(variant => chooseModel(variant.roleModel, model.value.trim()).id), base);
+  }
+  for (const name of ['input', 'change', 'click', 'case-restored']) experiment.addEventListener(name, budget);
+  for (const name of ['input', 'change']) model.addEventListener(name, budget);
+  budget();
   function clearPickup() {
     pickupState = undefined;
     if (pickupButton) pickupButton.hidden = true;
+    budget();
   }
   form.addEventListener('input', event => {
     if (event.target === notes || event.target === variants[0]?.instructions || [...factFields.values()].includes(event.target)) clearPickup();
@@ -159,6 +192,7 @@ function setupExperiment(experiment) {
     notes.value = notes.defaultValue;
     for (const field of factFields.values()) field.value = field.defaultValue;
     clearPickup();
+    experiment.dispatchEvent(new Event('setup-changed'));
     notes.focus();
   });
 
@@ -180,6 +214,8 @@ function setupExperiment(experiment) {
     clearPickup();
     for (const variant of variants) {
       variant.snapshot = undefined;
+      receipts.delete(variant.result);
+      variant.result.dataset.resultState = 'sample';
       renderResult(variant.result, variant.sample);
       variant.title.textContent = variant.sampleTitle;
       variant.meta.textContent = variant.sampleMeta;
@@ -194,7 +230,10 @@ function setupExperiment(experiment) {
   function reportComparison() {
     if (!comparisonStatus) return;
     const [first, second] = variants.map(variant => variant.snapshot);
-    if (!first || !second) return;
+    if (!first || !second) {
+      setStatus(comparisonStatus, 'Run both arms for a live comparison. Check the label on each result.');
+      return;
+    }
     if (first.truncated || second.truncated) {
       setStatus(comparisonStatus, 'At least one result hit the output limit. Shorten the input or prompt and run the pair again.', true);
     } else if (first.input !== second.input) {
@@ -217,6 +256,11 @@ function setupExperiment(experiment) {
     if (activeRequest) return;
 
     const resuming = Boolean(pickupState) && event.submitter === pickupButton;
+    if (resuming && pickupState.source !== sourceInputs()) {
+      clearPickup();
+      setStatus(runStatus, 'The input changed. Start a new run.', true);
+      return;
+    }
     const selected = variants.find(item => item.run === event.submitter) ?? variants[0];
     const run = selected.run;
     const defaultModel = model.value.trim();
@@ -226,6 +270,7 @@ function setupExperiment(experiment) {
       selection: chooseModel(variant.roleModel, defaultModel),
     }));
     const input = notes.value.trim();
+    const startingSource = sourceInputs();
     const apiKey = key?.value.trim();
     const missing = [
       [notes, input, 'Enter some input or load the sample.'],
@@ -261,13 +306,20 @@ function setupExperiment(experiment) {
     if (connectionStatus) setStatus(connectionStatus, '');
     const request = new AbortController();
     activeRequest = request;
-    let timeout;
+    const focusOnRun = document.activeElement === run || document.activeElement === pickupButton;
     let step = 0;
     let handoff = input;
     if (resuming) ({ handoff, factInputs, expectations } = pickupState);
     clearPickup();
+    if (comparisonStatus) setStatus(comparisonStatus, '');
+    for (const { variant } of resuming ? stages.slice(1) : stages) {
+      variant.snapshot = undefined;
+      if (variant.result.dataset.resultState !== 'sample' && sourceText(variant.result)) {
+        variant.result.dataset.resultState = 'previous';
+        variant.meta.textContent = 'Previous result shown while the new call runs.';
+      }
+    }
     const buttons = variants.map(variant => variant.run).filter(Boolean);
-    const focusOnRun = document.activeElement === run;
     buttons.forEach(button => { button.disabled = true; });
     cancel.hidden = false;
     if (focusOnRun) cancel.focus();
@@ -281,13 +333,14 @@ function setupExperiment(experiment) {
           : chain ? `Running step ${step} of ${stages.length}…` : label ? `Running prompt ${label}…` : 'Waiting for OpenRouter…';
         setStatus(runStatus, progress);
         setStatus(copyStatus, '');
-        timeout = window.setTimeout(() => request.abort('timeout'), 60_000);
-        const { content, reportedModel, truncated } = await complete({
+        const { content, reportedModel, truncated, receipt } = await withCallDeadline(request, () => complete({
           input: factInputs?.[step - 1] ?? handoff, prompt, modelId, apiKey, signal: request.signal,
           experiment: experiment.id, step: label || step,
-        });
-        window.clearTimeout(timeout);
+          includeUsage: true,
+        }), 'timeout');
 
+        result.dataset.resultState = truncated ? 'partial' : 'live';
+        receipts.set(result, receipt);
         renderResult(result, content);
         if (!chain && !factTest) title.textContent = label ? `Result ${label}` : 'Your result';
         meta.textContent = describeModel(modelId, reportedModel);
@@ -300,6 +353,8 @@ function setupExperiment(experiment) {
 
         if ((chain || factTest) && step === 1) {
           const next = stages[1].variant;
+          receipts.delete(next.result);
+          next.result.dataset.resultState = 'empty';
           renderResult(next.result, '');
           next.copy.disabled = true;
           next.handoff.disabled = true;
@@ -328,10 +383,12 @@ function setupExperiment(experiment) {
           const checks = checkFactPair(expectations, baseline, changed);
           const routedDifferently = baseline.reportedModel && changed.reportedModel &&
             baseline.reportedModel !== changed.reportedModel;
-          const caveat = routedDifferently
-            ? '\nOpenRouter reported different models. Rerun with a specific model to isolate the fact change.'
-            : !baseline.reportedModel || !changed.reportedModel
-              ? '\nOpenRouter did not identify both responding models.' : '';
+          const caveat = baseline.requestedModel !== changed.requestedModel
+            ? '\nThe two cases requested different models. Run both with the same model to isolate the fact change.'
+            : routedDifferently
+              ? '\nOpenRouter reported different models. Rerun with a specific model to isolate the fact change.'
+              : !baseline.reportedModel || !changed.reportedModel
+                ? '\nOpenRouter did not identify both responding models.' : '';
           let change = '';
           if (setup) {
             experiment.dispatchEvent(new CustomEvent('fact-checked', {
@@ -355,14 +412,19 @@ function setupExperiment(experiment) {
       }
     } catch (error) {
       const showFailure = (message, isError = true) => {
+        for (const { variant } of stages) {
+          if (variant.result.dataset.resultState === 'previous') variant.meta.textContent = 'Previous result retained. The new call did not finish.';
+        }
         if ((chain || factTest) && step === 2) {
           stages[1].variant.meta.textContent = factTest ? 'The changed case did not finish.' : 'Step 2 did not finish.';
           const remaining = factTest ? 'The baseline is kept. Pick a different model if you like, then pick up at the changed case.'
             : 'Step 1 is kept. Pick a different model for step 2 if you like, then pick up at step 2.';
-          setStatus(runStatus, `${message} ${remaining}`, isError);
-          if (request.signal.reason !== 'key-cleared') {
-            pickupState = { handoff, factInputs, expectations };
+          const recoverable = request.signal.reason !== 'key-cleared' && startingSource === sourceInputs();
+          setStatus(runStatus, recoverable ? `${message} ${remaining}` : message, isError);
+          if (recoverable) {
+            pickupState = { handoff, factInputs, expectations, source: startingSource };
             pickupButton.hidden = false;
+            budget();
           }
         } else {
           setStatus(runStatus, message, isError);
@@ -379,14 +441,16 @@ function setupExperiment(experiment) {
       }
       showFailure(error instanceof CompletionError ? error.message : 'Could not read a response from OpenRouter. Check your connection and try again.');
     } finally {
-      window.clearTimeout(timeout);
       activeRequest = undefined;
       buttons.forEach(button => { button.disabled = false; });
       if (document.activeElement === cancel) run.focus();
       cancel.hidden = true;
     }
   });
-  return () => activeRequest?.abort('key-cleared');
+  return () => {
+    clearPickup();
+    activeRequest?.abort('key-cleared');
+  };
 }
 
 function setupGraph(experiment) {
@@ -416,26 +480,53 @@ function setupGraph(experiment) {
   const sampleTitle = traceTitle.textContent;
   const sampleMeta = traceMeta.textContent;
   let active;
+  const sourceInputs = () => JSON.stringify([notes.value, minutes?.value]);
+  const runBudget = part('run-budget');
+  const modelRoles = spec.roleModels ? spec.roleModels.map(({ key }) => key) : Object.keys(spec.nodes);
+  function budget() {
+    const picks = modelRoles.map(role => chooseModel(modelFields.get(role), model.value.trim()).id);
+    makeRunStatus(runBudget, picks, `Up to ${experiment.dataset.baseCalls} base calls.`);
+    if (active?.failed) {
+      const selected = pickupModel.value.trim();
+      const failedModel = active.roleModels.get(active.failed.role)?.id;
+      const remaining = [...active.roleModels.values()].map(({ id }) => selected && id === failedModel ? selected : id);
+      makeRunStatus(part('pickup-budget'), remaining, `Up to ${active.graph.remainingCalls()} remaining base calls.`,
+        'The failed call can be sent again.');
+    }
+  }
+  for (const name of ['input', 'change', 'click', 'case-restored']) experiment.addEventListener(name, budget);
+  for (const name of ['input', 'change']) model.addEventListener(name, budget);
+  budget();
 
   experiment.addEventListener('case-restored', () => {
+    if (active?.failed) finishRun();
     trace.replaceChildren(...sample.map(entry => entry.cloneNode(true)));
+    formatWrittenResults(trace);
     traceTitle.textContent = sampleTitle;
     traceMeta.textContent = sampleMeta;
     setStatus(runStatus, '');
     setStatus(copyStatus, '');
   });
-  experiment.addEventListener('input-handoff', () => { if (active?.failed) finishRun(); });
+  function invalidatePickup() {
+    if (!active?.failed) return;
+    finishRun();
+    setStatus(runStatus, 'Input changed. Start a new run when ready.');
+  }
+  experiment.addEventListener('input-handoff', invalidatePickup);
+  experiment.addEventListener('input', event => {
+    if (event.target === notes || event.target === minutes) invalidatePickup();
+  });
 
-  function record(title, content, respondingModel, requestedModel) {
+  function record(title, content, respondingModel, requestedModel, kind, receipt) {
     const model = requestedModel ? describeModel(requestedModel, respondingModel) : '';
-    appendRunRecord(trace, title, content, model);
+    appendRunRecord(trace, title, content, model, kind, receipt);
   }
 
   function finishRun() {
     choices.hidden = true;
     pickup.hidden = true;
     run.disabled = false;
-    if (cancel === document.activeElement || choices.contains(document.activeElement)) run.focus();
+    if (cancel === document.activeElement || choices.contains(document.activeElement) || pickup.contains(document.activeElement)) run.focus();
     cancel.hidden = true;
     active = undefined;
   }
@@ -462,6 +553,8 @@ function setupGraph(experiment) {
         record('Paused for your choice', choices.querySelector('legend').textContent.trim());
         active.paused = true;
         choices.hidden = false;
+        makeRunStatus(part('approval-budget'), [...active.roleModels.values()].map(({ id }) => id),
+          `Up to ${active.graph.remainingCalls()} remaining base calls.`);
         if (editableBrief) {
           const proposal = result.roleProposal;
           active.roleQuestion = proposal.question;
@@ -495,7 +588,7 @@ function setupGraph(experiment) {
       setStatus(runStatus, message, !canceled || message === 'OpenRouter took too long.');
       // Finished steps are checkpointed, so offer to rerun only the step that failed.
       const point = message !== 'Run canceled because the key was cleared.' && await active.graph?.pickupPoint().catch(() => null);
-      if (point) {
+      if (point && !active.discardRecovery && active.source === sourceInputs()) {
         active.failed = point;
         pickup.querySelector('[data-part="pickup-reason"]').textContent =
           `It stopped at “${point.title}”. Finished steps are kept, so picking up sends only the unfinished ones.`;
@@ -503,6 +596,7 @@ function setupGraph(experiment) {
         pickup.hidden = false;
         run.disabled = false;
         cancel.hidden = true;
+        budget();
         pickup.querySelector('[data-pickup="go"]').focus();
       }
     } finally {
@@ -515,6 +609,8 @@ function setupGraph(experiment) {
         !window.confirm('Replace your input with the sample?')) return;
     notes.value = notes.defaultValue;
     if (minutes) minutes.value = minutes.defaultValue;
+    invalidatePickup();
+    experiment.dispatchEvent(new Event('setup-changed'));
     notes.focus();
   });
 
@@ -534,7 +630,6 @@ function setupGraph(experiment) {
     if (active) finishRun();
     const input = notes.value.trim();
     const defaultModel = model.value.trim();
-    const modelRoles = spec.roleModels ? spec.roleModels.map(({ key }) => key) : Object.keys(spec.nodes);
     const roleModels = new Map(modelRoles.map(role => [role, chooseModel(modelFields.get(role), defaultModel)]));
     const invalidModel = [...roleModels.values()].find(selection => !modelIdPattern.test(selection.id));
     const apiKey = key?.value.trim();
@@ -553,7 +648,7 @@ function setupGraph(experiment) {
     }
 
     const controller = new AbortController();
-    const current = { controller, paused: false, apiKey, roleModels };
+    const current = { controller, paused: false, apiKey, roleModels, source: sourceInputs() };
     active = current;
     trace.replaceChildren();
     traceTitle.textContent = 'Run record';
@@ -575,15 +670,11 @@ function setupGraph(experiment) {
           // A pick-up swaps in a new controller, key, and model selection, so read them from the run each call.
           const modelId = current.roleModels.get(node).id;
           const { controller: attempt } = current;
-          const timer = window.setTimeout(() => attempt.abort('OpenRouter took too long.'), 60_000);
-          try {
-            const result = await complete({
-              input: nodeInput, prompt, modelId, apiKey: current.apiKey, signal: attempt.signal, experiment: experiment.id, step: node,
-            });
-            return { ...result, requestedModel: modelId };
-          } finally {
-            window.clearTimeout(timer);
-          }
+          const result = await withCallDeadline(attempt, () => complete({
+            input: nodeInput, prompt, modelId, apiKey: current.apiKey, signal: attempt.signal, experiment: experiment.id, step: node,
+            includeUsage: true,
+          }));
+          return { ...result, requestedModel: modelId };
         },
       });
       return active.graph.start(input, budget);
@@ -624,6 +715,10 @@ function setupGraph(experiment) {
       stopRun('The key changed. Start a new graph to continue.');
       return;
     }
+    if (active.source !== sourceInputs()) {
+      stopRun('The input changed. Start a new graph to continue.');
+      return;
+    }
     const selection = editableBrief ? approvedAssignment() : choice;
     if (!selection) return;
     active.paused = false;
@@ -637,6 +732,10 @@ function setupGraph(experiment) {
   pickup.addEventListener('click', async event => {
     const action = event.target.closest('[data-pickup]')?.dataset.pickup;
     if (!action || !active?.failed) return;
+    if (active.source !== sourceInputs()) {
+      invalidatePickup();
+      return;
+    }
     if (action === 'stop') {
       setStatus(runStatus, 'Left as it is. Run the graph to start over.');
       finishRun();
@@ -675,12 +774,15 @@ function setupGraph(experiment) {
   });
 
   cancel.addEventListener('click', () => stopRun('Run canceled.'));
-  return () => stopRun('Run canceled because the key was cleared.');
+  return () => {
+    if (active) active.discardRecovery = true;
+    stopRun('Run canceled because the key was cleared.');
+  };
 }
 
 const labUI = {
   chooseModel, copy, describeModel, experiments, getApiKey: () => key?.value.trim(),
-  local, model, modelIdPattern, revealField, setStatus,
+  local, model, modelIdPattern, revealField, setStatus, makeRunStatus, refreshCallTrace: callTrace.refresh,
 };
 const cancelRequests = experiments.map(experiment => {
   if (experiment.hasAttribute('data-lab')) {
@@ -710,6 +812,11 @@ window.addEventListener('pageshow', event => {
 
 function selectExperiment(experiment) {
   for (const panel of experiments) panel.hidden = panel !== experiment;
+  if (!initializedPanels.has(experiment)) {
+    initializedPanels.add(experiment);
+    experiment.querySelectorAll('[data-model-picker]').forEach(setupModelPicker);
+    formatWrittenResults(experiment);
+  }
   for (const link of catalogLinks) {
     if (link.hash === `#${experiment.id}`) link.setAttribute('aria-current', 'location');
     else link.removeAttribute('aria-current');
@@ -738,6 +845,34 @@ function linkedExperiment() {
 
 const initialExperiment = linkedExperiment();
 selectExperiment(initialExperiment ?? experiments[0]);
+
+const search = document.getElementById('catalog-search');
+const shelves = [...document.querySelectorAll('[data-catalog-shelf]')].map(section => ({
+  section,
+  cards: [...section.querySelectorAll('li')].map(card => ({
+    card,
+    text: `${section.querySelector('h3').textContent} ${card.textContent}`.toLocaleLowerCase(),
+  })),
+}));
+const featured = document.querySelector('[data-catalog-featured]');
+const searchStatus = document.getElementById('catalog-search-status');
+search.parentElement.hidden = false;
+search.addEventListener('input', () => {
+  const query = search.value.trim().toLocaleLowerCase();
+  const terms = query.split(/\s+/);
+  let matches = 0;
+  for (const { section, cards } of shelves) {
+    let visible = 0;
+    for (const { card, text } of cards) {
+      card.hidden = !terms.every(term => text.includes(term));
+      if (!card.hidden) visible += 1;
+    }
+    section.hidden = !visible;
+    matches += visible;
+  }
+  featured.hidden = Boolean(query);
+  setStatus(searchStatus, query ? `${matches} ${matches === 1 ? 'experiment' : 'experiments'} found.` : '');
+});
 
 window.addEventListener('hashchange', () => {
   const target = linkedExperiment();

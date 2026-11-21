@@ -94,6 +94,7 @@ export function setupModelPicker(picker) {
     input.value = model.id;
     close();
     status.textContent = `Selected ${model.name}.`;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
   function suggest() {

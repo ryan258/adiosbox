@@ -3,21 +3,11 @@
 {{- $orchestrated := or (eq $graph.mode "orchestrated") (eq $graph.mode "orchestrated-subgraphs") -}}
 {{- $editableBrief := or (eq $graph.mode "adaptive") $orchestrated -}}
 {{- /* Hugo sorts map keys, so list nodes in the order the runtime visits them. Unlisted keys follow alphabetically. */ -}}
-{{- $runOrder := dict
-  "route" (slice "classify" "proceed" "alternate")
-  "fork" (slice "left" "right" "merge")
-  "tree" (slice "branchA" "branchB" "branchC" "prune" "childA" "childB" "finish")
-  "revise" (slice "draft" "review")
-  "ledger" (slice "draft" "review")
-  "evidence" (slice "extract" "rewrite")
-  "checkpoint" (slice "prepare" "finish")
-  "adaptive" (slice "profile" "execute" "review")
-  "orchestrated" (slice "plan" "specialist" "assemble")
-  "orchestrated-subgraphs" (slice "plan" "shape" "work" "assemble") -}}
+{{- $contract := partial "graph-contract.html" . -}}
 {{- $nodeOrder := slice -}}
-{{- with index $runOrder $graph.mode }}{{ range . }}{{ if index $graph.nodes . }}{{ $nodeOrder = $nodeOrder | append . }}{{ end }}{{ end }}{{ end -}}
+{{- with index $contract $graph.mode }}{{ range after 1 . }}{{ if index $graph.nodes . }}{{ $nodeOrder = $nodeOrder | append . }}{{ end }}{{ end }}{{ end -}}
 {{- range $key, $_ := $graph.nodes }}{{ if not (in $nodeOrder $key) }}{{ $nodeOrder = $nodeOrder | append $key }}{{ end }}{{ end -}}
-<section data-experiment data-graph data-case-revision="{{ sha256 (jsonify .) }}" id="{{ .slug }}" class="experiment" tabindex="-1" aria-labelledby="{{ .slug }}-experiment-title">
+<section data-experiment data-graph data-base-calls="{{ .maxRequests }}" data-case-revision="{{ sha256 (jsonify .) }}" id="{{ .slug }}" class="experiment" tabindex="-1" aria-labelledby="{{ .slug }}-experiment-title">
   <header class="experiment-header">
     <div>
       <h2 id="{{ .slug }}-experiment-title">{{ .title }}</h2>
@@ -68,7 +58,8 @@
           {{ end }}
         </div>
       </details>
-      <p class="help">{{ if $editableBrief }}First, one call drafts the {{ if $orchestrated }}plan{{ else }}role{{ end }} for you to approve. The whole run uses up to {{ .maxRequests }} calls.{{ else }}Up to {{ .maxRequests }} calls. It may stop sooner if it has what it needs.{{ end }}</p>
+      {{ if $editableBrief }}<p class="help">The first call drafts the {{ if $orchestrated }}plan{{ else }}role{{ end }} for you to approve.</p>{{ end }}
+      <p class="help" data-part="run-budget"></p>
       <div class="actions">
         <button class="primary" data-part="run" type="submit">{{ if $orchestrated }}Propose a chain{{ else if $editableBrief }}Propose an agent{{ else }}Run the graph{{ end }}</button>
         <button class="secondary" data-part="cancel" type="button" hidden>Cancel</button>
@@ -80,6 +71,7 @@
         {{ else }}
         <p class="help">Your call. Read what it found, then pick a direction. Either choice uses one more call.</p>
         {{ end }}
+        <p class="help" data-part="approval-budget"></p>
         <div class="actions">
           {{ if $editableBrief }}
           <button class="primary" type="button" data-choice="use-assignment">{{ if $orchestrated }}Run this chain{{ else }}Use this assignment{{ end }}</button>
@@ -95,6 +87,7 @@
         <p class="help" data-part="pickup-reason"></p>
         {{ partial "model-picker.html" (dict "id" (printf "%s-pickup-model" .slug) "label" "Model for the rest of this run" "role" "pickup" "helpID" (printf "%s-pickup-help" .slug)) }}
         <p id="{{ .slug }}-pickup-help" class="help">Leave it blank to try the same model again. Every unfinished step that used that model switches too. Finished steps stay as they are.</p>
+        <p class="help" data-part="pickup-budget"></p>
         <div class="actions">
           <button class="primary" type="button" data-pickup="go">Pick up from here</button>
           <button class="secondary" type="button" data-pickup="stop">Leave it here</button>

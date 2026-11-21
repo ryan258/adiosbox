@@ -1,4 +1,5 @@
 {{- $experiments := sort hugo.Data.experiments "order" -}}
+{{- partial "validate-catalog.html" (dict "experiments" $experiments "shelves" hugo.Data.shelves) -}}
 {{- $local := and (eq hugo.Environment "local") (hasPrefix site.BaseURL "http://127.0.0.1:") -}}
 <!doctype html>
 <html lang="en">
@@ -33,6 +34,7 @@
       <div>
         <h1 id="page-title">Ryan’s AI playground<span>.</span></h1>
         <p>Small AI experiments you can poke at. Each one comes with a worked example, so you can see the trick before spending a single call.</p>
+        <p><a href="https://github.com/ryan258/adiosbox/blob/main/docs/the-missing-manual.md">Read the guide</a>{{ if $local }} · <a href="#saved-cases">Saved cases</a>{{ end }}</p>
       </div>
       <dl class="title-block">
         <div><dt>Experiments</dt><dd class="title-count">{{ len $experiments }}</dd></div>
@@ -43,7 +45,12 @@
 
     <nav id="experiments" class="catalog" aria-labelledby="catalog-title">
       <h2 id="catalog-title" class="visually-hidden">Experiments</h2>
-      <section class="start-here" aria-labelledby="start-here-title">
+      <div class="catalog-filter" hidden>
+        <label for="catalog-search">Find an experiment</label>
+        <input type="search" id="catalog-search" autocomplete="off">
+        <p class="status" id="catalog-search-status" role="status"></p>
+      </div>
+      <section class="start-here" data-catalog-featured aria-labelledby="start-here-title">
         <h3 id="start-here-title">New here? Start with one of these</h3>
         <ul class="experiment-list">
           {{ range hugo.Data.shelves.startHere }}{{ with index (where $experiments "slug" .) 0 }}
@@ -53,7 +60,7 @@
       </section>
       {{ range $index, $shelf := hugo.Data.shelves.shelves }}
       {{ $items := where $experiments "shelf" $shelf.key }}
-      <section class="shelf" aria-labelledby="shelf-{{ $shelf.key }}">
+      <section class="shelf" data-catalog-shelf aria-labelledby="shelf-{{ $shelf.key }}">
         <h3 id="shelf-{{ $shelf.key }}"><span class="shelf-number" aria-hidden="true">{{ add $index 1 }}</span> {{ $shelf.title }} <span class="shelf-count">{{ len $items }}</span></h3>
         <p class="shelf-blurb">{{ $shelf.blurb }}</p>
         <ul class="experiment-list">
@@ -93,7 +100,7 @@
     <p class="back-to-catalog"><a href="#experiments">← All experiments</a></p>
     <dialog id="call-trace" class="handoff call-trace" aria-labelledby="call-trace-title" aria-describedby="call-trace-help">
       <h2 id="call-trace-title">OpenRouter call trace</h2>
-      <p id="call-trace-help" class="help">The raw conversation behind your last 20 calls: every prompt, reply, and retry. Your key is never included.</p>
+      <p id="call-trace-help" class="help">The last 20 calls include prompts, replies, and retries. Blind comparison calls appear after reveal. The key is redacted.</p>
       <label for="call-trace-json">Request and response JSON</label>
       <textarea id="call-trace-json" rows="16" readonly spellcheck="false" placeholder="Nothing yet. Run an experiment and its calls show up here."></textarea>
       <div class="actions">

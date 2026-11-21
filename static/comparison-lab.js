@@ -1,6 +1,8 @@
 import { prepareFactInputs } from './fact-test.js';
 import { appendRunRecord, runRecordText } from './handoff.js';
 import { runPromptExperiment, validatePromptCase } from './prompt-experiments.js';
+import { withCallDeadline } from './run-state.js';
+import { formatWrittenResults } from './layouts.js';
 
 const normalize = value => value.normalize('NFKC').toLowerCase()
   .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
@@ -44,7 +46,8 @@ export function checkRecall(answers, expected) {
 const makeChecks = checks => checks.map(({ label, pass }) => `${label} · ${pass ? 'Pass' : 'Review'}`).join('\n');
 
 export function setupLab(experiment, ui) {
-  const { complete, chooseModel, copy, describeModel, experiments, getApiKey, local, model, modelIdPattern, revealField, setStatus } = ui;
+  const { complete, chooseModel, copy, describeModel, experiments, getApiKey, local, model, modelIdPattern, revealField,
+    setStatus, makeRunStatus, refreshCallTrace } = ui;
   const part = name => experiment.querySelector(`[data-part="${name}"]`);
   const spec = JSON.parse(part('spec').value);
   const notes = part('notes');
@@ -69,8 +72,21 @@ export function setupLab(experiment, ui) {
   let blind;
   let cold;
 
-  function record(heading, content, reported, requested) {
-    appendRunRecord(trace, heading, content, requested ? describeModel(requested, reported) : '');
+  function budget() {
+    const picks = [...modelFields.values()].map(field => chooseModel(field, model.value.trim()).id);
+    const maximum = experiment.dataset.baseCalls;
+    const output = part('run-budget');
+    if (maximum === '0') output.textContent = 'No model calls.';
+    else makeRunStatus(output, picks, `Up to ${maximum} base calls.`,
+      spec.mode === 'repair' ? 'Each edited merge adds one base call.' : '');
+    if (repair) makeRunStatus(part('repair-budget'), [repair.selectedModels.merge], 'One base call for the revised merge.');
+  }
+  for (const name of ['input', 'change', 'click', 'case-restored']) experiment.addEventListener(name, budget);
+  for (const name of ['input', 'change']) model.addEventListener(name, budget);
+  budget();
+
+  function record(heading, content, reported, requested, kind, receipt) {
+    appendRunRecord(trace, heading, content, requested ? describeModel(requested, reported) : '', kind, receipt);
   }
 
   function resetTrace(heading = 'Run record') {
@@ -89,6 +105,7 @@ export function setupLab(experiment, ui) {
     if (save) save.hidden = false;
     resetTrace('Written sample');
     trace.replaceChildren(...sample.map(child => child.cloneNode(true)));
+    formatWrittenResults(trace);
     setStatus(status, '');
   }
 
@@ -105,6 +122,7 @@ export function setupLab(experiment, ui) {
     }
     loadedState = sampleState();
     reset();
+    experiment.dispatchEvent(new Event('setup-changed'));
     setStatus(status, `Loaded ${selected.title}.`);
   });
 
@@ -143,13 +161,7 @@ export function setupLab(experiment, ui) {
   }
 
   async function request(controller, options) {
-    controller.signal.throwIfAborted();
-    const timer = window.setTimeout(() => controller.abort('OpenRouter took too long.'), 60_000);
-    try {
-      return await complete({ ...options, signal: controller.signal });
-    } finally {
-      window.clearTimeout(timer);
-    }
+    return withCallDeadline(controller, () => complete({ includeUsage: true, ...options, signal: controller.signal }));
   }
 
   function graphDefinition() {
@@ -163,13 +175,13 @@ export function setupLab(experiment, ui) {
     controller.signal.throwIfAborted();
     const graph = createExperimentGraph(graphDefinition(), {
       signal: controller.signal,
-      record(heading, content, reported, requested) {
-        record(tag + heading, content, reported, requested);
+      record(heading, content, reported, requested, kind, receipt) {
+        record(tag + heading, content, reported, requested, kind, receipt);
       },
       async complete({ input, prompt, node }) {
         const requestedModel = selectedModels[node];
         const outcome = await request(controller, {
-          input, prompt, modelId: requestedModel, apiKey, includeUsage: Boolean(usage), step: tag ? `${tag}${node}` : node,
+          input, prompt, modelId: requestedModel, apiKey, step: tag ? `${tag}${node}` : node,
         });
         if (usage) usage.push(outcome.usage);
         return { ...outcome, requestedModel };
@@ -187,6 +199,7 @@ export function setupLab(experiment, ui) {
     chooser.value = 'left';
     part('repair-text').value = repair.left;
     repairForm.hidden = false;
+    budget();
     setStatus(status, 'Original run ready. Edit a finding and rerun the merge.');
   }
 
@@ -223,7 +236,8 @@ export function setupLab(experiment, ui) {
       includeUsage: true,
       step: 'Shared first draft',
     });
-    record('Shared first draft', draft.content, draft.reportedModel, selectedModels.writer);
+    record('Shared first draft', draft.content, draft.reportedModel, selectedModels.writer,
+      draft.truncated ? 'partial' : 'step', draft.receipt);
     if (draft.truncated) throw new Error('The shared first draft was incomplete. Neither reviewer ran.');
     sharedUsage.push(draft.usage);
     record('Shared draft usage', `${Math.round(performance.now() - draftStart)} ms · ${formatReportedUsage(sharedUsage)}`);
@@ -264,14 +278,21 @@ export function setupLab(experiment, ui) {
 
   async function startBlind(input, values, selectedModels, controller, apiKey) {
     const answers = [];
-    for (const role of ['first', 'second']) {
-      setStatus(status, `Collecting answer ${answers.length + 1} of 2…`);
-      const result = await request(controller, { input, prompt: spec.prompt, modelId: selectedModels[role], apiKey, step: role });
-      if (result.truncated) throw new Error('An answer reached its output limit. Try a shorter task.');
-      answers.push({ ...result, requestedModel: selectedModels[role] });
+    const visibility = { revealed: false };
+    try {
+      for (const role of ['first', 'second']) {
+        setStatus(status, `Collecting answer ${answers.length + 1} of 2…`);
+        const result = await request(controller, { input, prompt: spec.prompt, modelId: selectedModels[role], apiKey, step: role, visibility });
+        if (result.truncated) throw new Error('An answer reached its output limit. Try a shorter task.');
+        answers.push({ ...result, requestedModel: selectedModels[role] });
+      }
+    } catch (error) {
+      visibility.revealed = true;
+      refreshCallTrace();
+      throw error;
     }
     const reverse = crypto.getRandomValues(new Uint8Array(1))[0] % 2;
-    blind = { answers, order: reverse ? [1, 0] : [0, 1] };
+    blind = { answers, visibility, order: reverse ? [1, 0] : [0, 1] };
     part('frozen-rubric').textContent = values.rubric;
     part('blind-swap').disabled = false;
     showBlindAnswers();
@@ -351,7 +372,7 @@ export function setupLab(experiment, ui) {
       if (spec.mode === 'blind') await startBlind(input, values, selectedModels, controller, apiKey);
       if (spec.mode === 'prompt') {
         const prompt = spec.technique === 'schema' ? graphDefinition().nodes.review.prompt : spec.prompt;
-        const replies = await runPromptExperiment({ ...spec, prompt }, {
+        const { received, scorable } = await runPromptExperiment({ ...spec, prompt }, {
           input, values, record, signal: controller.signal, usageText: formatReportedUsage,
           progress: message => setStatus(status, message),
           request: async options => ({
@@ -359,9 +380,9 @@ export function setupLab(experiment, ui) {
             requestedModel: selectedModels.comparison,
           }),
         });
-        setStatus(status, replies
-          ? 'Comparison finished. Review the answers and checks in the run record.'
-          : 'No call returned a reply. Each error is in the run record.', !replies);
+        setStatus(status, received
+          ? `${scorable} of ${received} replies were complete enough to check. Review the answers and checks in the run record.`
+          : 'No call returned a reply. Each error is in the run record.', !scorable);
       }
     });
   });
@@ -412,8 +433,11 @@ export function setupLab(experiment, ui) {
       for (const [position, id] of blind.order.entries()) {
         const score = blind.firstScores ? `First score ${blind.firstScores[id]}/5 · Second score ${ratings[id]}/5` : `Score ${ratings[id]}/5`;
         const answer = blind.answers[id];
-        record(`Answer ${position === 0 ? 'A' : 'B'}`, `${answer.content}\n\n${score}`, answer.reportedModel, answer.requestedModel);
+        record(`Answer ${position === 0 ? 'A' : 'B'}`, `${answer.content}\n\n${score}`,
+          answer.reportedModel, answer.requestedModel, undefined, answer.receipt);
       }
+      blind.visibility.revealed = true;
+      refreshCallTrace();
       const preference = blind.firstScores
         ? Math.sign(blind.firstScores[0] - blind.firstScores[1]) === Math.sign(ratings[0] - ratings[1])
           ? 'Your preference stayed the same after the swap.'
@@ -448,9 +472,9 @@ export function setupLab(experiment, ui) {
     experiment.addEventListener('input-handoff', () => { if (cold) reset(); });
   }
 
-  experiment.addEventListener('case-restored', () => {
+  experiment.addEventListener('case-restored', event => {
     reset();
-    if (coldForm) startCold();
+    if (coldForm && !event.detail?.draft) startCold();
   });
 
   part('share').addEventListener('click', () => {

@@ -1,4 +1,5 @@
 import { sourceText } from './markdown.js';
+import { receipts } from './run-state.js';
 
 const outputSelector = '[data-handoff-output]';
 const htmlEntities = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
@@ -8,10 +9,13 @@ function readText(container, selector) {
 }
 
 function readOutput(output) {
+  const result = output.querySelector('[data-handoff-text]');
   return {
     title: readText(output, '[data-handoff-title]').trim(),
     note: readText(output, '[data-handoff-model]').trim(),
-    text: sourceText(output.querySelector('[data-handoff-text]')),
+    text: sourceText(result),
+    state: result?.dataset.resultState || 'sample',
+    receipt: receipts.get(result),
   };
 }
 
@@ -29,9 +33,18 @@ function readExport(experiment, controls) {
   const note = scope === 'record' ? readText(output, '[data-part="trace-meta"]').trim() : '';
   const comparison = readText(experiment, '[data-part="comparison-status"]');
   if (scope === 'pair' && comparison.trim()) {
-    entries.push({ title: 'Comparison notes', text: comparison });
+    entries.push({ title: 'Comparison notes', text: comparison, state: 'record' });
   }
   return { title, note, entries };
+}
+
+const states = {
+  sample: 'Written sample', previous: 'Previous run', live: 'Live result',
+  partial: 'Partial live result', invalid: 'Live response that failed a check',
+};
+
+function receiptText(entry) {
+  return entry.receipt ? JSON.stringify(entry.receipt, null, 2) : '';
 }
 
 function escapeHtml(value) {
@@ -42,8 +55,10 @@ function renderHtml(title, note, entries, timestamp) {
   const sections = entries.map(entry => [
     '<section>',
     `<h2>${escapeHtml(entry.title)}</h2>`,
+    states[entry.state] ? `<p>${states[entry.state]}</p>` : '',
     entry.note ? `<p>${escapeHtml(entry.note)}</p>` : '',
     `<div class="result">${escapeHtml(entry.text)}</div>`,
+    entry.receipt ? `<details><summary>Request and outcome</summary><div class="result">${escapeHtml(receiptText(entry))}</div></details>` : '',
     '</section>',
   ].filter(Boolean).join('\n'));
   return `<!doctype html>
@@ -80,10 +95,16 @@ function renderMarkdown(title, note, entries, timestamp) {
   if (note) blocks.push(markdownInline(note));
   for (const entry of entries) {
     blocks.push(`## ${markdownInline(entry.title)}`);
+    if (states[entry.state]) blocks.push(states[entry.state]);
     if (entry.note) blocks.push(markdownInline(entry.note));
     const longestFence = (entry.text.match(/~+/g) ?? []).reduce((length, run) => Math.max(length, run.length), 2);
     const fence = '~'.repeat(longestFence + 1);
     blocks.push(`${fence}text\n${entry.text}\n${fence}`);
+    const receipt = receiptText(entry);
+    if (receipt) {
+      const receiptFence = '~'.repeat(Math.max(2, ...(receipt.match(/~+/g) ?? []).map(run => run.length)) + 1);
+      blocks.push(`### Request and outcome\n\n${receiptFence}json\n${receipt}\n${receiptFence}`);
+    }
   }
   return blocks.join('\n\n') + '\n';
 }
@@ -104,11 +125,13 @@ document.addEventListener('click', event => {
   }
 
   const heading = `${readText(experiment, 'h2').trim()} · ${title}`;
+  const revision = experiment.dataset.caseRevision;
+  const exportNote = [note, revision && `Experiment revision ${revision}`].filter(Boolean).join('\n');
   const timestamp = new Date().toISOString();
   const label = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'result';
   const format = button.dataset.exportFormat;
   const html = format === 'html';
-  const content = (html ? renderHtml : renderMarkdown)(heading, note, available, timestamp);
+  const content = (html ? renderHtml : renderMarkdown)(heading, exportNote, available, timestamp);
   const mimeType = html ? 'text/html' : 'text/markdown';
   const filename = `${experiment.id}-${label}-${timestamp.replace(/[:.]/g, '-')}.${format}`;
   const url = URL.createObjectURL(new Blob([content], { type: `${mimeType};charset=utf-8` }));

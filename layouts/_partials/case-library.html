@@ -14,6 +14,12 @@
     </div>
     <p class="status" id="case-library-status" role="status"></p>
   </div>
+  <div class="case-library-fields">
+    <label class="handoff-append"><input type="checkbox" id="keep-draft"> Keep my latest edited setup in this browser</label>
+    <p class="help">Keeps one draft with its inputs, prompts, and model picks.</p>
+    <button type="button" class="secondary" id="draft-open" disabled>Restore latest draft</button>
+    <p class="status" id="draft-status" role="status"></p>
+  </div>
 </details>
 <dialog id="save-case" class="handoff" aria-labelledby="save-case-title" aria-describedby="save-case-source">
   <form id="save-case-form" novalidate>
@@ -23,10 +29,11 @@
     <input id="case-name" type="text" maxlength="100" required>
     <label for="case-expected">What should happen?</label>
     <textarea id="case-expected" rows="3" maxlength="1500" placeholder="Write a result you can check."></textarea>
-    <p class="help">Saves your input, model picks, and prompt edits so you can pick up right here later.</p>
+    <p class="help">Keeps the setup for a new run. Export results separately. Graph checkpoints and approved plans live in this tab.</p>
     <p id="save-case-status" class="status" role="status"></p>
     <div class="actions">
-      <button type="submit" class="primary">Save case</button>
+      <button type="submit" class="primary" id="case-save-submit">Save case</button>
+      <button type="submit" class="secondary" id="case-save-copy" hidden>Save as new case</button>
       <button type="button" class="secondary" id="save-case-cancel">Cancel</button>
     </div>
   </form>

@@ -8,7 +8,7 @@
   {{- $sampleFields = $first.fields | default dict -}}
 {{- end -}}
 {{- $local := and (eq hugo.Environment "local") (hasPrefix site.BaseURL "http://127.0.0.1:") -}}
-<section data-experiment data-lab="{{ $lab.mode }}"{{ with $lab.graph }} data-lab-graph="{{ . }}"{{ end }} data-case-revision="{{ sha256 (jsonify .) }}" id="{{ $slug }}" class="experiment" tabindex="-1" aria-labelledby="{{ $slug }}-experiment-title">
+<section data-experiment data-lab="{{ $lab.mode }}" data-base-calls="{{ partial "lab-call-budget.html" $lab }}"{{ with $lab.graph }} data-lab-graph="{{ . }}"{{ end }} data-case-revision="{{ sha256 (jsonify .) }}" id="{{ $slug }}" class="experiment" tabindex="-1" aria-labelledby="{{ $slug }}-experiment-title">
   <header class="experiment-header">
     <div>
       <h2 id="{{ $slug }}-experiment-title">{{ .title }}</h2>
@@ -62,6 +62,7 @@
         </details>
         {{ end }}
         <p class="help lab-help">{{ $lab.help }}</p>
+        <p class="help" data-part="run-budget"></p>
         <div class="actions">
           <button type="submit" class="primary" data-part="run">{{ $lab.runLabel }}</button>
           {{ if ne $lab.mode "cold" }}<button type="button" class="secondary" data-part="cancel" hidden>Cancel</button>{{ end }}
@@ -76,7 +77,8 @@
         </select>
         <label for="{{ $slug }}-edit">Corrected finding</label>
         <textarea id="{{ $slug }}-edit" data-part="repair-text" rows="5" maxlength="3500"></textarea>
-        <p class="help">Everything else stays put: the other finding, your input, and the merge model.</p>
+        <p class="help">The revised merge uses the other finding, your original input, and the same model.</p>
+        <p class="help" data-part="repair-budget"></p>
         <button class="primary" type="submit" data-part="repair-run">Rerun merge</button>
       </form>
       {{ end }}

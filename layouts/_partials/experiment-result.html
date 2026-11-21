@@ -13,6 +13,6 @@
             </div>
           </div>
           <p data-part="result-meta{{ .suffix }}" data-handoff-model class="help">{{ if .sampleNote }}{{ .sampleNote }}. Free to read.{{ else if .heading }}What step {{ .label }} might say about the sample. Free to read.{{ else }}What a good answer to the sample looks like. Free to read.{{ end }}</p>
-          <div data-part="result{{ .suffix }}" class="result" data-handoff-text tabindex="0" aria-labelledby="{{ .slug }}-result-title{{ .suffix }}">{{ .sample }}</div>
+          <div data-part="result{{ .suffix }}" class="result" data-handoff-text data-result-state="sample" tabindex="0" aria-labelledby="{{ .slug }}-result-title{{ .suffix }}">{{ .sample }}</div>
           <p class="status" data-part="copy-status{{ .suffix }}" role="status"></p>
         </section>

@@ -1,5 +1,6 @@
 import { sourceText } from './markdown.js';
 import { layoutTrace, renderResult } from './layouts.js';
+import { receipts } from './run-state.js';
 
 export function runRecordText(trace) {
   return [...trace.querySelectorAll('[data-handoff-output]')].map(entry =>
@@ -66,8 +67,14 @@ export function setupHandoff(experiments, openExperiment) {
       text.focus();
       return;
     }
+    if (target.experiment.querySelector('[data-part="run"]')?.disabled) {
+      status.textContent = 'Finish or cancel the destination’s run before replacing its input.';
+      status.setAttribute('data-error', '');
+      return;
+    }
     target.notes.value = combined;
     target.experiment.dispatchEvent(new Event('input-handoff'));
+    source.returnFocus = undefined;
     dialog.close();
     openExperiment(target.experiment, target.notes);
   });
@@ -75,6 +82,7 @@ export function setupHandoff(experiments, openExperiment) {
   document.getElementById('handoff-cancel').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => {
     if (dialog.open) return;
+    source?.returnFocus?.focus();
     source = undefined;
     text.value = '';
   });
@@ -90,7 +98,8 @@ export function setupHandoff(experiments, openExperiment) {
 
       const experimentTitle = experiment.querySelector('h2').textContent.trim();
       const outputTitle = output.querySelector('[data-handoff-title]').textContent.trim();
-      source = { label: `${experimentTitle} · ${outputTitle}` };
+      const button = event.target.closest('[data-handoff]');
+      source = { label: `${experimentTitle} · ${outputTitle}`, returnFocus: button.closest('details')?.querySelector('summary') ?? button };
       sourceLabel.textContent = source.label;
       text.value = content;
       for (const option of destination.options) option.disabled = option.value === experiment.id;
@@ -104,9 +113,10 @@ export function setupHandoff(experiments, openExperiment) {
   }
 }
 
-export function appendRunRecord(trace, title, content, model = '') {
+export function appendRunRecord(trace, title, content, model = '', kind, receipt) {
   const entry = document.createElement('li');
   entry.setAttribute('data-handoff-output', '');
+  if (kind) entry.dataset.stepKind = kind;
   const heading = document.createElement('h4');
   heading.setAttribute('data-handoff-title', '');
   heading.textContent = title;
@@ -121,6 +131,8 @@ export function appendRunRecord(trace, title, content, model = '') {
   const text = document.createElement('div');
   text.className = 'result';
   text.setAttribute('data-handoff-text', '');
+  text.dataset.resultState = kind === 'partial' || kind === 'invalid' ? kind : receipt ? 'live' : 'record';
+  if (receipt) receipts.set(text, receipt);
   entry.append(text);
   const options = document.getElementById('step-options');
   if (options) entry.append(options.content.cloneNode(true));
