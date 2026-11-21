@@ -1,0 +1,76 @@
+slug: the-long-lost-broadcast
+order: 322
+title: The Long-Lost Broadcast
+description: Reconstruct a fictional midnight broadcast from an off-air recording, a station log, and a conflicting tape label.
+inputLabel: Source excerpts, what conflicts, and the claim you need to publish
+placeholder: Paste numbered sources and the historical claim you want the archive to support…
+maxRequests: 7
+method: Test three plausible timelines against the sources. Develop the survivor into a conservative catalog entry and a public listening note, then pick the stronger publishable wording.
+sampleNotes: |-
+  Fictional radio archive. Did the 3 May harbor interview air live at midnight?
+  S1, tape box label in an unknown hand: “3 May, 00:00, LIVE Harbor Interview.”
+  S2, station transmission log signed by the duty operator: “3 May, 00:00, Harbor Interview, replay from cartridge 17.”
+  S3, off-air recording with an audible 00:00 station ID and announcer introduction: “Here’s that harbor interview we recorded yesterday.” The interview follows.
+  S4, undated interview production slip: “Cartridge 17, final edit ready.” No source gives the original recording hour. The archive needs one label a listener can trust.
+graph:
+  mode: tree
+  nodes:
+    branchA:
+      title: Test the live-broadcast timeline
+      prompt: >-
+        Test whether a live transmission accounts for the supplied excerpts.
+        Cite the evidence that supports it and the strongest contradictory source.
+        Say which records would have to be wrong. Up to 100 words.
+    branchB:
+      title: Test the replay timeline
+      prompt: >-
+        Test whether a replay accounts for the sources. Keep the original recording,
+        edit, and transmission separate. Cite source IDs and flag what the evidence
+        leaves undated. Up to 100 words.
+    branchC:
+      title: Test whether the sources describe different events
+      prompt: >-
+        Test whether a label or excerpt has been attached to the wrong broadcast or moment.
+        Identify any matching details that would support or undermine a split chronology.
+        Mark assumptions explicitly. Up to 100 words.
+    prune:
+      title: Select the best-supported timeline
+      prompt: >-
+        Compare candidates.branchA, branchB, and branchC with originalInput.
+        Give more weight to direct records and independent corroboration than an
+        unattributed label. Reject claims that need invented sources or timestamps.
+        Return JSON only with route branchA, branchB, branchC, or stop if the
+        evidence cannot support a working account, and a one-sentence reason.
+    childA:
+      title: Write for the catalog
+      prompt: >-
+        Turn parent into a conservative archive entry. Separate recording and
+        transmission dates, cite source IDs next to claims, and flag the missing
+        information explicitly. Draft a one-line title. Up to 120 words.
+    childB:
+      title: Write for the listener
+      prompt: >-
+        Turn parent into a listening note that explains the conflicting label and
+        points readers to one detail they can hear. Make it easy to distinguish
+        observation from inference. Preserve source IDs. Up to 120 words.
+    finish:
+      title: Deliver the archive label
+      prompt: >-
+        Choose one finalist for the audience in originalInput. Deliver the label,
+        a brief evidence note with source IDs, and one unresolved point. Do not
+        claim to have heard or inspected anything beyond the supplied excerpts.
+        Make the correction clear without guessing at anyone’s motives. Up to 180 words.
+sampleTrace:
+  - title: Three timelines
+    text: Live relies on S1. Replay matches S2 and S3. Two separate broadcasts would require another event the sources never identify.
+  - title: Search decision
+    text: Keep replay. The signed transmission log and the recorded introduction agree that the midnight transmission was prerecorded.
+  - title: Two descendants
+    text: The catalog entry labels the transmitted event. The listening note adds the announcer’s wording as an audible check.
+  - title: Archive label
+    text: >-
+      Harbor Interview · Replay aired 3 May at 00:00. The station log identifies a
+      replay from cartridge 17 (S2), and the on-air introduction describes a recording
+      made the previous day (S3). The box marked “LIVE” conflicts with both (S1).
+      The original recording hour is unknown.
+

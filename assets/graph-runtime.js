@@ -6,6 +6,11 @@ const State = Annotation.Root({
   first: Annotation(),
   leftOutput: Annotation(),
   rightOutput: Annotation(),
+  branchAOutput: Annotation(),
+  branchBOutput: Annotation(),
+  branchCOutput: Annotation(),
+  childAOutput: Annotation(),
+  childBOutput: Annotation(),
   draftOutput: Annotation(),
   reviewDecision: Annotation(),
   passes: Annotation(),
@@ -19,7 +24,7 @@ const State = Annotation.Root({
   specialistDraft: Annotation(),
 });
 
-export const requestLimits = { route: 2, revise: 4, ledger: 2, fork: 3, checkpoint: 2, evidence: 2, adaptive: 3, orchestrated: 5, 'orchestrated-subgraphs': 8 };
+export const requestLimits = { route: 2, revise: 4, ledger: 2, fork: 3, tree: 7, checkpoint: 2, evidence: 2, adaptive: 3, orchestrated: 5, 'orchestrated-subgraphs': 8 };
 
 function parseRecord(text) {
   return JSON.parse(text.replace(/^\x60{3}(?:json)?\s*|\s*\x60{3}$/gi, '').trim());
@@ -210,6 +215,40 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
     graph.addConditionalEdges(START, state => state.leftOutput && state.rightOutput
       ? 'merge' : ['left', 'right'], ['merge', 'left', 'right']);
     graph.addEdge(['left', 'right'], 'merge').addEdge('merge', END);
+  }
+
+  if (spec.mode === 'tree') {
+    const branches = ['branchA', 'branchB', 'branchC'];
+    const children = ['childA', 'childB'];
+    for (const branch of branches) {
+      graph.addNode(branch, async state => ({ [`${branch}Output`]: await runNode(branch, state.input) }));
+      graph.addEdge(START, branch);
+    }
+    graph.addNode('prune', async state => {
+      const candidates = Object.fromEntries(branches.map(branch => [branch, state[`${branch}Output`]]));
+      const verdict = await runNode('prune', { ...source(state), candidates });
+      const decision = readDecision(verdict, [...branches, 'stop']);
+      if (decision.route === 'stop') return { stopped: decision.reason };
+      const kept = spec.nodes[decision.route].title;
+      const discarded = branches.filter(branch => branch !== decision.route).map(branch => spec.nodes[branch].title);
+      record('Search decision', `Kept ${kept}. Pruned ${discarded.join(' and ')}.\n${decision.reason}`);
+      return { decision };
+    });
+    for (const child of children) {
+      graph.addNode(child, async state => ({
+        [`${child}Output`]: await runNode(child, {
+          ...source(state), parent: state[`${state.decision.route}Output`], selectionReason: state.decision.reason,
+        }),
+      }));
+    }
+    graph.addNode('finish', async state => ({
+      final: await runNode('finish', {
+        ...source(state), finalists: { childA: state.childAOutput, childB: state.childBOutput },
+      }),
+    }));
+    graph.addEdge(branches, 'prune');
+    graph.addConditionalEdges('prune', state => state.stopped ? END : children, [END, ...children]);
+    graph.addEdge(children, 'finish').addEdge('finish', END);
   }
 
   if (spec.mode === 'revise' || spec.mode === 'ledger') {

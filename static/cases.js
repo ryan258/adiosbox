@@ -1,10 +1,10 @@
 const prefix = 'adiosbox.case.1.';
 const format = 'adiosbox-cases';
 const schemaVersion = 1;
-const fieldName = /^(?:notes|instructions(?:-b)?|minutes|(?:role|fact):[a-z][a-z0-9-]*)$/;
+const fieldName = /^(?:notes|instructions(?:-b)?|minutes|(?:role|fact):[A-Za-z][A-Za-z0-9-]*)$/;
 const keyPattern = /\bsk-or-v1-[a-z0-9_-]{16,}\b/i;
 
-function cleanCase(value) {
+export function cleanCase(value) {
   if (!value || !/^[a-f0-9-]{36}$/.test(value.id ?? '') ||
       !/^[a-z0-9-]+$/.test(value.experiment ?? '') ||
       !Number.isSafeInteger(value.savedAt) ||

@@ -1,0 +1,71 @@
+slug: the-museum-of-the-missing-hour
+order: 321
+title: The Museum of the Missing Hour
+description: Build a fair-play mystery around an impossible timestamp, then test whether the audience can solve it before the reveal.
+inputLabel: Setting, apparent impossibility, clues, and rules for the reveal
+placeholder: Give the audience the evidence they can see and the facts the solution must preserve…
+maxRequests: 7
+method: Propose competing explanations, prune those that need invented evidence, and stage the survivor in two ways. Pick the reveal that makes the strongest fair-play puzzle.
+sampleNotes: |-
+  At a clock museum, a film camera records a curator entering the gallery at 11:55 and leaving five minutes later. The same gallery clock reads 13:00 in the exit shot. A door log records the exit at 12:00. The five uncut minutes are visible in the film. The clock has a separate hour-hand setting lever; a demonstration placard says pressing the noon demo button advances the hour hand by one step without moving the minute hand. Just before the curator leaves, a visitor presses the demo button and it lights up.
+  Write an interactive reveal for a two-minute exhibit. All clues must be available before the visitor chooses. The door log and film elapsed time are reliable. Use the supplied evidence and avoid a new culprit or a supernatural explanation.
+graph:
+  mode: tree
+  nodes:
+    branchA:
+      title: Test the clock mechanism
+      prompt: >-
+        Explain the apparent contradiction as a change in how an instrument displays
+        time. Match each supplied clue to a concrete event. Name one fact that could
+        falsify the explanation. Up to 100 words.
+    branchB:
+      title: Test a recording mix-up
+      prompt: >-
+        Try explaining the discrepancy using recording order, labeling, or the time
+        references available to the visitor. Respect explicitly reliable evidence.
+        Name the strongest clue against this explanation. Up to 100 words.
+    branchC:
+      title: Test an observation mix-up
+      prompt: >-
+        Try explaining the discrepancy as a mistake in what the visitor sees or
+        identifies. Use only supplied objects and observations. If the clues rule this
+        out, give the exact contradiction. Up to 100 words.
+    prune:
+      title: Audit the clues before choosing
+      prompt: >-
+        Compare candidates.branchA, branchB, and branchC against originalInput.
+        Prefer a mechanism that accounts for each reliable observation and can be
+        solved from pre-reveal evidence. Return JSON only with route set to branchA,
+        branchB, branchC, or stop if none fits, and a one-sentence reason.
+    childA:
+      title: Stage the reveal with objects
+      prompt: >-
+        Stage parent as an exhibit interaction led by objects and visible clues.
+        Give the clue order, one question before the reveal, and a way to demonstrate
+        the mechanism using only supplied elements. Up to 120 words.
+    childB:
+      title: Stage the reveal as a timeline
+      prompt: >-
+        Stage parent as a timeline puzzle. Show observations in the order the visitor
+        receives them, two plausible choices, and the clue that separates them before
+        the answer. Keep the original mystery solvable. Up to 120 words.
+    finish:
+      title: Write the two-minute exhibit
+      prompt: >-
+        Choose the more solvable finalist. Write the exhibit in beats timed to the
+        user's duration. Include clue placement, two visitor choices, the answer,
+        and a visible check. Keep every decisive clue before the choice. Up to 200 words.
+sampleTrace:
+  - title: Three explanations
+    text: A display change preserves both records. A recording mix-up conflicts with the uncut footage. A mistaken clock identity needs an extra object.
+  - title: Search decision
+    text: Keep the clock mechanism. The hour hand can jump while the film and door log continue to agree.
+  - title: Two descendants
+    text: Demonstrate the physical clock after the vote, or let visitors match the door log to the three timestamps.
+  - title: Two-minute exhibit
+    text: >-
+      0:00–0:45 Show the clip and door log. 0:45–1:10 Show the placard and replay
+      the button lighting. Ask whether elapsed time or the clock display changed.
+      1:10–2:00 Replay the jump and point to the unchanged minute hand. The curator
+      left at noon. The gallery clock showed one o’clock.
+

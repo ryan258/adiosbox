@@ -1,0 +1,73 @@
+slug: the-festival-with-one-pair-of-hands
+order: 323
+title: The Festival With One Pair of Hands
+description: Design a one-person premiere that still works when your second work block disappears.
+inputLabel: Premiere, must-have pieces, available time, and interruption risk
+placeholder: Describe what the audience needs, what’s ready, and how much effort you can count on…
+maxRequests: 7
+method: Try three definitions of a successful premiere. Keep the one that uses the guaranteed time well, then compare how to spend any extra capacity.
+sampleNotes: |-
+  Friday's premiere is an online listening room for a four-track neighborhood radio piece. One person is running it. The first work block is guaranteed at 45 minutes. A second 45-minute block may disappear. No extra people or paid services.
+  The work items are indivisible. Upload the finished mixes, 12 minutes. Post the supplied transcript, 10. Publish the room page with date and listening links, 12, after the upload and transcript. Send the announcement, 8, after the room page goes live. All four jobs are required. Optional work includes a narrated introduction, 35; a photo gallery, 20; or a second-device playback and transcript check, 15. Give one timed plan, a safe stopping point, and the first optional job to add if time returns. The audience needs the listening links and transcript at launch.
+graph:
+  mode: tree
+  nodes:
+    branchA:
+      title: Protect a complete premiere
+      prompt: >-
+        Build the smallest complete premiere from the supplied work items. Order the
+        dependencies and calculate the guaranteed time needed. Give a stopping point
+        a single operator can recognize. Up to 100 words.
+    branchB:
+      title: Aim for an editorial showcase
+      prompt: >-
+        Try to add the strongest optional editorial item while keeping every
+        launch requirement. Allocate both work blocks. Say what actually ships if
+        the second block disappears. Up to 100 words.
+    branchC:
+      title: Spend time on listener confidence
+      prompt: >-
+        Try to fit extra verification before launch. Check the guaranteed minutes
+        and each dependency, and state the tradeoff if verification cannot fit.
+        Do not invent resources or split indivisible tasks. Up to 100 words.
+    prune:
+      title: Choose what survives a lost work block
+      prompt: >-
+        Compare candidates.branchA, branchB, and branchC against originalInput.
+        First reject schedules that fail a required dependency or miss the launch
+        if optional time disappears. Then favor a usable stopping point and
+        lower operator effort. Return JSON only with route branchA, branchB,
+        branchC, or stop if there is no feasible basis, and a one-sentence reason.
+    childA:
+      title: Use the spare block for reliability
+      prompt: >-
+        Keep the guaranteed schedule in parent and extend it with an optional
+        check that prevents the most likely audience problem. Give each block’s
+        total and a restart cue. Preserve the launch promise. Up to 120 words.
+    childB:
+      title: Use the spare block for the audience experience
+      prompt: >-
+        Keep the guaranteed schedule in parent and extend it with an optional
+        addition that most improves the audience’s experience. Use supplied times
+        and say what happens if that addition is interrupted. Up to 120 words.
+    finish:
+      title: Write the premiere run sheet
+      prompt: >-
+        Choose one finalist and verify its times against originalInput. Give a
+        timed first block, a stopping point, and one optional job to do first
+        if the next block returns. Keep dependencies and accessibility requirements
+        intact. If no plan can deliver them, show the shortfall. Up to 180 words.
+sampleTrace:
+  - title: Three premiere plans
+    text: The full minimum takes 42 minutes. An introduction needs the second block. Adding a playback check before launch would take 57 minutes.
+  - title: Search decision
+    text: Keep the complete premiere as the guaranteed schedule. It meets every dependency and leaves three minutes before the block ends.
+  - title: Two descendants
+    text: Add a second-device check if time returns, or use the extra block to give listeners a narrated introduction.
+  - title: Premiere run sheet
+    text: >-
+      0–12 upload. 12–22 post transcript. 22–34 publish the room with the date and
+      listening links. 34–42 send the announcement. Stop when the announcement is
+      sent. If the next block returns, spend its first 15 minutes checking playback
+      and transcript access on a second device.
+

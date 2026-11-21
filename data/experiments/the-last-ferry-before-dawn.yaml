@@ -1,0 +1,72 @@
+slug: the-last-ferry-before-dawn
+order: 320
+title: The Last Ferry Before Dawn
+description: Get an island festival’s crew and guests across the water with tight boarding windows and a possible loss of seats.
+inputLabel: Passengers, ferry capacities, timing, and possible disruptions
+placeholder: Give the routes, capacities, deadlines, and constraints you want the plan to survive…
+maxRequests: 7
+method: Compare three boarding policies. Keep the strongest, develop a planned schedule and a capacity-loss variant, then choose one dispatch plan with a clear switch condition.
+sampleNotes: |-
+  Fictional island festival. All 54 people must arrive by 07:05. They include eight setup crew who must arrive by 06:45, four wheelchair users who need step-free boarding, and 42 other guests. The groups do not overlap. Everyone is ready to board at 06:20.
+  Dawn ferry leaves at 06:30, arrives at 06:42, and carries 36 people total, including up to four wheelchair users. Harbor ferry leaves at 06:50, arrives at 07:02, and carries 24 people with no step-free boarding. Its capacity may drop to 18, which will be confirmed by 06:25. No extra trips or vehicles. Give the dispatcher one feasible manifest and a clear decision deadline.
+graph:
+  mode: tree
+  nodes:
+    branchA:
+      title: Protect the early arrival
+      prompt: >-
+        Design a boarding policy around deadlines. Assign the groups to the supplied
+        ferries and check arrival times and capacities. Give headcounts and a single
+        vulnerability. Use only supplied resources. Up to 100 words.
+    branchB:
+      title: Board for access first
+      prompt: >-
+        Design around step-free boarding and keeping assigned groups together where possible.
+        Show who boards each ferry and what this policy does if the later capacity changes.
+        Flag a missed deadline or seat shortfall. Up to 100 words.
+    branchC:
+      title: Reserve space for the disruption
+      prompt: >-
+        Build the manifest for the lowest confirmed or stated fallback capacity first.
+        Check the arithmetic, the early-arrival group, and access requirements. Report
+        any spare seats in each state. Up to 100 words.
+    prune:
+      title: Select a feasible boarding policy
+      prompt: >-
+        Compare candidates.branchA, branchB, and branchC against originalInput.
+        Reject headcount, arrival, access, and resource violations. Prefer a policy
+        that works in the fallback state; break ties by fewer last-minute changes.
+        Return JSON only with route set to branchA, branchB, branchC, or stop if
+        none has a feasible basis, and reason naming the decisive check in one sentence.
+    childA:
+      title: Lock the manifest early
+      prompt: >-
+        Turn parent into a single manifest that can be locked before the disruption is
+        confirmed. Give group counts, departure and arrival times, and the assumptions
+        that make it feasible. If impossible, give the exact shortfall. Up to 120 words.
+    childB:
+      title: Keep a controlled switch
+      prompt: >-
+        Turn parent into a default manifest and a fallback that can be activated before
+        boarding closes. Give group counts and the exact trigger and cutoff from
+        originalInput. Flag any unverified lead time. Up to 120 words.
+    finish:
+      title: Write the dispatch card
+      prompt: >-
+        Audit both finalists against originalInput. Select one; recalculate every
+        headcount and arrival. Deliver the dispatcher’s manifest, one timing cue,
+        and what to do when the reduced capacity is confirmed. If neither works,
+        give the exact bottleneck. Use supplied facts and up to 180 words.
+sampleTrace:
+  - title: Three boarding policies
+    text: Deadline-first loads 30 on Dawn and 24 on Harbor. Access-first locks all four step-free places. Capacity-first loads 36 on Dawn and 18 on Harbor.
+  - title: Search decision
+    text: Keep capacity-first. It covers all 54 seats under either capacity and avoids reassigning six passengers after the announcement.
+  - title: Two descendants
+    text: Lock the 36/18 split at 06:20, or hold six flexible assignments until the 06:25 confirmation.
+  - title: Dispatch card
+    text: >-
+      Use the fixed manifest. Dawn 06:30–06:42 takes eight crew, four wheelchair users,
+      and 24 other guests. Harbor 06:50–07:02 takes the remaining 18 guests. At 06:25,
+      confirm Harbor has at least 18 seats. The supplied reduction requires no switches.
+
