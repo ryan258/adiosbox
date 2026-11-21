@@ -1,10 +1,10 @@
 // Run with: npm run check   (or: node --test tests/*.test.mjs)
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
 import { cleanCase } from '../static/cases.js';
-import { traceBody } from '../static/call-trace.js';
+import { redactTraceText, traceBody } from '../static/call-trace.js';
 import { checkRecall, checkStopCases, formatReportedUsage } from '../static/comparison-lab.js';
 import { checkFactPair, compareFactChecks, prepareFactInputs, sameFactScenario } from '../static/fact-test.js';
 import { parseInline, parseMarkdown } from '../static/markdown.js';
@@ -12,7 +12,7 @@ import { enrich, readFields, sections, stepKind, toneFor } from '../static/layou
 import {
   CompletionError, completionBody, freeRetryLimit, readCompletion, withFreeRetries,
 } from '../static/completion-options.js';
-import { checkSchedule, readVote, runPromptExperiment } from '../static/prompt-experiments.js';
+import { checkSchedule, readVote, runPromptExperiment, validatePromptCase } from '../static/prompt-experiments.js';
 import { createExperimentGraph, requestLimits } from '../assets/graph-runtime.js';
 
 const root = new URL('../', import.meta.url);
@@ -53,7 +53,16 @@ test('a prompt comparison reports zero replies when every call fails', async () 
     record() {}, progress() {}, usageText: () => '',
     request: async () => { throw new Error('down'); },
   });
-  assert.equal(replies, 0);
+  assert.deepEqual(replies, { received: 0, scorable: 0 });
+});
+
+test('truncated prompt comparison replies are counted but excluded from scoring', async () => {
+  const replies = await runPromptExperiment({ technique: 'ballot', prompt: 'p' }, {
+    input: 'q', values: { expected: 'A' }, signal: new AbortController().signal,
+    record() {}, progress() {}, usageText: () => '',
+    request: async () => ({ content: 'A', truncated: true }),
+  });
+  assert.deepEqual(replies, { received: 3, scorable: 0 });
 });
 
 test('tree graph uses its full budget on success and stops after a bad prune', async () => {
@@ -80,6 +89,49 @@ test('each graph YAML displays the request limit the runtime enforces', () => {
     const mode = yaml.match(/^graph:\n(?:[ ]{2,}.*\n|\n)*?[ ]{2}mode: (\S+)/m)?.[1];
     if (!mode) continue;
     assert.equal(Number(yaml.match(/^maxRequests: (\d+)/m)?.[1]), requestLimits[mode], file);
+  }
+});
+
+test('the built catalog has valid prompt samples and model budgets', {
+  skip: !existsSync(new URL('public/index.html', root)),
+}, () => {
+  const parsed = execFileSync('python3', ['-I', '-B', '-c', `
+from html.parser import HTMLParser
+import json, sys
+class Catalog(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.specs = []
+        self.current = None
+        self.spec = None
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if "data-experiment" in attrs:
+            self.current = attrs
+        if tag == "textarea" and attrs.get("data-part") == "spec":
+            self.spec = []
+    def handle_data(self, data):
+        if self.spec is not None:
+            self.spec.append(data)
+    def handle_endtag(self, tag):
+        if tag == "textarea" and self.spec is not None:
+            self.specs.append([self.current, json.loads("".join(self.spec))])
+            self.spec = None
+catalog = Catalog()
+catalog.feed(sys.stdin.read())
+print(json.dumps(catalog.specs))
+`], { input: read('public/index.html') });
+  const labs = JSON.parse(parsed).filter(([attrs]) => attrs['data-lab'] === 'prompt');
+  assert.ok(labs.length, 'the rendered catalog contains prompt experiments');
+  for (const [attrs, spec] of labs) {
+    const expectedCalls = ['dependencies', 'ballot'].includes(spec.technique) ? 3 : 2;
+    assert.equal(Number(attrs['data-base-calls']), expectedCalls, attrs.id);
+    const defaults = Object.fromEntries((spec.fields ?? []).map(field => [field.key, field.sample ?? '']));
+    const model = spec.roles[0].defaultModel || 'openrouter/free';
+    for (const sample of spec.cases) {
+      const issue = validatePromptCase(spec.technique, sample.input, { ...defaults, ...sample.fields }, model);
+      assert.equal(issue, null, `${attrs.id} / ${sample.title}`);
+    }
   }
 });
 
@@ -116,6 +168,13 @@ except ValueError: print('null')
 test('call traces redact the key, including its JSON-escaped form', () => {
   assert.deepEqual(traceBody('{"a":"sk-1","b":"k\\"q"}', 'sk-1'), { a: '[redacted]', b: 'k"q' });
   assert.deepEqual(traceBody('{"b":"k\\"q"}', 'k"q'), { b: '[redacted]' });
+});
+
+test('provider diagnostics use redacted text', () => {
+  const key = 'fixture"key';
+  const raw = JSON.stringify({ error: { message: `Rejected ${key}` } });
+  assert.throws(() => readCompletion({ ok: false, status: 401 }, redactTraceText(raw, key), { modelId: 'test/model' }),
+    error => !error.message.includes(key) && error.message.includes('[redacted]'));
 });
 
 test('free models retry transient failures; paid models and permanent errors do not', async () => {
@@ -296,6 +355,79 @@ test('a failed graph step can be picked up without rerunning finished steps', as
   assert.deepEqual(['branchA', 'branchC', 'prune', 'childA', 'finish'].map(runs), [1, 1, 1, 1, 1], 'finished steps never rerun');
   assert.deepEqual([runs('branchB'), runs('childB')], [2, 2]);
   assert.equal(await graph.pickupPoint(), null, 'a finished run has nothing to pick up');
+});
+
+test('an approved checkpoint can retry the failed follow-up without repeating preparation', async () => {
+  const nodes = Object.fromEntries(['prepare', 'finish'].map(key => [key, { title: key, prompt: key }]));
+  const seen = [];
+  const graph = createExperimentGraph({
+    mode: 'checkpoint', nodes, options: [{ id: 'draft', label: 'Draft', instruction: 'Draft it' }],
+  }, {
+    signal: new AbortController().signal, record() {},
+    complete: async ({ prompt, input }) => {
+      seen.push(prompt);
+      if (prompt === 'prepare') return { content: 'Assessment' };
+      assert.equal(JSON.parse(input).choice, 'Draft it');
+      if (seen.length === 2) throw new Error('follow-up failed');
+      return { content: 'Finished' };
+    },
+  });
+  assert.equal((await graph.start('task')).paused, true);
+  assert.equal(graph.remainingCalls(), 1);
+  assert.equal(await graph.pickupPoint(), null);
+  await assert.rejects(graph.resume('draft'), /follow-up failed/);
+  assert.equal(graph.remainingCalls(), 1);
+  assert.equal((await graph.pickupPoint()).role, 'finish');
+  assert.equal((await graph.pickUp(new AbortController().signal)).result.final, 'Finished');
+  assert.deepEqual(seen, ['prepare', 'finish', 'finish']);
+});
+
+test('nested specialists retain a validated role when the work call fails', async () => {
+  const nodes = Object.fromEntries(['plan', 'shape', 'work', 'assemble'].map(key => [key, { title: key, prompt: key }]));
+  const proposal = {
+    role: 'Lead', deliverable: 'Brief', approach: 'Split work', checks: ['Grounded'],
+    stages: ['Extract facts', 'Write summary'], question: '',
+  };
+  const brief = JSON.stringify({ role: 'Analyst', approach: 'Check facts', checks: ['Cite'] });
+  const calls = [];
+  let fail = true;
+  const graph = createExperimentGraph({ mode: 'orchestrated-subgraphs', nodes }, {
+    signal: new AbortController().signal, record() {},
+    complete: async ({ prompt, node }) => {
+      calls.push(`${node}:${prompt}`);
+      if (prompt === 'work' && fail) {
+        fail = false;
+        throw new Error('work failed');
+      }
+      return { content: { plan: JSON.stringify(proposal), shape: brief, work: 'Handoff', assemble: 'Finished' }[prompt] };
+    },
+  });
+  assert.equal((await graph.start('task')).paused, true);
+  await assert.rejects(graph.resume(proposal), /work failed/);
+  assert.equal((await graph.pickupPoint()).role, 'specialist-1');
+  assert.equal((await graph.pickUp(new AbortController().signal)).result.final, 'Finished');
+  assert.deepEqual(calls, [
+    'plan:plan', 'specialist-1:shape', 'specialist-1:work', 'specialist-1:work',
+    'specialist-2:shape', 'specialist-2:work', 'assemble:assemble',
+  ]);
+});
+
+test('claim validation retries the call that produced malformed data', async () => {
+  const nodes = Object.fromEntries(['extract', 'rewrite'].map(key => [key, { title: key, prompt: key }]));
+  const claims = JSON.stringify({ claims: [{ claim: 'Example', source: 'A', quote: 'Source text' }] });
+  const seen = [];
+  const graph = createExperimentGraph({ mode: 'evidence', nodes }, {
+    signal: new AbortController().signal, record() {},
+    complete: async ({ prompt }) => {
+      seen.push(prompt);
+      return { content: seen.length === 1 ? 'invalid' : claims };
+    },
+  });
+  await assert.rejects(graph.start('[A] Source text'), /JSON claim list/);
+  assert.equal((await graph.pickupPoint()).role, 'extract');
+  const { result } = await graph.pickUp(new AbortController().signal);
+  assert.equal(result.final[0].status, 'Exact quote carried through');
+  assert.deepEqual(seen, ['extract', 'extract', 'rewrite']);
 });
 
 test('fork and review loops pick up at the failed step too', async () => {
