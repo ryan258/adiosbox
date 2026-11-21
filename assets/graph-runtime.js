@@ -171,8 +171,11 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
   // A pick-up after a failure gets a fresh signal, since the failed attempt's controller is already aborted.
   let currentSignal = signal;
   let failure;
+  let approved = false;
+  let completedCalls = 0;
+  const specialistProgress = new Map();
 
-  async function runNode(name, data, { modelRole = name, label } = {}) {
+  async function runNode(name, data, { modelRole = name, label, kind = 'step', validate } = {}) {
     currentSignal.throwIfAborted();
     if (calls >= requestLimits[spec.mode]) throw new Error('The model request limit was reached.');
     const node = spec.nodes[name];
@@ -182,8 +185,16 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
     try {
       const response = await complete({ prompt: node.prompt, input, node: modelRole });
       currentSignal.throwIfAborted();
-      record(label || node.title, response.content, response.reportedModel, response.requestedModel);
-      if (response.truncated) throw new Error('A node hit its output limit. The partial result is available in the run record.');
+      try {
+        if (response.truncated) throw new Error('A node hit its output limit. The partial result is available in the run record.');
+        if (validate) validate(response.content);
+      } catch (error) {
+        record(label || node.title, response.content, response.reportedModel, response.requestedModel,
+          response.truncated ? 'partial' : 'invalid', response.receipt);
+        throw error;
+      }
+      completedCalls += 1;
+      record(label || node.title, response.content, response.reportedModel, response.requestedModel, kind, response.receipt);
       return response.content;
     } catch (error) {
       failure ??= { title: label || node.title, role: modelRole };
@@ -230,7 +241,7 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
     const branches = ['branchA', 'branchB', 'branchC'];
     const children = ['childA', 'childB'];
     for (const branch of branches) {
-      graph.addNode(branch, async state => ({ [`${branch}Output`]: await runNode(branch, state.input) }));
+      graph.addNode(branch, async state => ({ [`${branch}Output`]: await runNode(branch, state.input, { kind: 'branch' }) }));
       graph.addEdge(START, branch);
     }
     graph.addNode('prune', async state => {
@@ -240,20 +251,20 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
       if (decision.route === 'stop') return { stopped: decision.reason };
       const kept = spec.nodes[decision.route].title;
       const discarded = branches.filter(branch => branch !== decision.route).map(branch => spec.nodes[branch].title);
-      record('Search decision', `Kept ${kept}. Pruned ${discarded.join(' and ')}.\n${decision.reason}`);
+      record('Search decision', `Kept ${kept}. Pruned ${discarded.join(' and ')}.\n${decision.reason}`, '', '', 'decision');
       return { decision };
     });
     for (const child of children) {
       graph.addNode(child, async state => ({
         [`${child}Output`]: await runNode(child, {
           ...source(state), parent: state[`${state.decision.route}Output`], selectionReason: state.decision.reason,
-        }),
+        }, { kind: 'child' }),
       }));
     }
     graph.addNode('finish', async state => ({
       final: await runNode('finish', {
         ...source(state), finalists: { childA: state.childAOutput, childB: state.childBOutput },
-      }),
+      }, { kind: 'final' }),
     }));
     // Plain edges, not a join: the parallel steps finish in one superstep, and a join never fires after a pick-up.
     for (const branch of branches) graph.addEdge(branch, 'prune');
@@ -300,10 +311,10 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
   if (spec.mode === 'evidence') {
     graph.addNode('extract', async state => {
       sourceBlocks(state.input);
-      return { first: await runNode('extract', state.input) };
+      return { first: await runNode('extract', state.input, { validate: readClaims }) };
     });
     graph.addNode('rewrite', async state => ({
-      draftOutput: await runNode('rewrite', { ...source(state), ledger: state.first }),
+      draftOutput: await runNode('rewrite', { ...source(state), ledger: state.first }, { validate: readClaims }),
     }));
     graph.addNode('check', state => ({
       final: auditClaimTrail(state.input, state.first, state.draftOutput),
@@ -391,30 +402,40 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
       const specialist = new StateGraph(State)
         .addNode('shape_role', async state => {
           const { number, input } = specialistJob(state);
-          const response = await runNode('shape', input, {
+          const retained = specialistProgress.get(number);
+          if (retained) return { specialistBrief: retained.brief };
+          let brief;
+          await runNode('shape', input, {
             modelRole: `specialist-${number}`, label: `Specialist ${number} · Design the role`,
+            validate(content) {
+              try {
+                brief = cleanSpecialistBrief(parseRecord(content));
+              } catch {
+                throw new Error(`Specialist ${number} did not return a usable brief. Completed work is in the run record.`);
+              }
+            },
           });
-          try {
-            return { specialistBrief: cleanSpecialistBrief(parseRecord(response)) };
-          } catch {
-            failure ??= { title: `Specialist ${number} · Design the role`, role: `specialist-${number}` };
-            throw new Error(`Specialist ${number} did not return a usable brief. Completed work is in the run record.`);
-          }
+          specialistProgress.set(number, { brief });
+          return { specialistBrief: brief };
         })
         .addNode('do_work', async state => {
           const { number, input } = specialistJob(state);
+          const progress = specialistProgress.get(number);
+          if (progress.draft) return { specialistDraft: progress.draft };
           const specialistDraft = await runNode('work', { ...input, specialistBrief: state.specialistBrief }, {
             modelRole: `specialist-${number}`, label: `Specialist ${number} · Work in the ${state.specialistBrief.role} role`,
+            validate(content) {
+              if (!content.trim() || content.length > 750) {
+                throw new Error(`Specialist ${number} returned an empty or oversized handoff. Completed work is in the run record.`);
+              }
+            },
           });
+          progress.draft = specialistDraft;
           return { specialistDraft };
         })
         .addNode('check_handoff', state => {
           const { number } = specialistJob(state);
           currentSignal.throwIfAborted();
-          if (!state.specialistDraft.trim() || state.specialistDraft.length > 750) {
-            failure ??= { title: `Specialist ${number} · Handoff check`, role: `specialist-${number}` };
-            throw new Error(`Specialist ${number} returned an empty or oversized handoff. Completed work is in the run record.`);
-          }
           record('Specialist ' + number + ' · Handoff check',
             'The handoff has text and fits the 750-character limit. It can pass to the next node.');
           return recordHandoff(state, { ...state.specialistBrief, handoff: state.specialistDraft });
@@ -429,16 +450,17 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
     } else {
       graph.addNode('specialist', async state => {
         const { number, input } = specialistJob(state);
-        const response = await runNode('specialist', input, {
-          modelRole: `specialist-${number}`, label: `Specialist ${number} · Model response`,
-        });
         let output;
-        try {
-          output = readSpecialistResult(response);
-        } catch {
-          failure ??= { title: `Specialist ${number} · Model response`, role: `specialist-${number}` };
-          throw new Error(`Specialist ${number} did not return a usable handoff. Completed work is in the run record.`);
-        }
+        await runNode('specialist', input, {
+          modelRole: `specialist-${number}`, label: `Specialist ${number} · Model response`,
+          validate(content) {
+            try {
+              output = readSpecialistResult(content);
+            } catch {
+              throw new Error(`Specialist ${number} did not return a usable handoff. Completed work is in the run record.`);
+            }
+          },
+        });
         return recordHandoff(state, output);
       });
     }
@@ -461,11 +483,14 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
   const compiled = graph.compile({ checkpointer: new MemorySaver(), ...(resumeNode && { interruptBefore: [resumeNode] }) });
   const config = () => ({ recursionLimit: 12, signal: currentSignal, configurable: { thread_id: 'experiment' } });
   async function settle(result) {
-    const paused = Boolean(resumeNode && (await compiled.getState(config())).next.includes(resumeNode));
+    const paused = Boolean(!approved && resumeNode && (await compiled.getState(config())).next.includes(resumeNode));
     return { paused, result };
   }
 
   return {
+    remainingCalls() {
+      return Math.max(0, requestLimits[spec.mode] - completedCalls);
+    },
     async start(input, minutes, retained) {
       const state = { input, minutes };
       if (spec.mode === 'fork' && retained?.left && retained?.right) {
@@ -480,7 +505,7 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
     // The step that failed, if the run stopped with unfinished work to pick up.
     async pickupPoint() {
       const { next } = await compiled.getState(config());
-      return next.length && !(resumeNode && next.includes(resumeNode)) ? failure ?? { title: 'the next step' } : null;
+      return next.length && failure && (approved || !resumeNode || !next.includes(resumeNode)) ? failure : null;
     },
     // Rerun only the unfinished steps. Each pick-up gets the full request budget again; finished steps never rerun.
     async pickUp(nextSignal) {
@@ -509,6 +534,7 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
       } else {
         await compiled.updateState(config(), { decision: choice }, 'prepare');
       }
+      approved = true;
       return compiled.invoke(null, config());
     },
   };

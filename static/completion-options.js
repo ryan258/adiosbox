@@ -158,6 +158,7 @@ export function readCompletion(response, responseText, { modelId, provider, incl
   return {
     content: content.trim(),
     reportedModel,
+    reportedProvider: typeof payload?.provider === 'string' ? payload.provider : '',
     truncated,
     usage: includeUsage ? payload.usage : undefined,
   };

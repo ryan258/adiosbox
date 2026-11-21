@@ -161,7 +161,7 @@ export async function runPromptExperiment(spec, { input, values, request, record
       signal.throwIfAborted();
       results.push(response);
       record(label, response.truncated ? `${response.content}\n\nOutput limit reached. This reply was excluded from scoring.` : response.content,
-        response.reportedModel, response.requestedModel);
+        response.reportedModel, response.requestedModel, response.truncated ? 'partial' : 'step', response.receipt);
       if (response.usage) record(`${label} · Usage`, usageText([response.usage]));
       return response.truncated ? null : response;
     } catch (error) {
@@ -233,5 +233,5 @@ export async function runPromptExperiment(spec, { input, values, request, record
   } else if (reported.some(id => !id)) {
     record('Model comparison caveat', 'OpenRouter omitted the responding model on at least one reply.');
   }
-  return results.length;
+  return { received: results.length, scorable: results.filter(result => !result.truncated).length };
 }
