@@ -168,19 +168,27 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
   const subgraphs = spec.mode === 'orchestrated-subgraphs';
   const orchestrated = spec.mode === 'orchestrated' || subgraphs;
   let calls = 0;
+  // A pick-up after a failure gets a fresh signal, since the failed attempt's controller is already aborted.
+  let currentSignal = signal;
+  let failure;
 
   async function runNode(name, data, { modelRole = name, label } = {}) {
-    signal.throwIfAborted();
+    currentSignal.throwIfAborted();
     if (calls >= requestLimits[spec.mode]) throw new Error('The model request limit was reached.');
     const node = spec.nodes[name];
     const input = typeof data === 'string' ? data : JSON.stringify(data);
     if (input.length > 8000) throw new Error('A handoff exceeded the input limit. Try with shorter source material.');
     calls += 1;
-    const response = await complete({ prompt: node.prompt, input, node: modelRole });
-    signal.throwIfAborted();
-    record(label || node.title, response.content, response.reportedModel, response.requestedModel);
-    if (response.truncated) throw new Error('A node hit its output limit. The partial result is available in the run record.');
-    return response.content;
+    try {
+      const response = await complete({ prompt: node.prompt, input, node: modelRole });
+      currentSignal.throwIfAborted();
+      record(label || node.title, response.content, response.reportedModel, response.requestedModel);
+      if (response.truncated) throw new Error('A node hit its output limit. The partial result is available in the run record.');
+      return response.content;
+    } catch (error) {
+      failure ??= { title: label || node.title, role: modelRole };
+      throw error;
+    }
   }
 
   function source(state) {
@@ -214,7 +222,8 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
     }));
     graph.addConditionalEdges(START, state => state.leftOutput && state.rightOutput
       ? 'merge' : ['left', 'right'], ['merge', 'left', 'right']);
-    graph.addEdge(['left', 'right'], 'merge').addEdge('merge', END);
+    // Plain edges, not a join: the parallel steps finish in one superstep, and a join never fires after a pick-up.
+    graph.addEdge('left', 'merge').addEdge('right', 'merge').addEdge('merge', END);
   }
 
   if (spec.mode === 'tree') {
@@ -246,9 +255,11 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
         ...source(state), finalists: { childA: state.childAOutput, childB: state.childBOutput },
       }),
     }));
-    graph.addEdge(branches, 'prune');
+    // Plain edges, not a join: the parallel steps finish in one superstep, and a join never fires after a pick-up.
+    for (const branch of branches) graph.addEdge(branch, 'prune');
     graph.addConditionalEdges('prune', state => state.stopped ? END : children, [END, ...children]);
-    graph.addEdge(children, 'finish').addEdge('finish', END);
+    for (const child of children) graph.addEdge(child, 'finish');
+    graph.addEdge('finish', END);
   }
 
   if (spec.mode === 'revise' || spec.mode === 'ledger') {
@@ -386,6 +397,7 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
           try {
             return { specialistBrief: cleanSpecialistBrief(parseRecord(response)) };
           } catch {
+            failure ??= { title: `Specialist ${number} · Design the role`, role: `specialist-${number}` };
             throw new Error(`Specialist ${number} did not return a usable brief. Completed work is in the run record.`);
           }
         })
@@ -398,8 +410,9 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
         })
         .addNode('check_handoff', state => {
           const { number } = specialistJob(state);
-          signal.throwIfAborted();
+          currentSignal.throwIfAborted();
           if (!state.specialistDraft.trim() || state.specialistDraft.length > 750) {
+            failure ??= { title: `Specialist ${number} · Handoff check`, role: `specialist-${number}` };
             throw new Error(`Specialist ${number} returned an empty or oversized handoff. Completed work is in the run record.`);
           }
           record('Specialist ' + number + ' · Handoff check',
@@ -423,6 +436,7 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
         try {
           output = readSpecialistResult(response);
         } catch {
+          failure ??= { title: `Specialist ${number} · Model response`, role: `specialist-${number}` };
           throw new Error(`Specialist ${number} did not return a usable handoff. Completed work is in the run record.`);
         }
         return recordHandoff(state, output);
@@ -443,10 +457,13 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
   }
 
   const resumeNode = orchestrated ? 'launch' : { checkpoint: 'finish', adaptive: 'execute' }[spec.mode];
-  const compiled = graph.compile(resumeNode
-    ? { checkpointer: new MemorySaver(), interruptBefore: [resumeNode] }
-    : {});
-  const config = { recursionLimit: 12, signal, configurable: { thread_id: 'experiment' } };
+  // Every run checkpoints after each finished step, so a failed step can be picked up without redoing the rest.
+  const compiled = graph.compile({ checkpointer: new MemorySaver(), ...(resumeNode && { interruptBefore: [resumeNode] }) });
+  const config = () => ({ recursionLimit: 12, signal: currentSignal, configurable: { thread_id: 'experiment' } });
+  async function settle(result) {
+    const paused = Boolean(resumeNode && (await compiled.getState(config())).next.includes(resumeNode));
+    return { paused, result };
+  }
 
   return {
     async start(input, minutes, retained) {
@@ -458,14 +475,25 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
         state.draftOutput = retained.draft;
         state.passes = 1;
       }
-      const result = await compiled.invoke(state, config);
-      const paused = Boolean(resumeNode && (await compiled.getState(config)).next.includes(resumeNode));
-      return { paused, result };
+      return settle(await compiled.invoke(state, config()));
+    },
+    // The step that failed, if the run stopped with unfinished work to pick up.
+    async pickupPoint() {
+      const { next } = await compiled.getState(config());
+      return next.length && !(resumeNode && next.includes(resumeNode)) ? failure ?? { title: 'the next step' } : null;
+    },
+    // Rerun only the unfinished steps. Each pick-up gets the full request budget again; finished steps never rerun.
+    async pickUp(nextSignal) {
+      currentSignal = nextSignal;
+      if (!(await this.pickupPoint())) throw new Error('There is nothing to pick up.');
+      calls = 0;
+      failure = undefined;
+      return settle(await compiled.invoke(null, config()));
     },
     async resume(choice) {
-      signal.throwIfAborted();
+      currentSignal.throwIfAborted();
       if (spec.mode === 'adaptive' || orchestrated) {
-        const snapshot = await compiled.getState(config);
+        const snapshot = await compiled.getState(config());
         if (!snapshot.next.includes(resumeNode)) throw new Error('There is no assignment waiting for approval.');
         const brief = cleanAgentBrief(choice);
         const clarification = typeof choice.clarification === 'string' ? choice.clarification.trim() : '';
@@ -477,11 +505,11 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
           ...brief, clarification,
           ...(orchestrated && { stages: cleanStages(choice.stages) }),
         };
-        await compiled.updateState(config, { approvedBrief }, orchestrated ? 'plan' : 'profile');
+        await compiled.updateState(config(), { approvedBrief }, orchestrated ? 'plan' : 'profile');
       } else {
-        await compiled.updateState(config, { decision: choice }, 'prepare');
+        await compiled.updateState(config(), { decision: choice }, 'prepare');
       }
-      return compiled.invoke(null, config);
+      return compiled.invoke(null, config());
     },
   };
 }

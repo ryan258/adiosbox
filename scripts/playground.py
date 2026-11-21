@@ -25,7 +25,15 @@ MAX_REQUEST = 64 * 1024
 MAX_RESPONSE = 2 * 1024 * 1024
 COMPLETION_TOKEN_LIMIT = 2048
 REASONING_TOKEN_LIMIT = 1024
+REASONING_COMPLETION_TOKEN_LIMIT = 4096
+# Mirrors reasoningCapped and capsReasoning in static/completion-options.js.
+REASONING_CAPPED = {"nvidia/nemotron-3.5-super-vl", "nvidia/nemotron-3.5-super-vl:free"}
 MAX_RESPONSE_FORMAT = 4000
+
+
+def caps_reasoning(model, payload):
+    free = model == "openrouter/free" or model.endswith(":free")
+    return model in REASONING_CAPPED or (free and "provider" not in payload)
 
 
 def load_key(path):
@@ -64,10 +72,13 @@ def completion_request(payload):
         "model": model, "messages": clean_messages, "max_tokens": COMPLETION_TOKEN_LIMIT, "stream": False,
     }
     if "reasoning" in payload:
+        if not caps_reasoning(model, payload):
+            raise ValueError
         tokens = payload["reasoning"].get("max_tokens") if isinstance(payload["reasoning"], dict) else None
         if payload["reasoning"] != {"max_tokens": tokens} or type(tokens) is not int or not 1 <= tokens <= REASONING_TOKEN_LIMIT:
             raise ValueError
         cleaned["reasoning"] = {"max_tokens": tokens}
+        cleaned["max_tokens"] = REASONING_COMPLETION_TOKEN_LIMIT
     usage = payload.get("usage")
     if isinstance(usage, dict) and usage.get("include") is True:
         cleaned["usage"] = {"include": True}

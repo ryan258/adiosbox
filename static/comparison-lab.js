@@ -168,7 +168,9 @@ export function setupLab(experiment, ui) {
       },
       async complete({ input, prompt, node }) {
         const requestedModel = selectedModels[node];
-        const outcome = await request(controller, { input, prompt, modelId: requestedModel, apiKey, includeUsage: Boolean(usage) });
+        const outcome = await request(controller, {
+          input, prompt, modelId: requestedModel, apiKey, includeUsage: Boolean(usage), step: tag ? `${tag}${node}` : node,
+        });
         if (usage) usage.push(outcome.usage);
         return { ...outcome, requestedModel };
       },
@@ -219,6 +221,7 @@ export function setupLab(experiment, ui) {
       modelId: selectedModels.writer,
       apiKey,
       includeUsage: true,
+      step: 'Shared first draft',
     });
     record('Shared first draft', draft.content, draft.reportedModel, selectedModels.writer);
     if (draft.truncated) throw new Error('The shared first draft was incomplete. Neither reviewer ran.');
@@ -263,7 +266,7 @@ export function setupLab(experiment, ui) {
     const answers = [];
     for (const role of ['first', 'second']) {
       setStatus(status, `Collecting answer ${answers.length + 1} of 2…`);
-      const result = await request(controller, { input, prompt: spec.prompt, modelId: selectedModels[role], apiKey });
+      const result = await request(controller, { input, prompt: spec.prompt, modelId: selectedModels[role], apiKey, step: role });
       if (result.truncated) throw new Error('An answer reached its output limit. Try a shorter task.');
       answers.push({ ...result, requestedModel: selectedModels[role] });
     }
