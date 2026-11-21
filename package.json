@@ -1,8 +1,13 @@
 {
   "name": "adiosbox",
   "private": true,
+  "type": "module",
   "engines": {
     "node": ">=22"
+  },
+  "scripts": {
+    "start": "python3 scripts/playground.py",
+    "check": "hugo --panicOnWarning --quiet && node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@langchain/langgraph": "1.7.5"
