@@ -22,6 +22,7 @@ ORIGIN = f"http://{ADDRESS}"
 MODEL_ID = re.compile(r"[\w.-]+/[\w.:@+-]+", re.ASCII)
 MAX_REQUEST = 64 * 1024
 MAX_RESPONSE = 2 * 1024 * 1024
+COMPLETION_TOKEN_LIMIT = 2048
 
 
 def load_key(path):
@@ -56,7 +57,9 @@ def completion_request(payload):
         if not isinstance(content, str) or not content.strip() or len(content) > limit:
             raise ValueError
         clean_messages.append({"role": role, "content": content})
-    cleaned = {"model": model, "messages": clean_messages, "max_tokens": 650, "stream": False}
+    cleaned = {
+        "model": model, "messages": clean_messages, "max_tokens": COMPLETION_TOKEN_LIMIT, "stream": False,
+    }
     usage = payload.get("usage")
     if isinstance(usage, dict) and usage.get("include") is True:
         cleaned["usage"] = {"include": True}

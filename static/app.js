@@ -7,6 +7,7 @@ import { setupLab } from './comparison-lab.js';
 const local = document.body.hasAttribute('data-local-openrouter');
 const modelIdPattern = /^[\w.-]+\/[\w.:@+-]+$/;
 const endpoint = local ? '/api/complete' : 'https://openrouter.ai/api/v1/chat/completions';
+const completionTokenLimit = 2048;
 const model = document.getElementById('model');
 document.querySelectorAll('[data-model-picker]').forEach(setupModelPicker);
 
@@ -77,7 +78,7 @@ async function complete({ input, prompt, modelId, apiKey, signal, includeUsage =
         { role: 'system', content: prompt },
         { role: 'user', content: input },
       ],
-      max_tokens: 650,
+      max_tokens: completionTokenLimit,
       stream: false,
       ...(includeUsage && { usage: { include: true } }),
     }),
@@ -93,13 +94,25 @@ async function complete({ input, prompt, modelId, apiKey, signal, includeUsage =
   signal.throwIfAborted();
   const choice = payload?.choices?.[0];
   const content = choice?.message?.content;
-  if (choice?.error || choice?.finish_reason === 'error' || typeof content !== 'string' || !content.trim()) {
-    throw new CompletionError('OpenRouter returned no usable text. Try again.');
+  const reportedModel = typeof payload?.model === 'string' ? payload.model : '';
+  const truncated = choice?.finish_reason === 'length';
+  if (payload?.error || choice?.error || choice?.finish_reason === 'error') {
+    throw new CompletionError(`OpenRouter reported a completion error. ${describeModel(modelId, reportedModel)}. Try again or choose another model.`);
+  }
+  if (typeof content !== 'string' || !content.trim()) {
+    const modelDetails = describeModel(modelId, reportedModel);
+    if (truncated) {
+      throw new CompletionError(`The model reached its token limit before returning an answer. ${modelDetails}. Try a shorter task or choose a non-reasoning model.`);
+    }
+    if (choice?.finish_reason === 'content_filter' || choice?.message?.refusal) {
+      throw new CompletionError(`The model declined to answer. ${modelDetails}. Revise the prompt or input and try again.`);
+    }
+    throw new CompletionError(`OpenRouter returned an empty reply. ${modelDetails}. Try choosing another model.`);
   }
   return {
     content: content.trim(),
-    reportedModel: typeof payload.model === 'string' ? payload.model : '',
-    truncated: choice.finish_reason === 'length',
+    reportedModel,
+    truncated,
     usage: includeUsage ? payload.usage : undefined,
   };
 }
