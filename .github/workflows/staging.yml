@@ -20,6 +20,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install LangGraph
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Configure GitHub Pages
         id: pages
         uses: actions/configure-pages@v5
