@@ -37,6 +37,8 @@ jobs:
             --output "$package"
           printf '%s  %s\n' "$HUGO_SHA256" "$package" | sha256sum --check
           sudo dpkg -i "$package"
+      - name: Run tests
+        run: node --test tests/*.test.mjs
       - name: Build staging site
         env:
           PAGES_URL: ${{ steps.pages.outputs.base_url }}
