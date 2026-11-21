@@ -1,6 +1,12 @@
 const catalogUrl = 'https://openrouter.ai/api/v1/models?input_modalities=text&output_modalities=text';
 const freeRouter = { id: 'openrouter/free', name: 'Free Models Router' };
 const maximumSuggestions = 8;
+const priceFormat = new Intl.NumberFormat('en-US', {
+  style: 'currency', currency: 'USD', maximumFractionDigits: 6,
+});
+const dateFormat = new Intl.DateTimeFormat('en-US', {
+  month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+});
 
 let models = [freeRouter];
 let catalogState = 'idle';
@@ -18,7 +24,8 @@ function loadModels() {
     if (!response.ok) throw new Error('OpenRouter model list unavailable');
     const catalog = await response.json();
     const available = catalog.data.filter(model => typeof model?.id === 'string' && typeof model.name === 'string');
-    models = [freeRouter, ...available.filter(model => model.id !== freeRouter.id)];
+    const listedFreeRouter = available.find(model => model.id === freeRouter.id);
+    models = [listedFreeRouter ?? freeRouter, ...available.filter(model => model.id !== freeRouter.id)];
     catalogState = 'ready';
   }).catch(() => {
     catalogState = 'error';
@@ -26,6 +33,34 @@ function loadModels() {
     catalogRequest = undefined;
   });
   return catalogRequest;
+}
+
+function formatPrice(raw, multiplier) {
+  if (typeof raw !== 'number' && (typeof raw !== 'string' || !raw.trim())) return null;
+  const price = Number(raw) * multiplier;
+  if (!Number.isFinite(price) || price < 0) return null;
+  return price > 0 && price < 0.000001 ? '<$0.000001' : priceFormat.format(price);
+}
+
+function describePricing({ id, pricing }) {
+  if (id === freeRouter.id || id.endsWith(':free')) return 'Free';
+  if (id === 'openrouter/auto') return 'Rates vary by routed model';
+
+  const input = formatPrice(pricing?.prompt, 1_000_000);
+  const output = formatPrice(pricing?.completion, 1_000_000);
+  const tokenRates = input || output
+    ? `Per 1M tokens: ${input ?? '—'} input / ${output ?? '—'} output`
+    : 'Token rates unavailable';
+  const requestFee = formatPrice(pricing?.request, 1);
+  return requestFee && Number(pricing.request) > 0
+    ? `${tokenRates} · +${requestFee} per request`
+    : tokenRates;
+}
+
+function describeListingDate(created) {
+  if (!Number.isInteger(created) || created <= 0) return 'Listing date unavailable';
+  const date = new Date(created * 1000);
+  return Number.isFinite(date.getTime()) ? `Listed ${dateFormat.format(date)}` : 'Listing date unavailable';
 }
 
 export function setupModelPicker(picker) {
@@ -76,10 +111,11 @@ export function setupModelPicker(picker) {
       item.setAttribute('aria-selected', 'false');
       const name = document.createElement('strong');
       name.textContent = model.name;
-      const detail = document.createElement('span');
-      const free = model.id === freeRouter.id || model.id.endsWith(':free');
-      detail.textContent = free ? `${model.id} · Free` : model.id;
-      item.append(name, detail);
+      const id = document.createElement('span');
+      id.textContent = model.id;
+      const details = document.createElement('span');
+      details.textContent = `${describePricing(model)} · ${describeListingDate(model.created)}`;
+      item.append(name, id, details);
       item.addEventListener('pointerdown', event => event.preventDefault());
       item.addEventListener('click', () => choose(model));
       return item;

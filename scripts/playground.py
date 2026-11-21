@@ -20,9 +20,12 @@ ADDRESS = f"{HOST}:{PORT}"
 LOCALHOST_ALIAS = f"localhost:{PORT}"
 ORIGIN = f"http://{ADDRESS}"
 MODEL_ID = re.compile(r"[\w.-]+/[\w.:@+-]+", re.ASCII)
+PROVIDER_SLUG = re.compile(r"[a-z0-9][a-z0-9-]*(?:/[a-z0-9][a-z0-9-]*){0,2}", re.ASCII)
 MAX_REQUEST = 64 * 1024
 MAX_RESPONSE = 2 * 1024 * 1024
 COMPLETION_TOKEN_LIMIT = 2048
+REASONING_TOKEN_LIMIT = 1024
+MAX_RESPONSE_FORMAT = 4000
 
 
 def load_key(path):
@@ -60,13 +63,34 @@ def completion_request(payload):
     cleaned = {
         "model": model, "messages": clean_messages, "max_tokens": COMPLETION_TOKEN_LIMIT, "stream": False,
     }
+    if "reasoning" in payload:
+        tokens = payload["reasoning"].get("max_tokens") if isinstance(payload["reasoning"], dict) else None
+        if payload["reasoning"] != {"max_tokens": tokens} or type(tokens) is not int or not 1 <= tokens <= REASONING_TOKEN_LIMIT:
+            raise ValueError
+        cleaned["reasoning"] = {"max_tokens": tokens}
     usage = payload.get("usage")
     if isinstance(usage, dict) and usage.get("include") is True:
         cleaned["usage"] = {"include": True}
+    if "provider" in payload:
+        only = payload["provider"].get("only") if isinstance(payload["provider"], dict) else None
+        slug = only[0] if isinstance(only, list) and len(only) == 1 else None
+        if (not isinstance(slug, str) or len(slug) > 100 or not PROVIDER_SLUG.fullmatch(slug) or
+                payload["provider"] != {"only": [slug], "allow_fallbacks": False, "require_parameters": True}):
+            raise ValueError
+        cleaned["provider"] = {"only": [slug], "allow_fallbacks": False, "require_parameters": True}
+    if "response_format" in payload:
+        # The browser owns the schema; the launcher only pins it to one provider and bounds its size.
+        response_format = payload["response_format"]
+        if ("provider" not in cleaned or not isinstance(response_format, dict) or
+                response_format.get("type") != "json_schema" or not isinstance(response_format.get("json_schema"), dict) or
+                len(json.dumps(response_format)) > MAX_RESPONSE_FORMAT):
+            raise ValueError
+        cleaned["response_format"] = response_format
     return cleaned
 
 
 def complete(api_key, payload):
+    """Return the status and OpenRouter's body, or None when no body arrived."""
     connection = http.client.HTTPSConnection("openrouter.ai", timeout=50)
     try:
         connection.request(
@@ -74,16 +98,15 @@ def complete(api_key, payload):
             headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
         )
         response = connection.getresponse()
-        if response.status != 200:
-            return response.status if 400 <= response.status < 600 else 502, b"{}"
         body = response.read(MAX_RESPONSE + 1)
         if len(body) > MAX_RESPONSE:
-            return 502, b"{}"
-        return 200, body
+            return 502, None
+        status = response.status
+        return status if status == 200 or 400 <= status < 600 else 502, body
     except TimeoutError:
-        return 504, b"{}"
+        return 504, None
     except (OSError, http.client.HTTPException):
-        return 502, b"{}"
+        return 502, None
     finally:
         connection.close()
 
@@ -144,9 +167,11 @@ class PlaygroundHandler(SimpleHTTPRequestHandler):
             return
 
         status, body = complete(self.api_key, payload)
+        body = completion_trace(payload, body, self.api_key)
         try:
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
+            self.send_header("X-Adiosbox-Trace", "1")
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
@@ -154,6 +179,19 @@ class PlaygroundHandler(SimpleHTTPRequestHandler):
             self.wfile.write(body)
         except (BrokenPipeError, ConnectionResetError):
             pass  # The browser canceled while OpenRouter was still working.
+
+
+def completion_trace(payload, body, api_key):
+    escaped_key = json.dumps(api_key)[1:-1]
+
+    def redact(text):
+        return text.replace(escaped_key, "[redacted]").replace(api_key, "[redacted]")
+
+    return json.dumps({
+        "request": redact(json.dumps(payload)),
+        "response": redact(body.decode("utf-8", errors="replace")) if body is not None else None,
+        "source": "OpenRouter" if body is not None else "local proxy",
+    }).encode()
 
 
 def main():

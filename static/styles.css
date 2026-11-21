@@ -23,6 +23,7 @@ h1, h2, h3, p { margin: 0; }
 .header-inner { min-height: 4rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .wordmark { display: inline-flex; align-items: center; gap: .55rem; color: var(--ink); font-weight: 800; font-size: 1.2rem; text-decoration: none; letter-spacing: -.035em; }
 .header-link { font-weight: 650; font-size: .9rem; }
+.header-actions { display: flex; align-items: center; gap: 1.25rem; }
 .skip-link { position: absolute; left: 1rem; top: .5rem; transform: translateY(-200%); background: #fff; padding: .5rem; z-index: 1; }
 .skip-link:focus { transform: none; }
 
@@ -48,6 +49,8 @@ textarea, input { width: 100%; color: var(--ink); background: #fff; border: 1px 
 textarea { display: block; resize: vertical; }
 input { min-width: 0; }
 .prompt-editor { margin-block: .6rem 1rem; }
+.step-options { margin-top: .35rem; }
+.step-options summary { cursor: pointer; color: var(--accent); font-size: .9rem; font-weight: 650; min-height: 2.5rem; padding-block: .5rem; }
 .prompt-editor summary { cursor: pointer; color: var(--accent); font-weight: 650; min-height: 2.75rem; display: list-item; padding-block: .55rem; }
 .prompt-editor label { display: block; font-weight: 650; margin-block: .2rem .35rem; }
 .key-row { flex-wrap: nowrap; margin-top: .35rem; }
@@ -190,6 +193,12 @@ main { padding-bottom: 2rem; }
 }
 .handoff .handoff-append { display: flex; align-items: center; gap: .4rem; font-weight: 600; }
 .handoff-append input { width: auto; accent-color: var(--accent); }
+.call-trace { width: min(54rem, calc(100% - 2rem)); }
+.call-trace textarea {
+  max-height: 52vh;
+  font-family: ui-monospace, monospace;
+  font-size: .9rem;
+}
 
 .role-models { margin-block: .75rem 1rem; }
 .role-models summary { cursor: pointer; color: var(--accent); font-weight: 700; min-height: 2.75rem; padding-block: .55rem; }

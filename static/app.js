@@ -3,11 +3,12 @@ import { readCaseSetup, setupCases } from './cases.js';
 import { checkFactPair, compareFactChecks, prepareFactInputs, sameFactScenario } from './fact-test.js';
 import { appendRunRecord, runRecordText, setupHandoff } from './handoff.js';
 import { setupLab } from './comparison-lab.js';
+import { setupCallTrace, traceBody } from './call-trace.js';
+import { completionBody } from './completion-options.js';
 
 const local = document.body.hasAttribute('data-local-openrouter');
 const modelIdPattern = /^[\w.-]+\/[\w.:@+-]+$/;
 const endpoint = local ? '/api/complete' : 'https://openrouter.ai/api/v1/chat/completions';
-const completionTokenLimit = 2048;
 const model = document.getElementById('model');
 document.querySelectorAll('[data-model-picker]').forEach(setupModelPicker);
 
@@ -16,6 +17,7 @@ const connection = document.getElementById('connection');
 const connectionStatus = document.getElementById('connection-status');
 const experiments = [...document.querySelectorAll('[data-experiment]')];
 const catalogLinks = document.querySelectorAll('.experiment-list a');
+const callTrace = setupCallTrace(copy);
 
 function chooseModel(override, defaultId) {
   const value = override?.value.trim();
@@ -63,34 +65,68 @@ function providerError(status) {
   }
 }
 
+function openRouterMessage(text) {
+  try {
+    const message = JSON.parse(text)?.error?.message;
+    return typeof message === 'string' && message.trim() ? `OpenRouter said: ${message.trim().slice(0, 300)}` : '';
+  } catch {
+    return '';
+  }
+}
+
 class CompletionError extends Error {}
 
-async function complete({ input, prompt, modelId, apiKey, signal, includeUsage = false }) {
+async function complete({
+  input, prompt, modelId, apiKey, signal, includeUsage = false, experiment, step, provider, enforceTeachbackSchema,
+}) {
   signal.throwIfAborted();
   const headers = { 'Content-Type': 'application/json' };
   if (!local) headers.Authorization = `Bearer ${apiKey}`;
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model: modelId,
-      messages: [
-        { role: 'system', content: prompt },
-        { role: 'user', content: input },
-      ],
-      max_tokens: completionTokenLimit,
-      stream: false,
-      ...(includeUsage && { usage: { include: true } }),
-    }),
-    signal,
-    credentials: 'omit',
-    redirect: 'error',
-    cache: 'no-store',
+  const body = JSON.stringify(completionBody({ modelId, prompt, input, includeUsage, provider, enforceTeachbackSchema }));
+  const finishTrace = callTrace.start(experiment, step, local ? null : traceBody(body, apiKey));
+  let response;
+  let responseText;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body,
+      signal,
+      credentials: 'omit',
+      redirect: 'error',
+      cache: 'no-store',
+    });
+    responseText = await response.text();
+  } catch (error) {
+    finishTrace({ state: signal.aborted ? 'aborted' : 'transport_error', http_status: response?.status ?? null });
+    throw error;
+  }
+  let tracedResponse;
+  if (local && response.headers.get('X-Adiosbox-Trace') === '1') {
+    const receipt = JSON.parse(responseText);
+    responseText = receipt.response;
+    tracedResponse = {
+      request: traceBody(receipt.request),
+      response: traceBody(responseText),
+      response_source: receipt.source,
+    };
+  } else {
+    tracedResponse = { response: traceBody(responseText, apiKey), response_source: local ? 'local proxy' : 'OpenRouter' };
+  }
+  finishTrace({
+    state: signal.aborted ? 'aborted' : response.ok ? 'received' : 'http_error',
+    http_status: response.status,
+    ...tracedResponse,
   });
   signal.throwIfAborted();
-  if (!response.ok) throw new CompletionError(providerError(response.status));
+  if (!response.ok) {
+    if (provider && response.status === 404) {
+      throw new CompletionError(`OpenRouter found no matching endpoint for ${modelId} at ${provider}. Check the provider and its supported parameters.`);
+    }
+    throw new CompletionError([providerError(response.status), openRouterMessage(responseText)].filter(Boolean).join(' '));
+  }
 
-  const payload = await response.json();
+  const payload = JSON.parse(responseText);
   signal.throwIfAborted();
   const choice = payload?.choices?.[0];
   const content = choice?.message?.content;
@@ -274,6 +310,7 @@ function setupExperiment(experiment) {
         timeout = window.setTimeout(() => request.abort('timeout'), 60_000);
         const { content, reportedModel, truncated } = await complete({
           input: factInputs?.[step - 1] ?? handoff, prompt, modelId, apiKey, signal: request.signal,
+          experiment: experiment.id, step: label || step,
         });
         window.clearTimeout(timeout);
 
@@ -537,7 +574,9 @@ function setupGraph(experiment) {
           const modelId = roleModels.get(node).id;
           const timer = window.setTimeout(() => controller.abort('OpenRouter took too long.'), 60_000);
           try {
-            const result = await complete({ input: nodeInput, prompt, modelId, apiKey, signal: controller.signal });
+            const result = await complete({
+              input: nodeInput, prompt, modelId, apiKey, signal: controller.signal, experiment: experiment.id, step: node,
+            });
             return { ...result, requestedModel: modelId };
           } finally {
             window.clearTimeout(timer);
@@ -597,23 +636,31 @@ function setupGraph(experiment) {
 }
 
 const labUI = {
-  complete, chooseModel, copy, describeModel, experiments, getApiKey: () => key?.value.trim(),
+  chooseModel, copy, describeModel, experiments, getApiKey: () => key?.value.trim(),
   local, model, modelIdPattern, revealField, setStatus,
 };
 const cancelRequests = experiments.map(experiment => {
-  if (experiment.hasAttribute('data-lab')) return setupLab(experiment, labUI);
+  if (experiment.hasAttribute('data-lab')) {
+    return setupLab(experiment, {
+      ...labUI,
+      complete: options => complete({ ...options, experiment: experiment.id }),
+    });
+  }
   return experiment.hasAttribute('data-graph') ? setupGraph(experiment) : setupExperiment(experiment);
 });
 
 document.getElementById('clear-key')?.addEventListener('click', () => {
   key.value = '';
   cancelRequests.forEach(cancel => cancel());
+  callTrace.clear();
   key.focus();
   setStatus(connectionStatus, 'Key cleared.');
 });
 
 window.addEventListener('pageshow', event => {
-  if (!key || !event.persisted) return;
+  if (!event.persisted) return;
+  callTrace.clear();
+  if (!key) return;
   key.value = '';
   cancelRequests.forEach(cancel => cancel());
 });

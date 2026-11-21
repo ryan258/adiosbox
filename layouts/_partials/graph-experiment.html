@@ -2,6 +2,21 @@
 {{- $graph := .graph -}}
 {{- $orchestrated := or (eq $graph.mode "orchestrated") (eq $graph.mode "orchestrated-subgraphs") -}}
 {{- $editableBrief := or (eq $graph.mode "adaptive") $orchestrated -}}
+{{- /* Hugo sorts map keys, so list nodes in the order the runtime visits them. Unlisted keys follow alphabetically. */ -}}
+{{- $runOrder := dict
+  "route" (slice "classify" "proceed" "alternate")
+  "fork" (slice "left" "right" "merge")
+  "tree" (slice "branchA" "branchB" "branchC" "prune" "childA" "childB" "finish")
+  "revise" (slice "draft" "review")
+  "ledger" (slice "draft" "review")
+  "evidence" (slice "extract" "rewrite")
+  "checkpoint" (slice "prepare" "finish")
+  "adaptive" (slice "profile" "execute" "review")
+  "orchestrated" (slice "plan" "specialist" "assemble")
+  "orchestrated-subgraphs" (slice "plan" "shape" "work" "assemble") -}}
+{{- $nodeOrder := slice -}}
+{{- with index $runOrder $graph.mode }}{{ range . }}{{ if index $graph.nodes . }}{{ $nodeOrder = $nodeOrder | append . }}{{ end }}{{ end }}{{ end -}}
+{{- range $key, $_ := $graph.nodes }}{{ if not (in $nodeOrder $key) }}{{ $nodeOrder = $nodeOrder | append $key }}{{ end }}{{ end -}}
 <section data-experiment data-graph data-case-revision="{{ sha256 (jsonify .) }}" id="{{ .slug }}" class="experiment" tabindex="-1" aria-labelledby="{{ .slug }}-experiment-title">
   <header class="experiment-header">
     <div>
@@ -30,12 +45,12 @@
       <details class="prompt-editor">
         <summary>How the graph works</summary>
         <p class="help">{{ .method }}</p>
-        {{ range $graph.nodes }}
+        {{ range $nodeOrder }}{{ with index $graph.nodes . }}
         <details class="graph-node-prompt">
           <summary>{{ .title }}</summary>
           <p class="help">{{ .prompt }}</p>
         </details>
-        {{ end }}
+        {{ end }}{{ end }}
       </details>
       {{ $modelHelp := printf "%s-role-model-help" .slug }}
       <details class="role-models" data-part="role-models">
@@ -47,7 +62,7 @@
           {{ partial "model-picker.html" (dict "id" (printf "%s-role-model-%s" $experiment.slug .key) "label" .title "role" .key "helpID" $modelHelp) }}
           {{ end }}
           {{ else }}
-          {{ range $role, $node := $graph.nodes }}
+          {{ range $role := $nodeOrder }}{{ $node := index $graph.nodes $role }}
           {{ partial "model-picker.html" (dict "id" (printf "%s-role-model-%s" $experiment.slug $role) "label" $node.title "role" $role "helpID" $modelHelp) }}
           {{ end }}
           {{ end }}
@@ -92,8 +107,7 @@
         <li data-handoff-output>
           <h4 data-handoff-title>{{ .title }}</h4>
           <div class="result" data-handoff-text>{{ .text }}</div>
-          <button type="button" class="text-button" data-handoff>Use this step</button>
-          {{ partial "export-actions.html" (dict "scope" "output" "label" "step") }}
+          {{ partial "step-options.html" . }}
         </li>
         {{ end }}
       </ol>

@@ -119,13 +119,8 @@ export function appendRunRecord(trace, title, content, model = '') {
   text.className = 'result';
   text.setAttribute('data-handoff-text', '');
   text.textContent = content;
-  const handoff = document.createElement('button');
-  handoff.type = 'button';
-  handoff.className = 'text-button';
-  handoff.setAttribute('data-handoff', '');
-  handoff.textContent = 'Use this step';
-  entry.append(text, handoff);
-  const exportActions = document.getElementById('trace-export-actions');
-  if (exportActions) entry.append(exportActions.content.cloneNode(true));
+  entry.append(text);
+  const options = document.getElementById('step-options');
+  if (options) entry.append(options.content.cloneNode(true));
   trace.append(entry);
 }

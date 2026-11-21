@@ -21,7 +21,10 @@
   <header class="site-header">
     <div class="shell header-inner">
       <a class="wordmark" href="{{ .RelPermalink }}"><img src="{{ "mark.svg" | relURL }}" alt="" width="32" height="32"> Adiosbox</a>
-      <a class="header-link" href="#experiments">Experiments</a>
+      <div class="header-actions">
+        <button class="text-button header-link" type="button" id="call-trace-open" aria-haspopup="dialog">Call trace</button>
+        <a class="header-link" href="#experiments">Experiments</a>
+      </div>
     </div>
   </header>
   <main class="shell">
@@ -50,7 +53,15 @@
       <h2 id="graphs" class="chain-heading">LangGraph experiments</h2>
       <ul class="experiment-list">
         {{ range $experiments }}
-        {{ if .graph }}
+        {{ if and .graph (ne .graph.mode "tree") }}
+        <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
+        {{ end }}
+        {{ end }}
+      </ul>
+      <h2 id="tree-of-thought" class="chain-heading">Tree of Thought experiments</h2>
+      <ul class="experiment-list">
+        {{ range $experiments }}
+        {{ if and .graph (eq .graph.mode "tree") }}
         <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
         {{ end }}
         {{ end }}
@@ -58,7 +69,15 @@
       <h2 id="comparison-lab" class="chain-heading">Comparison lab</h2>
       <ul class="experiment-list">
         {{ range $experiments }}
-        {{ if .lab }}
+        {{ if and .lab (ne .lab.mode "prompt") }}
+        <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
+        {{ end }}
+        {{ end }}
+      </ul>
+      <h2 id="prompting-techniques" class="chain-heading">Prompting techniques</h2>
+      <ul class="experiment-list">
+        {{ range $experiments }}
+        {{ if and .lab (eq .lab.mode "prompt") }}
         <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
         {{ end }}
         {{ end }}
@@ -94,7 +113,19 @@
       {{ if .lab }}{{ partial "lab-experiment.html" . }}{{ else if .graph }}{{ partial "graph-experiment.html" . }}{{ else }}{{ partial "experiment.html" . }}{{ end }}
     {{ end }}
     <p class="back-to-catalog"><a href="#experiments">Back to experiments</a></p>
-    <template id="trace-export-actions">{{ partial "export-actions.html" (dict "scope" "output" "label" "step") }}</template>
+    <dialog id="call-trace" class="handoff call-trace" aria-labelledby="call-trace-title" aria-describedby="call-trace-help">
+      <h2 id="call-trace-title">OpenRouter call trace</h2>
+      <p id="call-trace-help" class="help">The last 20 calls on this page, including prompts and replies. Authorization headers are excluded.</p>
+      <label for="call-trace-json">Request and response JSON</label>
+      <textarea id="call-trace-json" rows="16" readonly spellcheck="false" placeholder="Run an experiment to see its calls."></textarea>
+      <div class="actions">
+        <button class="secondary" type="button" id="call-trace-close" autofocus>Close</button>
+        <button class="secondary" type="button" id="call-trace-copy">Copy JSON</button>
+        <button class="secondary" type="button" id="call-trace-clear">Clear trace</button>
+      </div>
+      <p id="call-trace-status" class="status" role="status"></p>
+    </dialog>
+    <template id="step-options">{{ partial "step-options.html" . }}</template>
     <dialog id="handoff" class="handoff" aria-labelledby="handoff-title" aria-describedby="handoff-source">
       <form id="handoff-form" novalidate>
         <h2 id="handoff-title">Use in another experiment</h2>

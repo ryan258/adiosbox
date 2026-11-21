@@ -1,5 +1,12 @@
 {{- $lab := .lab -}}
 {{- $slug := .slug -}}
+{{- $sampleInput := .sampleNotes -}}
+{{- $sampleFields := dict -}}
+{{- with $lab.cases -}}
+  {{- $first := index . 0 -}}
+  {{- $sampleInput = $first.input -}}
+  {{- $sampleFields = $first.fields | default dict -}}
+{{- end -}}
 {{- $local := and (eq hugo.Environment "local") (hasPrefix site.BaseURL "http://127.0.0.1:") -}}
 <section data-experiment data-lab="{{ $lab.mode }}"{{ with $lab.graph }} data-lab-graph="{{ . }}"{{ end }} data-case-revision="{{ sha256 (jsonify .) }}" id="{{ $slug }}" class="experiment" tabindex="-1" aria-labelledby="{{ $slug }}-experiment-title">
   <header class="experiment-header">
@@ -18,11 +25,29 @@
     <div class="inputs">
       <textarea data-part="spec" hidden>{{ $lab | jsonify }}</textarea>
       <form data-part="experiment-form" autocomplete="off" novalidate>
+        {{ with $lab.cases }}
+        <label for="{{ $slug }}-sample">Sample case</label>
+        <select id="{{ $slug }}-sample" data-part="prompt-sample">
+          {{ range $index, $case := . }}<option value="{{ $index }}">{{ $case.title }}</option>{{ end }}
+        </select>
+        <button class="text-button" type="button" data-part="load-prompt-sample">Load sample case</button>
+        {{ end }}
         <label for="{{ $slug }}-notes">{{ .inputLabel }}</label>
-        <textarea id="{{ $slug }}-notes" data-part="notes" rows="6" maxlength="3000" placeholder="{{ .placeholder }}">{{ .sampleNotes }}</textarea>
+        <textarea id="{{ $slug }}-notes" data-part="notes" rows="6" maxlength="{{ if eq $lab.technique "placement" }}7000{{ else }}3000{{ end }}" placeholder="{{ .placeholder }}">{{ $sampleInput }}</textarea>
         {{ range $lab.fields }}
         <label for="{{ $slug }}-{{ .key }}">{{ .label }}</label>
-        <textarea id="{{ $slug }}-{{ .key }}" data-case-field="{{ .key }}" rows="2" maxlength="800">{{ .sample }}</textarea>
+        <textarea id="{{ $slug }}-{{ .key }}" data-case-field="{{ .key }}" rows="2" maxlength="800">{{ index $sampleFields .key | default .sample }}</textarea>
+        {{ end }}
+        {{ if eq $lab.mode "prompt" }}
+        {{- $prompt := $lab.prompt -}}
+        {{- with $lab.graph }}{{ range hugo.Data.experiments }}{{ if eq .slug $lab.graph }}{{ $prompt = .graph.nodes.review.prompt }}{{ end }}{{ end }}{{ end -}}
+        <details class="prompt-editor">
+          <summary>See the prompt</summary>
+          <h4>{{ if $lab.graph }}Reviewer prompt, shared with the graph{{ else }}Prompt{{ end }}</h4>
+          <p class="result">{{ $prompt }}</p>
+          {{ with $lab.dependencyPrompt }}<h4>Dependency map prompt</h4><p class="result">{{ . }}</p>{{ end }}
+          {{ range $lab.arms }}<h4>Examples · {{ .title }}</h4><p class="result">{{ .examples }}</p>{{ end }}
+        </details>
         {{ end }}
         {{ with $lab.roles }}
         <details class="role-models">
@@ -31,7 +56,7 @@
           <p id="{{ $helpID }}" class="help">Search OpenRouter. A blank role uses the main model.</p>
           <div class="role-model-grid">
             {{ range . }}
-            {{ partial "model-picker.html" (dict "id" (printf "%s-role-model-%s" $slug .key) "label" .label "role" .key "helpID" $helpID) }}
+            {{ partial "model-picker.html" (dict "id" (printf "%s-role-model-%s" $slug .key) "label" .label "role" .key "helpID" $helpID "value" .defaultModel) }}
             {{ end }}
           </div>
         </details>
@@ -100,8 +125,7 @@
         <li data-handoff-output>
           <h4 data-handoff-title>{{ .title }}</h4>
           <div class="result" data-handoff-text>{{ .text }}</div>
-          <button class="text-button" type="button" data-handoff>Use this step</button>
-          {{ partial "export-actions.html" (dict "scope" "output" "label" "step") }}
+          {{ partial "step-options.html" . }}
         </li>
         {{ end }}
       </ol>

@@ -5,7 +5,7 @@
   </div>
   <div class="model-control">
     <input id="{{ .id }}" data-model-input{{ with .role }} data-role-model="{{ . }}"{{ end }}
-      type="text" {{ if not .role }}value="openrouter/free"{{ end }}
+      type="text" {{ with .value }}value="{{ . }}"{{ else }}{{ if not .role }}value="openrouter/free"{{ end }}{{ end }}
       placeholder="{{ if .role }}Use main model{{ else }}Search by name or paste a model ID{{ end }}"
       maxlength="200" autocomplete="off" autocapitalize="off" spellcheck="false"
       role="combobox" aria-autocomplete="list" aria-controls="{{ .id }}-options" aria-expanded="false"
