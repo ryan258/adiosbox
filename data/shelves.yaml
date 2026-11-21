@@ -15,7 +15,7 @@ shelves:
     blurb: Turn messy notes into next steps, and test whether someone else could pick up where you left off.
   - key: team
     title: Build a little AI team
-    blurb: The model hires its own specialists. You approve the plan before anything runs.
+    blurb: One call proposes the assignment or team. You review the plan before the work starts.
   - key: puzzles
     title: Puzzle boxes
     blurb: Branching puzzles with real constraints. The model tries three paths and keeps the most promising one.

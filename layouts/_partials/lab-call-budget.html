@@ -1,0 +1,6 @@
+{{- $counts := dict "blind" 2 "evidence" 2 "repair" 3 "stop" 4 "cost" 7 "cold" 0 -}}
+{{- if eq .mode "prompt" -}}
+  {{- cond (in (slice "dependencies" "ballot") .technique) 3 2 -}}
+{{- else -}}
+  {{- index $counts .mode -}}
+{{- end -}}

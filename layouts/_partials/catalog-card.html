@@ -1,3 +1,3 @@
 {{- $cost := "1 call" -}}
-{{- if .comparison }}{{ $cost = "Two prompts" }}{{ else if .factTest }}{{ $cost = "2 calls" }}{{ else if .chain }}{{ $cost = "2 steps" }}{{ else if .graph }}{{ $cost = printf "Up to %d calls" .maxRequests }}{{ else if .lab }}{{ $cost = cond (eq .lab.mode "prompt") "Scored in code" "Side by side" }}{{ end -}}
+{{- if .comparison }}{{ $cost = "1 call per arm" }}{{ else if or .factTest .chain }}{{ $cost = "2 calls" }}{{ else if .graph }}{{ $cost = printf "Up to %d calls" .maxRequests }}{{ else if .lab }}{{ $cost = printf "Up to %s calls" (partial "lab-call-budget.html" .lab) }}{{ if eq .lab.mode "cold" }}{{ $cost = "0 calls" }}{{ end }}{{ end -}}
 <a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span><em class="chip">{{ $cost }}</em></a>

@@ -1,0 +1,77 @@
+{{- $shelves := .shelves -}}
+{{- $experiments := .experiments -}}
+{{- $bySlug := dict -}}
+{{- $orders := slice -}}
+{{- $contract := partial "graph-contract.html" . -}}
+{{- $labModes := slice "blind" "evidence" "repair" "stop" "cost" "cold" "prompt" -}}
+{{- $labRoles := dict "blind" (slice "first" "second") "evidence" (slice "extract" "rewrite") "repair" (slice "left" "right" "merge") "stop" (slice "classify" "proceed" "alternate") "cost" (slice "writer" "baseline" "challenger") "prompt" (slice "comparison") -}}
+{{- $labGraphs := dict "evidence" "evidence" "repair" "fork" "stop" "route" "cost" "revise" -}}
+{{- range $experiments -}}
+  {{- if or (not .slug) (not (findRE `^[a-z0-9]+(-[a-z0-9]+)*$` .slug)) (isset $bySlug .slug) -}}
+    {{- errorf "Adiosbox catalog: invalid or duplicate slug %q" .slug -}}
+  {{- end -}}
+  {{- if or (not .order) (in $orders .order) -}}{{- errorf "Adiosbox catalog: invalid or duplicate order for %s" .slug -}}{{- end -}}
+  {{- $orders = $orders | append .order -}}
+  {{- $bySlug = merge $bySlug (dict .slug .) -}}
+  {{- if or (not .title) (not .description) (not (len (where $shelves.shelves "key" .shelf))) -}}
+    {{- errorf "Adiosbox catalog: missing title, description, or valid shelf for %s" .slug -}}
+  {{- end -}}
+{{- end -}}
+{{- range $shelves.startHere -}}
+  {{- if not (isset $bySlug .) -}}{{- errorf "Adiosbox catalog: unknown Start here experiment %s" . -}}{{- end -}}
+{{- end -}}
+{{- range $experiments -}}
+  {{- $entry := . -}}
+  {{- $graph := .graph -}}
+  {{- with .lab -}}{{- if .graphSpec -}}{{- $graph = .graphSpec -}}{{- end -}}{{- end -}}
+  {{- with $graph -}}
+    {{- with index $contract .mode -}}
+      {{- if and $entry.graph (ne (int $entry.maxRequests) (index . 0)) -}}
+        {{- errorf "Adiosbox catalog: incorrect graph budget for %s" $entry.slug -}}
+      {{- end -}}
+      {{- range after 1 . -}}
+        {{- $node := index $graph.nodes . -}}
+        {{- if not (and $node $node.title $node.prompt) -}}{{- errorf "Adiosbox catalog: %s needs graph node %s" $entry.slug . -}}{{- end -}}
+      {{- end -}}
+    {{- else -}}
+      {{- errorf "Adiosbox catalog: unknown graph mode for %s" $entry.slug -}}
+    {{- end -}}
+    {{- if in (slice "orchestrated" "orchestrated-subgraphs") .mode -}}
+      {{- range slice "plan" "specialist-1" "specialist-2" "specialist-3" "assemble" -}}
+        {{- if ne (len (where $graph.roleModels "key" .)) 1 -}}{{- errorf "Adiosbox catalog: %s needs graph role %s" $entry.slug . -}}{{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  {{- with .lab -}}
+    {{- $lab := . -}}
+    {{- if not (in $labModes .mode) -}}{{- errorf "Adiosbox catalog: unknown lab mode for %s" $entry.slug -}}{{- end -}}
+    {{- range index $labRoles .mode -}}
+      {{- if ne (len (where $lab.roles "key" .)) 1 -}}{{- errorf "Adiosbox catalog: %s needs lab role %s" $entry.slug . -}}{{- end -}}
+    {{- end -}}
+    {{- $source := .graphSpec -}}
+    {{- with .graph -}}
+      {{- with index $bySlug . -}}{{- $source = .graph -}}{{- end -}}
+      {{- if not $source -}}{{- errorf "Adiosbox catalog: %s refers to an unknown graph %s" $entry.slug . -}}{{- end -}}
+    {{- end -}}
+    {{- $expectedMode := index $labGraphs .mode -}}
+    {{- if and (eq .mode "prompt") (eq .technique "schema") -}}{{- $expectedMode = "revise" -}}{{- end -}}
+    {{- if and $expectedMode (or (not $source) (ne $source.mode $expectedMode)) -}}
+      {{- errorf "Adiosbox catalog: %s needs a %s graph" $entry.slug $expectedMode -}}
+    {{- end -}}
+    {{- if eq .mode "prompt" -}}
+      {{- if or (not .cases) (not (in (slice "boundary" "placement" "dependencies" "ballot" "schema") .technique)) -}}
+        {{- errorf "Adiosbox catalog: %s needs a known technique and sample cases" $entry.slug -}}
+      {{- end -}}
+      {{- range .cases -}}
+        {{- if not (and .title .input) -}}{{- errorf "Adiosbox catalog: %s has an incomplete sample case" $entry.slug -}}{{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if not .samples -}}{{- errorf "Adiosbox catalog: %s has no written sample" $entry.slug -}}{{- end -}}
+  {{- else -}}
+    {{- if .graph -}}
+      {{- if not (and .sampleNotes .sampleTrace) -}}{{- errorf "Adiosbox catalog: %s has no written graph sample" .slug -}}{{- end -}}
+    {{- else -}}
+      {{- if not (and .sampleNotes .sampleResult .instructions) -}}{{- errorf "Adiosbox catalog: %s has no written sample or prompt" .slug -}}{{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
