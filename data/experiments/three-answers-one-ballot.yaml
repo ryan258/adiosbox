@@ -1,0 +1,54 @@
+slug: three-answers-one-ballot
+order: 333
+title: Three Answers, One Ballot
+description: Compare the first answer to a logic puzzle with the majority vote across three independent calls.
+inputLabel: Logic puzzle with answers labeled A through D
+placeholder: Paste a puzzle with exactly one correct letter…
+lab:
+  mode: prompt
+  technique: ballot
+  runLabel: Run the ballot
+  help: Three fresh calls use the same model and prompt. The first response is the single-call baseline and also casts a vote. At least two of the three attempts must agree for a majority.
+  roles:
+    - key: comparison
+      label: Model used for all three attempts
+  fields:
+    - key: expected
+      label: Correct option letter (A, B, C, or D)
+  prompt: >-
+    Solve the multiple-choice problem in the user message. Respond with exactly
+    one uppercase letter A, B, C, or D for the correct option.
+  cases:
+    - title: Run of show
+      input: |-
+        A radio piece has four sounds: tape, bell, chimes, and drum. Chimes cannot be first or last. Tape must come before chimes. Bell plays immediately after tape. Which order works?
+        A. Tape, bell, chimes, drum
+        B. Tape, chimes, bell, drum
+        C. Bell, tape, chimes, drum
+        D. Tape, bell, drum, chimes
+      fields:
+        expected: A
+    - title: The unlabeled crate
+      input: |-
+        A crate holds between 20 and 40 tickets. Bundling by fives leaves two tickets loose. Bundling by sevens leaves four. How many tickets are in the crate?
+        A. 22
+        B. 27
+        C. 32
+        D. 37
+      fields:
+        expected: C
+    - title: Overall playback failures
+      input: |-
+        Studio A failed 1 of 10 morning playbacks and 9 of 90 evening playbacks. Studio B failed 2 of 10 morning playbacks and 9 of 190 evening playbacks. Combine all playbacks across both shifts for each studio. Which studio has the lower share of failures?
+        A. Studio A
+        B. Studio B
+        C. Both shares are equal
+        D. There is too little information
+      fields:
+        expected: B
+  samples:
+    - title: First attempt
+      text: D
+    - title: Ballot
+      text: D, A, A. A wins with two votes and matches the answer key. OpenRouter usage is available when the endpoint returns it.
+

@@ -1,0 +1,71 @@
+slug: solve-the-dependencies-first
+order: 332
+title: Solve the Dependencies First
+description: Compare a one-pass museum installation schedule with a schedule that starts from a dependency map.
+inputLabel: Installation jobs and deadline in minutes
+placeholder: Load a sample with job IDs, durations, resources, and prerequisites…
+lab:
+  mode: prompt
+  technique: dependencies
+  runLabel: Compare schedules
+  help: Three calls. The same model schedules with and without a dependency map. The page checks deadlines, prerequisites, and shared resources using the supplied job durations.
+  roles:
+    - key: comparison
+      label: Model used for all three calls
+  prompt: >-
+    Schedule the installation from minute 0 through the deadline in the input JSON.
+    Jobs are indivisible. Every job has one resource, and jobs using the same resource
+    cannot overlap. Every job in its after list must finish before it starts. Jobs can
+    start at the minute another job ends. If dependencyNotes is present, use it as a
+    suggestion and check it against the original job list. Return only JSON with a
+    jobs array; each entry contains the supplied id and its integer start minute.
+  dependencyPrompt: >-
+    Read the JSON installation brief. List the prerequisite chains, shared resources,
+    and the tightest timing constraints. Give the scheduler specific orderings and
+    any pairs that can safely run in parallel. Keep supplied IDs and times exact.
+    Return at most 130 words as a dependency map. Leave the final schedule to the next step.
+  cases:
+    - title: Exhibit opens in 40 minutes
+      input: |-
+        {
+          "deadline": 40,
+          "jobs": [
+            {"id":"unpack","minutes":10,"resource":"crew","after":[]},
+            {"id":"mount","minutes":20,"resource":"crew","after":["unpack"]},
+            {"id":"wire","minutes":15,"resource":"electrician","after":["unpack"]},
+            {"id":"test","minutes":10,"resource":"electrician","after":["mount","wire"]},
+            {"id":"labels","minutes":10,"resource":"crew","after":["mount"]}
+          ]
+        }
+    - title: Two rooms share one technician
+      input: |-
+        {
+          "deadline": 31,
+          "jobs": [
+            {"id":"prepare-east","minutes":5,"resource":"crew","after":[]},
+            {"id":"prepare-west","minutes":7,"resource":"crew","after":[]},
+            {"id":"calibrate-east","minutes":8,"resource":"technician","after":["prepare-east"]},
+            {"id":"calibrate-west","minutes":8,"resource":"technician","after":["prepare-west"]},
+            {"id":"walkthrough","minutes":10,"resource":"curator","after":["calibrate-east","calibrate-west"]}
+          ]
+        }
+    - title: The first visitor needs both experiences
+      input: |-
+        {
+          "deadline": 35,
+          "jobs": [
+            {"id":"mount-screen","minutes":12,"resource":"installer","after":[]},
+            {"id":"fit-headphones","minutes":6,"resource":"installer","after":[]},
+            {"id":"load-video","minutes":10,"resource":"media","after":["mount-screen"]},
+            {"id":"load-audio","minutes":8,"resource":"media","after":["fit-headphones"]},
+            {"id":"visitor-check","minutes":5,"resource":"guide","after":["load-video","load-audio"]}
+          ]
+        }
+  samples:
+    - title: One-pass schedule
+      text: A draft starts the test at minute 25, while the mount still has five minutes left. The prerequisite check catches it.
+    - title: Dependency map
+      text: Unpack first. Mount and wire can overlap. Test must wait for both. Labels and test can run together.
+    - title: Schedule with dependency map
+      text: '{"jobs":[{"id":"unpack","start":0},{"id":"mount","start":10},{"id":"wire","start":10},{"id":"test","start":30},{"id":"labels","start":30}]}'
+

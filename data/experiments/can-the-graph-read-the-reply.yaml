@@ -1,0 +1,61 @@
+slug: can-the-graph-read-the-reply
+order: 334
+title: Can the Graph Read the Reply?
+description: Send the same Teachback review prompt twice and test what schema enforcement changes about the handoff.
+inputLabel: Teachback input and the draft to review
+placeholder: Supply JSON with originalInput and draft strings…
+lab:
+  mode: prompt
+  technique: schema
+  graph: teachback-loop
+  runLabel: Compare review formats
+  help: Two review calls share a draft, model, and requested provider. The second enforces the route and reason schema. The preselected reviewer is a paid OpenRouter model. Choose a compatible model and provider before running if you want a different endpoint.
+  roles:
+    - key: comparison
+      label: Reviewer for both calls (paid by default)
+      defaultModel: openai/gpt-6-luna
+  fields:
+    - key: provider
+      label: OpenRouter provider or exact endpoint slug for both calls
+      sample: openai
+    - key: expected
+      label: Expected review route (proceed, revise, or stop)
+    - key: cue
+      label: Expected phrase in the evidence or repair note
+      optional: true
+  cases:
+    - title: A missing comparison
+      input: |-
+        {
+          "originalInput": "Explain rising travel time to a 10-year-old. Show why getting closer does not always make arrival sooner and give a new example they can reason about.",
+          "draft": "Traffic changes how quickly you can move. What happens if a crowd blocks the sidewalk on your way to the ice cream shop?"
+        }
+      fields:
+        expected: revise
+        cue: speed
+    - title: A complete teachback
+      input: |-
+        {
+          "originalInput": "Explain to a 10-year-old why a longer game download can finish first. They should explain what's wrong with judging by file size alone and give another example.",
+          "draft": "Time depends on both how much you transfer and how fast it moves. A 1 GB game moving at 1 GB per minute is ready in a minute. A smaller half-GB game at a tenth of a GB per minute takes five minutes, so size by itself cannot tell you which finishes first. Picture a big bucket under a wide-open tap and a small bucket under a trickle. Which might fill first, and what else would you want to know?"
+        }
+      fields:
+        expected: proceed
+        cue: rate
+    - title: An unspecified task
+      input: |-
+        {
+          "originalInput": "Teach it to them so they can do the thing.",
+          "draft": "Start with the basics and try it once."
+        }
+      fields:
+        expected: stop
+        cue: topic
+  samples:
+    - title: Prompt-only JSON
+      text: '{"route":"revise","reason":"Show with two times how a lower speed can outweigh less distance."}'
+    - title: Enforced JSON schema
+      text: '{"route":"revise","reason":"Use numbers to compare a shorter trip at a lower speed with the original estimate."}'
+    - title: What to check
+      text: Both replies have exactly two fields and a usable route. The repair still needs to address the missing comparison.
+

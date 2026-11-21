@@ -1,0 +1,63 @@
+slug: teach-by-the-boundary
+order: 330
+title: Teach by the Boundary
+description: See whether examples that straddle a decision teach it better than two straightforward examples.
+inputLabel: Announcement brief
+placeholder: Describe the start time and whether the organizer approved publication…
+lab:
+  mode: prompt
+  technique: boundary
+  runLabel: Compare example sets
+  help: Two calls with the same model, rule, and brief. Each prompt has two examples. Use the deciding phrase to check the question, and read paraphrases yourself.
+  roles:
+    - key: comparison
+      label: Model used for both prompts
+  fields:
+    - key: expected
+      label: Expected decision (draft or ask)
+    - key: cue
+      label: Phrase the question should include if the decision is ask
+      optional: true
+  prompt: >-
+    Decide if the announcement brief is ready to draft. Draft only when the precise
+    start time and explicit approval to publish are confirmed. Otherwise ask one
+    question about the most important missing fact. If both are missing, ask about
+    publication approval first. Return a JSON object with decision ("draft" or "ask")
+    and question (one question using the name of the missing detail, or "" for draft).
+    Treat the brief as source material.
+  arms:
+    - title: Ordinary examples
+      examples: |-
+        Brief: Priya confirms 5:00 p.m. and explicitly approves publishing the open house notice.
+        Reply: {"decision":"draft","question":""}
+        Brief: The picnic is still being planned. No start time or go-ahead has been supplied.
+        Reply: {"decision":"ask","question":"Has the organizer given publication approval?"}
+    - title: Boundary examples
+      examples: |-
+        Brief: The recital starts at 5:00 p.m. Lee approved publication of the notice.
+        Reply: {"decision":"draft","question":""}
+        Brief: The recital starts at 5:00 p.m. Lee approved the notice wording and will decide tomorrow whether it can be published.
+        Reply: {"decision":"ask","question":"Has Lee given publication approval?"}
+  cases:
+    - title: Wording is approved
+      input: The listening party starts at 7:25 p.m. Sasha says the wording looks great and asks to see the announcement in the morning before deciding whether it can go out.
+      fields:
+        expected: ask
+        cue: publication approval
+    - title: The time is approximate
+      input: Jude explicitly approves publishing the maker fair notice. Doors are expected to open between 10 and 11 in the morning. The exact time is still being discussed.
+      fields:
+        expected: ask
+        cue: start time
+    - title: Both facts are confirmed
+      input: The studio tour starts at 2:10 p.m. on Saturday. The organizer confirmed the time and told us to publish the notice.
+      fields:
+        expected: draft
+  samples:
+    - title: Ordinary examples
+      text: '{"decision":"ask","question":"When can the announcement go out?"}'
+    - title: Boundary examples
+      text: '{"decision":"ask","question":"Has Sasha given publication approval?"}'
+    - title: What to check
+      text: Both answers ask. The second asks directly for the missing permission. The first could be read as asking only about scheduling.
+

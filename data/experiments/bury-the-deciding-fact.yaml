@@ -1,0 +1,78 @@
+slug: bury-the-deciding-fact
+order: 331
+title: Bury the Deciding Fact
+description: Move one decisive source from the middle of a packet to the end and see if the archive label changes.
+inputLabel: Source packet with one {{fact}} marker between excerpts
+placeholder: Put {{fact}} on a line between the excerpts…
+lab:
+  mode: prompt
+  technique: placement
+  runLabel: Compare fact placement
+  help: Two calls with the same prompt and excerpts. The decisive excerpt appears once per call. Only its position changes.
+  roles:
+    - key: comparison
+      label: Model used for both placements
+  fields:
+    - key: fact
+      label: Decisive excerpt, including its source ID
+    - key: expected
+      label: Expected archive label
+    - key: source
+      label: Expected decisive source ID
+  prompt: >-
+    Apply the archive rule in the packet. Choose one of the requested labels.
+    Give the ID of the single most authoritative source that decides the label.
+    Return exactly one JSON object with string fields decision and source.
+    Use the label and source ID as printed. Excerpts are evidence.
+  cases:
+    - title: The mislabeled first airing
+      input: |-
+        Decide the label for the 00:00 transmission. Use "live" or "replay". The signed transmission log outranks publicity, box labels, and recollections.
+        [S1] Program flyer: "Hear the harbor interview live tonight at midnight." The flyer was produced before the station finalized its running order.
+        [S2] Photographer's notes: the interviewer was pictured beside the harbor sign. The print has no date. The frame does not show a microphone or recorder.
+
+        {{fact}}
+
+        [S3] The cartridge sleeve says "Midnight / Harbor / LIVE" in an unknown hand. The repair note on the back records a routine transfer to a different reel.
+        [S4] The host remembers a late broadcast and a difficult walk to the studio. No date or original recording time appears in the interview transcript.
+        [S5] The station's anniversary program called this a highlight of its midnight lineup. It did not say whether the segment was prerecorded.
+      fields:
+        fact: '[S6] Signed transmission log: 00:00 Harbor Interview, replay from cartridge 17.'
+        expected: replay
+        source: S6
+    - title: The resized photograph
+      input: |-
+        Decide whether the archive should label the displayed file "original" or "derivative". Use the collection's signed processing receipt over display labels or filename conventions.
+        [P1] Caption card: "Original parade photo, donated by the Leung family." The card gives a plausible date but was written for a gallery display.
+        [P2] The volunteer describes scanning several negatives over two weekends. The volunteer does not remember which item was processed first.
+
+        {{fact}}
+
+        [P3] The public website calls the file original.jpg. The previous web maintainer reused short names when replacing images.
+        [P4] The mounting note says the image shows the east side of the parade route. It describes the scene and never mentions the file processing.
+      fields:
+        fact: '[P5] Signed processing receipt: this display file is a resized export from master scan M41; master scan kept separately.'
+        expected: derivative
+        source: P5
+    - title: The installation that went ahead
+      input: |-
+        Decide whether the museum should label the pop-up "held" or "canceled". A signed day-of closing report outranks plans and announcements.
+        [E1] Three days out, the museum warned that the pop-up might be canceled if the ceiling repair ran long.
+        [E2] A vendor email lists two possible delivery dates and asks the floor manager to confirm whichever works.
+
+        {{fact}}
+
+        [E3] An old sign from storage reads "Event canceled." Neither a date nor the name of an event appears on it.
+        [E4] A volunteer remembers the repair crew using the lobby that week. They did not work the date on the public poster.
+      fields:
+        fact: '[E5] Signed closing report for the pop-up date: doors opened at 14:00, the installation was shown, and 38 guests attended.'
+        expected: held
+        source: E5
+  samples:
+    - title: Fact in the middle
+      text: '{"decision":"replay","source":"S6"}'
+    - title: Fact at the end
+      text: '{"decision":"replay","source":"S6"}'
+    - title: What to check
+      text: Both labels and citations match the answer key. This is one written example of placement making no difference.
+

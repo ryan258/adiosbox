@@ -1,5 +1,6 @@
 import { prepareFactInputs } from './fact-test.js';
 import { appendRunRecord, runRecordText } from './handoff.js';
+import { runPromptExperiment, validatePromptCase } from './prompt-experiments.js';
 
 const normalize = value => value.normalize('NFKC').toLowerCase()
   .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
@@ -62,6 +63,7 @@ export function setupLab(experiment, ui) {
   const repairForm = part('repair-form');
   const blindForm = part('blind-form');
   const coldForm = part('cold-form');
+  const loadSample = part('load-prompt-sample');
   let active;
   let repair;
   let blind;
@@ -89,6 +91,22 @@ export function setupLab(experiment, ui) {
     trace.replaceChildren(...sample.map(child => child.cloneNode(true)));
     setStatus(status, '');
   }
+
+  // The provider is the visitor's choice and survives a sample load.
+  const sampleState = () => JSON.stringify([notes.value, ...[...fields].filter(([key]) => key !== 'provider').map(([, field]) => field.value)]);
+  let loadedState = sampleState();
+  loadSample?.addEventListener('click', () => {
+    if (active) return;
+    if (sampleState() !== loadedState && !window.confirm('Replace your input with the sample case?')) return;
+    const selected = spec.cases[Number(part('prompt-sample').value)];
+    notes.value = selected.input;
+    for (const [key, field] of fields) {
+      if (key !== 'provider') field.value = selected.fields?.[key] || '';
+    }
+    loadedState = sampleState();
+    reset();
+    setStatus(status, `Loaded ${selected.title}.`);
+  });
 
   function validated(field, message) {
     if (field) revealField(experiment, field);
@@ -293,8 +311,8 @@ export function setupLab(experiment, ui) {
     const input = notes.value.trim();
     if (!input) return validated(notes, 'Enter an input to run the experiment.');
     const values = Object.fromEntries([...fields].map(([key, field]) => [key, field.value.trim()]));
-    for (const [key, value] of Object.entries(values)) {
-      if (!value) return validated(fields.get(key), 'Fill in this field before running.');
+    for (const { key, optional } of spec.fields || []) {
+      if (!values[key] && !optional) return validated(fields.get(key), 'Fill in this field before running.');
     }
     if (spec.mode === 'stop') {
       try {
@@ -310,6 +328,10 @@ export function setupLab(experiment, ui) {
       if (!modelIdPattern.test(selection.id)) return validated(selection.field, 'Choose an OpenRouter model or paste its full model ID.');
       selectedModels[role] = selection.id;
     }
+    if (spec.mode === 'prompt') {
+      const issue = validatePromptCase(spec.technique, input, values, selectedModels.comparison);
+      if (issue) return validated(fields.get(issue.field) || (issue.field === 'model' ? modelFields.get('comparison') : notes), issue.message);
+    }
     const twins = spec.mode === 'blind' ? ['first', 'second'] : spec.mode === 'cost' ? ['baseline', 'challenger'] : null;
     if (twins && selectedModels[twins[0]] === selectedModels[twins[1]]) {
       return validated(modelFields.get(twins[1]), 'Choose two different model IDs for this comparison.');
@@ -324,6 +346,20 @@ export function setupLab(experiment, ui) {
       if (spec.mode === 'stop') await compareStop(input, values, selectedModels, controller, apiKey);
       if (spec.mode === 'cost') await compareReviewers(input, selectedModels, controller, apiKey);
       if (spec.mode === 'blind') await startBlind(input, values, selectedModels, controller, apiKey);
+      if (spec.mode === 'prompt') {
+        const prompt = spec.technique === 'schema' ? graphDefinition().nodes.review.prompt : spec.prompt;
+        const replies = await runPromptExperiment({ ...spec, prompt }, {
+          input, values, record, signal: controller.signal, usageText: formatReportedUsage,
+          progress: message => setStatus(status, message),
+          request: async options => ({
+            ...await request(controller, { ...options, modelId: selectedModels.comparison, apiKey }),
+            requestedModel: selectedModels.comparison,
+          }),
+        });
+        setStatus(status, replies
+          ? 'Comparison finished. Review the answers and checks in the run record.'
+          : 'No call returned a reply. Each error is in the run record.', !replies);
+      }
     });
   });
 
