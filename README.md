@@ -1,6 +1,6 @@
 # Adiosbox
 
-Ryan's AI playground. Thirty-four experiments run from one workbench, including eight two-step chains and eleven LangGraph experiments. Every experiment has a share link and a written sample visitors can inspect without a key. LangGraph runs in the browser and records the nodes that ran, alongside their outputs. Checkpoint experiments wait for your choice before they send another request. A reload ends the in-memory checkpoint. A chain sends up to two sequential requests and shows each output. Step 2 receives the original input and the actual text from step 1. In Prompt control group, Run A and Run B send one request each, and the results stay side by side. For a fairer comparison, choose a specific model, keep the input fixed, and repeat the pair to check whether differences hold.
+Ryan's AI playground. Forty-three experiments run from one workbench: nine single runs, eight two-step chains, eleven LangGraph experiments, four Tree of Thought graphs, six comparison-lab workbenches, and five prompting-technique tests. Every experiment has a share link and a written sample visitors can inspect without a key. LangGraph runs in the browser and records the nodes that ran, alongside their outputs. Checkpoint experiments wait for your choice before they send another request. A reload ends the in-memory checkpoint. A chain sends up to two sequential requests and shows each output. Step 2 receives the original input and the actual text from step 1. In Prompt control group, Run A and Run B send one request each, and the results stay side by side. For a fairer comparison, choose a specific model, keep the input fixed, and repeat the pair to check whether differences hold.
 
 ## Run locally
 
@@ -19,12 +19,14 @@ Create a private `.env` if you don't have one:
 Put your key on the `OPENROUTER_API_KEY=` line in `.env`, then start the playground:
 
 ```sh
-python3 scripts/playground.py
+npm start
 ```
+
+`npm start` runs `python3 scripts/playground.py`.
 
 Open [the local playground](http://127.0.0.1:1313/#experiments), pick a model, and run an example. The launcher redirects `localhost:1313` to `127.0.0.1:1313`. It builds on startup and reads the key once, so restart it after editing either the site or `.env`. Press Ctrl+C to stop. The launcher listens only on loopback and sends the key to OpenRouter from the local Python process. Keep `.env` private. Git ignores it and Hugo publishes only generated site files.
 
-For an auto-reloading preview of the public visitor experience, use `hugo server --disableLiveReload` and open [the visitor preview](http://localhost:1313/#experiments). Stop the local launcher first so the port is free. Hugo reads the catalog and workbenches from YAML files in [data/experiments](data/experiments). Each experiment's unique `slug` is its share-link anchor. To check the site build, run `hugo --panicOnWarning`.
+For an auto-reloading preview of the public visitor experience, use `hugo server --disableLiveReload` and open [the visitor preview](http://localhost:1313/#experiments). Stop the local launcher first so the port is free. Hugo reads the catalog and workbenches from YAML files in [data/experiments](data/experiments). Each experiment's unique `slug` is its share-link anchor. To check the build and run the tests, use `npm run check`. It builds with `hugo --panicOnWarning` and runs `tests/adiosbox.test.mjs`, which needs Python 3 for the launcher contract test.
 
 ## Keep a case
 
@@ -33,6 +35,14 @@ For an auto-reloading preview of the public visitor experience, use `hugo server
 ## Comparison lab
 
 The [Comparison lab](http://127.0.0.1:1313/#comparison-lab) adds fork repair, evidence tracing, blind model ratings, paired stop tests, reviewer comparisons, and a cold restart drill. The local launcher can request OpenRouter usage details for the reviewer comparison. Restart an already running launcher after updating the Python file to enable that request option.
+
+## Prompting techniques
+
+Five lab workbenches test one prompting technique each: boundary examples, fact placement, dependency-first scheduling, a three-vote ballot, and schema-enforced JSON. Each has several sample cases and shows its full prompt under **See the prompt**. Code grades every reply against an answer key you can edit. A blank model field uses the main model. For a controlled comparison, choose one specific model so every call goes to the same model.
+
+## Call trace
+
+**Call trace** in the page header shows the last 20 OpenRouter requests and responses on this page as JSON, including prompts and replies. The key is redacted and authorization headers are never recorded. The trace lives only in page memory and clears with **Clear key**, **Clear trace**, or when you leave the page.
 
 ## OpenRouter in hosted builds
 
