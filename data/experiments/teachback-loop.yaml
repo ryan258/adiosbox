@@ -1,0 +1,43 @@
+slug: teachback-loop
+order: 190
+title: Teachback loop
+description: Ask a simulated novice to explain the idea back. The explanation gets one repair if the learner misses a key distinction.
+inputLabel: Idea, audience, and what the audience should be able to do
+placeholder: Name a concept and how you would know the listener understood it…
+maxRequests: 4
+method: Draft, then review against a three-part teachback rubric. A specific failure can send the draft around once. The graph stops if the second review still fails, and the full record stays visible.
+sampleNotes: >-
+  Explain why a map app’s estimated arrival time can go up even as you move
+  closer. The audience is a 10-year-old. They should be able to explain
+  what matters besides distance and give a new example.
+graph:
+  mode: revise
+  nodes:
+    draft:
+      title: Explain for the learner
+      prompt: >-
+        The user JSON includes originalInput and may include priorDraft and
+        priorReview. Write an explanation under 140 words for that audience.
+        Use one familiar example and finish with a new scenario the learner
+        can reason about instead of repeating a definition. If the review
+        requests a change, repair the specific gap while retaining what worked.
+    review:
+      title: Simulate a teachback
+      prompt: >-
+        The user JSON includes originalInput and draft. Play the stated learner
+        using only information actually conveyed by the draft. Check whether
+        they can explain the mechanism, explain why a tempting incorrect answer
+        is wrong, and correctly apply the idea to a fresh example. Return JSON
+        only with route proceed if all three checks pass, revise if a specific
+        repair is possible, or stop if the task is underspecified. Put the
+        simulated learner response and one repair if needed into reason, at most
+        90 words. Do not claim that a real learner was tested.
+sampleTrace:
+  - title: Explain for the learner
+    text: You can get closer while the trip takes longer. A map estimates how long the roads ahead will take, so a jam can change its guess.
+  - title: Review decision · Revise
+    text: “A jam makes it longer, but I can’t explain why going closer doesn’t cancel that out.” Add two times that demonstrate the remaining trip getting longer.
+  - title: Explain for the learner · Revised
+    text: Suppose the last mile usually takes five minutes. Later you’re half a mile away, but road work means that half mile now takes 12 minutes. You’re closer, and there’s more time left. What happens if the road work clears?
+  - title: Review decision · Accept
+    text: “Time depends on how fast the road moves. Once the work clears, the last bit could take less time.” The example supports all three checks.

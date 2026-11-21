@@ -1,0 +1,37 @@
+slug: minutes-have-to-add-up
+order: 200
+title: Make the minutes add up
+description: Let the model propose a schedule, then let code do the arithmetic. An over-budget draft gets one correction.
+inputLabel: Tasks, priorities, and what can be deferred
+placeholder: List what you would like to do with a short block of time…
+sampleMinutes: 25
+maxRequests: 2
+method: Code checks whole-minute durations and the sum. If a draft exceeds the budget or the record is malformed, the graph routes back with the exact issue. The check verifies arithmetic. Effort estimates still come from the model.
+sampleNotes: >-
+  I need to answer one important email, tidy the notes from yesterday,
+  and prepare an agenda headline for tomorrow. The email matters most.
+  I can leave the notes rough if time is tight.
+graph:
+  mode: ledger
+  nodes:
+    draft:
+      title: Propose a time budget
+      prompt: >-
+        The user JSON contains originalInput, minutes, and maybe priorDraft and
+        priorReview. Fit prioritized work into the exact available-minute ceiling.
+        Include a useful stopping checkpoint in each task name. Drop or shrink
+        lower-priority work if needed. Estimates are proposals. Return only JSON
+        matching {"items":[{"task":"short task and checkpoint","minutes":5}]}.
+        Use positive whole minutes, at most eight tasks. Apply any arithmetic
+        or format correction from priorReview before returning the new record.
+sampleTrace:
+  - title: Propose a time budget
+    text: Reply to the email (12 min), organize notes (10 min), draft agenda headline (6 min).
+  - title: Check the minutes
+    text: The tasks total 28 minutes and the budget is 25.
+  - title: Checked plan
+    text: |-
+      12 min · Send or save the email reply.
+      6 min · Save a rough note with the open question at the top.
+      5 min · Write one agenda headline and save it.
+      23 of 25 minutes assigned. 2 minutes unallocated.

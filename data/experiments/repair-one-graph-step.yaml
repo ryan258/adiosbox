@@ -1,0 +1,26 @@
+slug: repair-one-graph-step
+order: 260
+title: Repair one graph step
+description: Correct one intermediate finding, keep the other branch, and rerun just the merge.
+inputLabel: Process and measurements
+placeholder: Describe the workflow and what the existing measurements count…
+sampleNotes: >-
+  The repair shop counts work completed among jobs dropped off.
+  Customers book by calling between 9 and 11 a.m. A voicemail log exists,
+  but it covers only messages left during staffed hours. The shop reports 95% completion.
+lab:
+  mode: repair
+  graph: the-invisible-queue
+  help: Build the original run with up to three requests. Correct one finding, then rerun the merge with one more request. The original is kept beside your revision.
+  runLabel: Build original run
+  roles:
+    - { key: left, label: Outside the queue }
+    - { key: right, label: Inside the operation }
+    - { key: merge, label: Merge findings }
+  samples:
+    - title: Original merge
+      text: Count calls that went to voicemail and whether those people booked.
+    - title: Repair one finding
+      text: The voicemail log only covers staffed hours. People who cannot call then remain invisible.
+    - title: Revised merge
+      text: Count missed bookings among recorded callers. To learn about people outside the booking window, trial an after-hours callback form and tally those requests separately.

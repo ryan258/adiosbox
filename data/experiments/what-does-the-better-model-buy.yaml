@@ -1,0 +1,24 @@
+slug: what-does-the-better-model-buy
+order: 300
+title: What does the better model buy?
+description: Change only the reviewer in a teachback graph and compare what it caught, how long it took, and what OpenRouter reported.
+inputLabel: Idea and how you want a learner to explain it back
+placeholder: Supply a teaching task with at least one concrete distinction to check…
+sampleNotes: >-
+  Explain for a 10-year-old why a map app's arrival estimate can increase as
+  they get closer. They should explain what matters besides distance and
+  correctly apply it to another example.
+lab:
+  mode: cost
+  graph: teachback-loop
+  help: Choose two different reviewer IDs. Both graphs review the same first draft. Each can revise once with the same writer model, for up to seven requests total. Timing and usage describe this run.
+  runLabel: Compare reviewers
+  roles:
+    - { key: writer, label: Shared writer }
+    - { key: baseline, label: Baseline reviewer }
+    - { key: challenger, label: Challenger reviewer }
+  samples:
+    - title: Written baseline review
+      text: Accept. The draft gives an example of roadwork causing a later arrival.
+    - title: Written challenger review
+      text: Revise. The draft gives the explanation, then asks the learner to repeat it. Add a new scenario in which the distance changes and traffic clears.

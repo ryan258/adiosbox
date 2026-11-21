@@ -1,0 +1,80 @@
+slug: shapeshifting-orchestrator
+order: 246
+title: Shapeshifting orchestrator
+description: Let an orchestrator take on a role, design a short chain of jobs, and hand each job to a specialist that adapts to what the previous one found.
+inputLabel: Task, source material, audience, and constraints
+placeholder: Describe a job that needs several kinds of judgment and give the chain material to work from…
+maxRequests: 5
+checkpointQuestion: Review the orchestrator’s plan
+method: The orchestrator proposes a role and two or three ordered jobs. You can edit the plan before it runs. Each specialist chooses an appropriate role, does one job, and hands its result forward. The orchestrator returns in its approved role to assemble and check the final artifact.
+graph:
+  mode: orchestrated
+  roleModels:
+    - { key: plan, title: Orchestrator · Plan }
+    - { key: specialist-1, title: Specialist 1 }
+    - { key: specialist-2, title: Specialist 2 }
+    - { key: specialist-3, title: Specialist 3 (if used) }
+    - { key: assemble, title: Orchestrator · Assemble }
+  nodes:
+    plan:
+      title: Shape the orchestrator and plan the chain
+      prompt: >-
+        Design a role for the orchestrator specific to the user's deliverable
+        and audience. Decompose the task into two or three distinct jobs in the
+        order they should be done. For each job, state the handoff the next
+        specialist needs. Leave the specialist's role open so it can adapt to
+        the actual material it receives. Ask a question only if a missing fact
+        materially changes the deliverable. Use the provided material and
+        choose jobs a text assistant can perform. Return JSON only with string
+        fields role (100 characters), deliverable (240), approach (900), and
+        question (240, empty when unnecessary). Include checks, an array of
+        two to four observable success checks of up to 200 characters each,
+        and stages, an ordered array of two or three single-line jobs of up to
+        240 characters each. Do not complete the jobs yet.
+    specialist:
+      title: Shape a specialist and do its job
+      prompt: >-
+        The user message is JSON containing originalInput, approvedBrief, job,
+        and previous. Choose a narrow role suited to this job and any previous
+        handoff, then do the job. Use the original input to check facts in
+        the handoff. Keep hard constraints and identify missing facts. Stay
+        within this job and deliver a concise artifact the next person can
+        use. Return JSON only with string fields role (100 characters), approach
+        (280), and handoff (600), plus checks, an array of one to three observable
+        checks of up to 120 characters each. The handoff must contain the
+        worked result. Work from the supplied material and avoid claims of
+        external access, credentials, or verification.
+    assemble:
+      title: Assemble and check the final artifact
+      prompt: >-
+        The user message is JSON containing originalInput, approvedBrief, and
+        handoffs in chain order. Work in the orchestrator role from the approved
+        brief. Deliver the requested artifact using the specialist findings.
+        Resolve conflicts using the original material. Keep uncertainties
+        visible where they affect the answer. Then list the approved checks with
+        Pass, Needs work, or Unverifiable and a short reason. Distinguish source
+        checks from model judgment. Plain text, up to 350 words.
+sampleNotes: |-
+  A library is piloting a repair café. Write a 100-word announcement and a short organizer checklist.
+  Records: May had 8 of 40 bookings miss their appointment. June had 4 of 20 miss theirs. The pilot began June 1.
+  The branch has 18 seats. Volunteers may bring tools. The room is known, but the next date and time are still undecided.
+  Readers should know what to bring and how to watch for the confirmed date.
+sampleTrace:
+  - title: Proposed orchestrator · Library program editor
+    text: |-
+      Deliver a public announcement and a separate organizer checklist. Keep any figures consistent with the reported rates, avoid unproven claims about the pilot, and leave the date open.
+      1. Reconcile the appointment figures and write a short evidence note.
+      2. Turn the evidence note and event constraints into a visitor draft and a list of open logistics.
+  - title: Specialist 1 · Data editor
+    text: Missed appointments fell from 8 to 4 as bookings fell from 40 to 20. The rate stayed at 20%. There is no before-and-after evidence of a lower rate.
+  - title: Specialist 2 · Visitor information editor
+    text: Say that attendees can bring a small item to repair. Share the date after it’s confirmed. Keep the 18-seat capacity in the organizer checklist and confirm volunteer tool coverage before promising specific repairs.
+  - title: Assembled announcement and checklist
+    text: |-
+      Bring a small item you’d like to repair to the library’s next repair café. It’s a chance to talk through what went wrong and explore whether the item can be fixed. If you have a manual, a spare part, or a short description of the problem, bring that along too. We’ll post the confirmed date and time once the schedule is set. Tool availability will depend on which volunteers can attend, so watch the library’s usual announcements for details before you make a special trip. The repair café is a pilot, and we welcome feedback about what would help.
+
+      Organizer checklist
+      • Confirm the date and time before publishing.
+      • Plan around 18 seats and confirm who will bring which tools.
+  - title: Orchestrator’s final checks
+    text: The public draft keeps the date open and makes no claim that the pilot lowered missed-appointment rates. The checklist records the room capacity and the remaining tool question.

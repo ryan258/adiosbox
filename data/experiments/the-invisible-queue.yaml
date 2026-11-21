@@ -1,0 +1,44 @@
+slug: the-invisible-queue
+order: 210
+title: The invisible queue
+description: Investigate the people who disappear before a service records them, alongside what the staff can actually observe.
+inputLabel: A workflow and the numbers you already track
+placeholder: Explain what people try to do, where the process starts, and which events show up in reports…
+maxRequests: 3
+method: Two model calls examine the same workflow in parallel from different prompts. The merge gets both readings and looks for a missing event worth counting.
+sampleNotes: >-
+  The repair shop counts jobs dropped off and completed. Customers must call
+  9–11 a.m. weekdays to book. Calls go to voicemail while the clerk helps
+  customers in the shop. Management reports a 95% completion rate.
+graph:
+  mode: fork
+  nodes:
+    left:
+      title: Read from outside the queue
+      prompt: >-
+        Trace the journey of someone who needs this service but never gets into its
+        reported queue. Identify the earliest possible invisible exit, the fact
+        supporting it, and one unknown. State plausible mechanisms conditionally.
+        Do not invent counts. Up to 120 plain-text words.
+    right:
+      title: Read from inside the operation
+      prompt: >-
+        Map the observed metrics to the workflow events actually counted. Name the
+        denominator, a capacity constraint visible in the description, and one
+        cheap observation staff could make without extra systems. Do not invent
+        data. Up to 120 plain-text words.
+    merge:
+      title: Design a missing-event check
+      prompt: >-
+        The user JSON contains originalInput and two independent readings, left
+        and right. Find where they agree and which missing event would distinguish
+        high completion from good access. Write a one-week tally with exactly
+        what is counted and what remains invisible. Keep within the described
+        workflow. No invented counts. Up to 200 plain-text words.
+sampleTrace:
+  - title: Read from outside the queue
+    text: Someone unable to call in the morning, or unable to get a callback, may never book. The job count cannot see either path.
+  - title: Read from inside the operation
+    text: The 95% covers work dropped off. A clerk can count voicemails and how many receive a callback within one business day.
+  - title: Design a missing-event check
+    text: For one week, tally unique people who left a booking message, who got a callback, and who booked. Report these separately from completion. People who cannot call during the booking window still remain invisible.

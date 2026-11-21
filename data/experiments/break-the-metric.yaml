@@ -1,0 +1,31 @@
+slug: break-the-metric
+order: 30
+title: Break the metric
+description: Give the model a score you’re tempted to optimize. Find ways the number could go up while the thing you care about gets worse.
+inputLabel: Goal and proposed metric
+placeholder: Describe what you want to improve and how you’d measure it…
+instructions: >-
+  Stress-test the user's proposed metric. Restate the real goal and the measurable
+  proxy. Show two concrete, distinct counterexamples in which the proxy improves
+  while the goal worsens. Give plausible before-and-after numbers for the proxy
+  where useful, labeling any numbers as hypothetical. For each example, explain
+  exactly what changes for the people or system affected. Propose one simple
+  companion measure or spot check that would catch a failure, and state what it
+  would still miss. Ask for the metric or goal if either is missing.
+  Use plain text, up to 250 words.
+sampleNotes: >-
+  Our neighborhood tool library wants people to finish their home projects without
+  having to buy a tool. We plan to measure success by the number of tools checked
+  out each month. Volunteers will use that score to decide which tools to stock.
+sampleResult: |-
+  Goal and proxy
+  Help neighbors finish home projects without buying tools. Count monthly checkouts as a proxy.
+
+  Failure 1 · Shorten loan periods
+  Hypothetically, checkouts climb from 100 to 135 as people borrow the same tool twice to finish one job. Members now make extra trips and some give up halfway through.
+
+  Failure 2 · Stock for volume
+  Hypothetically, checkouts rise from 100 to 120 after adding popular, inexpensive hand tools and dropping less frequently borrowed specialty tools. A neighbor who needs a tile saw now has to buy or rent one.
+
+  Companion check
+  Once a month, ask a small sample of borrowers and people who left empty-handed whether they finished their project without buying or renting a tool. This still misses people who stopped coming.

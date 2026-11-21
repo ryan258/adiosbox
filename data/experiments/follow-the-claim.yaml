@@ -1,0 +1,39 @@
+slug: follow-the-claim
+order: 270
+title: Follow the claim
+description: Carry source labels and exact quotes through a rewrite. See which evidence survived and where the rewritten claims need another look.
+inputLabel: Source excerpts, each beginning with a label such as [A]
+placeholder: Paste labeled source excerpts, one source block after another…
+sampleNotes: |-
+  [A] The repair pilot served 18 riders in April.
+  [B] Eleven riders filled in the feedback form. Eight marked the session useful.
+  [C] The organizer proposed a second pilot for June.
+lab:
+  mode: evidence
+  help: Two model requests extract and rewrite claims. A code check looks for each quote in the named excerpt and checks whether the quote came from the first pass. Read each quote to judge whether it supports the claim.
+  runLabel: Trace claims
+  roles:
+    - { key: extract, label: Extract claims }
+    - { key: rewrite, label: Write the summary }
+  graphSpec:
+    mode: evidence
+    nodes:
+      extract:
+        title: Extract an evidence ledger
+        prompt: >-
+          Extract up to four factual claims from labeled source blocks. Return JSON only
+          in the format {"claims":[{"claim":"statement","source":"A","quote":"exact source text"}]}.
+          Copy continuous quotations verbatim from the matching block and omit unsupported claims.
+      rewrite:
+        title: Rewrite from the ledger
+        prompt: >-
+          The user JSON contains originalInput and ledger. Write up to four
+          concise public-facing sentences. Return JSON only as
+          {"claims":[{"claim":"sentence","source":"A","quote":"exact source text"}]}.
+          Carry forward exact citations from the ledger when possible. Preserve counts,
+          denominators, and the distinction between plans and completed events.
+  samples:
+    - title: Exact quote carried through
+      text: The April pilot served 18 riders. [A] “The repair pilot served 18 riders in April.”
+    - title: Quote missing from the named source
+      text: A June event was approved. [C] “A second pilot was approved for June.” The supplied source describes a proposal.

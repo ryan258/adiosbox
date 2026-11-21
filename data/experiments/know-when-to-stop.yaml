@@ -1,0 +1,29 @@
+slug: know-when-to-stop
+order: 290
+title: Know when to stop
+description: Run the same decision graph with and without the deciding fact. Check that it drafts when it can and asks when it needs to.
+inputLabel: Shared brief with one {{fact}} marker
+placeholder: Put {{fact}} where the decision goes…
+sampleNotes: >-
+  Draft a short note to volunteers about changing next Tuesday’s event.
+  The room is unavailable. The two options are online on Tuesday or
+  in person Thursday. Coordinator decision: {{fact}}.
+  Volunteers need clear instructions about when and how to attend.
+lab:
+  mode: stop
+  graph: the-one-question-gate
+  help: Both cases use the same graph and model selections. The test expects a draft when the fact is present and a question when it is missing. It sends up to four requests.
+  runLabel: Run both cases
+  roles:
+    - { key: classify, label: Check the brief }
+    - { key: proceed, label: Draft the note }
+    - { key: alternate, label: Ask the question }
+  fields:
+    - { key: present, label: Fact present, sample: "move online on Tuesday at the usual time" }
+    - { key: absent, label: Fact missing, sample: "still undecided" }
+    - { key: cue, label: Words the question should contain, sample: "Tuesday, Thursday" }
+  samples:
+    - title: Fact present · Draft
+      text: Tuesday’s event will take place online at the usual time. We’ll share the meeting link before the event.
+    - title: Fact missing · Ask
+      text: Should volunteers join online on Tuesday or come in person Thursday?

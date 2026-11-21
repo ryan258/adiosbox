@@ -1,0 +1,45 @@
+slug: claim-release-gate
+order: 170
+title: Claim release gate
+description: Give a draft claim a route it has to earn. Keep it, narrow it, or stop with the one missing piece of evidence.
+inputLabel: Proposed claim and labeled evidence
+placeholder: Paste one claim and what you can actually cite…
+maxRequests: 2
+method: A classifier chooses one of two writing nodes or a stop. An invalid routing response also stops. Approval is a model judgment to check against the supplied evidence.
+sampleNotes: |-
+  Claim: Our pilot cut missed appointments by half.
+  A · The May report records 12 missed appointments among 60 bookings.
+  B · The June report records 6 missed appointments among 30 bookings.
+  C · The pilot began June 1.
+graph:
+  mode: route
+  routes:
+    proceed: Draft with the original scope
+    alternate: Narrow the claim
+    stop: Hold for evidence
+  nodes:
+    classify:
+      title: Classify the evidence
+      prompt: >-
+        Review the proposed claim using supplied evidence only. Use route proceed only
+        if all material parts are supported, including denominator, time window,
+        and causal language. Use alternate if a narrower informative claim is supported.
+        Use stop if no material claim is supported. Output JSON only with keys route
+        (proceed, alternate, or stop) and reason (one sentence naming evidence or the gap).
+    proceed:
+      title: Draft a supported claim
+      prompt: >-
+        The user JSON contains originalInput and decision. Write one sentence with
+        the original scope, and cite the supporting source labels. If the decision
+        overstates the evidence, identify the gap instead. Do not invent data.
+    alternate:
+      title: Write the narrower claim
+      prompt: >-
+        The user JSON contains originalInput and decision. Recalculate any rates
+        from the source, then give one sentence that survives it and one sentence
+        explaining which stronger claim was dropped and why. Use supplied labels.
+sampleTrace:
+  - title: Route selected · Narrow the claim
+    text: Missed appointments fell in count, but bookings fell in the same proportion. The reports do not isolate the pilot’s effect.
+  - title: Write the narrower claim
+    text: Missed appointments went from 12 of 60 bookings in May to 6 of 30 in June (A, B). The missed-appointment rate stayed at 20%, and the reports do not establish a pilot effect.

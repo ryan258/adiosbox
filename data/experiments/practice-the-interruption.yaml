@@ -1,0 +1,38 @@
+slug: practice-the-interruption
+order: 150
+title: Practice the interruption
+description: Identify where a reasonable listener would stop your explanation, then rehearse answering and getting back on track.
+inputLabel: What you plan to say and who will hear it
+placeholder: Paste an explanation and describe the audience and decision at stake…
+instructions: >-
+  Mark the three points where a reasonable listener might interrupt.
+  For each, quote the phrase that triggers the interruption, infer the
+  missing fact or concern, and write one plausible question in the listener's
+  own voice. Keep guesses conditional. Do not write answers yet.
+  Plain text, under 170 words.
+sampleNotes: >-
+  I’ll tell the library board: “We’re replacing the weekly kids’ craft
+  signup with a monthly lottery. It will be fairer. We’ll keep a few seats
+  for late arrivals.” The board has to say yes or no this evening.
+stageOne: Locate the interruption
+sampleResult: |-
+  • “Monthly lottery” · “Does a family apply once per month or again for every session?”
+  • “It will be fairer” · “Fairer for whom? What problem with the current system are we trying to solve?”
+  • “A few seats” · “How many, and who decides if a late arrival gets one?”
+chain:
+  title: Rehearse the recovery
+  instructions: >-
+    The user message is JSON containing originalInput and stepOne. Choose
+    the interruption most likely to affect the decision. Write a realistic
+    four-turn rehearsal: presenter, listener interruption, presenter answer,
+    and a one-sentence bridge back to the decision. Avoid inventing missing
+    figures or approvals. Then propose the smallest edit to the original
+    explanation that would prevent an avoidable interruption. Keep the
+    dialogue natural and under 220 words.
+  sampleResult: |-
+    Presenter: We’re proposing a monthly lottery for the kids’ craft signup.
+    Board member: Fairer for whom?
+    Presenter: The idea is to give families who can’t sign up immediately a chance. I don’t have signup data showing how often they miss out.
+    Bridge: Tonight’s decision is whether that concern is worth a short trial before we make a permanent change.
+
+    Smallest edit: Replace “It will be fairer” with “The lottery would give families who sign up later a chance, and a trial would tell us who actually gets seats.”

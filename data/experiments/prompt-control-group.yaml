@@ -1,0 +1,20 @@
+slug: prompt-control-group
+order: 50
+title: Prompt control group
+description: Run two prompts on the same input. Change one sentence and see what moves in the output.
+inputLabel: Shared input for both runs
+placeholder: Paste the same material you want both prompts to work on…
+instructions: |-
+  Turn the meeting note into an action list. Give each action an owner and due date. Infer the most likely owner and due date when either is missing. Use one line per action in the format “Action | Owner | Due”.
+sampleNotes: |-
+  Priya said, “I’ll send the survey summary by Friday.” Lee asked whether we should post a reminder. The group agreed a reminder should go out, then moved on without assigning it or setting a date.
+sampleResult: |-
+  Send the survey summary | Priya | Friday
+  Post a reminder | Lee | Before Friday
+comparison:
+  instructions: |-
+    Turn the meeting note into an action list. Give each action an owner and due date. Write “unassigned” or “unscheduled” unless the note explicitly assigns a person or sets a date for that action. Use one line per action in the format “Action | Owner | Due”.
+  sampleResult: |-
+    Send the survey summary | Priya | Friday
+    Post a reminder | unassigned | unscheduled
+  guide: Start with the two prompts as written. Check whether either one turns Lee’s question into an assignment or copies Friday onto the reminder. The written samples show two possible outcomes.

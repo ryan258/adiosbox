@@ -1,0 +1,36 @@
+slug: rule-under-pressure
+order: 80
+title: Rule under pressure
+description: Give the model a rule and the reason it exists. See who gets caught by the wording and whether a small edit fixes it.
+inputLabel: Rule, purpose, and one ordinary case
+placeholder: Paste a proposed rule and say what it’s meant to protect…
+instructions: >-
+  Test a draft rule using only its stated purpose and relevant facts in the input.
+  Say what its wording would do in the user's ordinary case. Invent one plausible
+  case where it blocks something that serves the purpose and one where it permits
+  something that undermines it. Label invented cases hypothetical. Propose a
+  small rewrite with an observable criterion that a person can consistently apply.
+  Replay all three cases through the rewrite. Name one remaining judgment call.
+  If the rule or purpose is missing, ask for it. Plain text, up to 250 words.
+sampleNotes: |-
+  Draft rule: Each household can reserve one tool per weekend.
+  Purpose: Give more households a fair shot at scarce tools.
+  Ordinary case: A neighbor reserves the only tile saw for Saturday.
+sampleResult: |-
+  Ordinary case
+  Reserving the tile saw is allowed.
+
+  Hypothetical cases
+  • Blocks useful access. A neighbor needs both a drill and a sander. Nobody else is waiting for either, but the rule blocks the second reservation.
+  • Permits unfair access. One household reserves the only tile saw every weekend ahead of the same waiting households. Each booking follows the rule.
+
+  Small rewrite
+  A household may reserve one tool at a time from the waitlist. When a household returns a waitlisted tool, offer it to the next waiting household before that household can book it again. Tools without a waitlist can be reserved together.
+
+  Replay
+  • Tile saw: The neighbor can book it if their turn has arrived or nobody is waiting.
+  • Drill and sander: Both reservations are allowed.
+  • Repeat saw booking: Waiting households get the next offer.
+
+  Remaining judgment call
+  Decide how long to hold an offer before moving to the next household.

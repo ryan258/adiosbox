@@ -1,0 +1,38 @@
+slug: undo-plan
+order: 120
+title: Undo plan
+description: Find where a decision becomes hard to reverse, then design an exit you can actually use.
+inputLabel: Proposed change and what you need to preserve
+placeholder: Describe a change, who depends on it, and anything that must survive a rollback…
+instructions: >-
+  Map the decision into commitments. For each, say what will change, who
+  relies on it according to the input, and what would become harder to undo.
+  Distinguish technical reversibility from the work of telling people or
+  recovering records. Mark unknown dependencies. Do not design rollback yet.
+  Plain text, under 180 words.
+sampleNotes: >-
+  Next month the community garden wants to replace its paper watering roster
+  with a shared calendar. Two gardeners do not use smartphones. The coordinator
+  can print a sheet once a week. We need to keep a record of who volunteered
+  and whether swaps were confirmed.
+stageOne: Find the commitments
+sampleResult: |-
+  • Calendar becomes the source for assignments. The coordinator needs access and gardeners need a dependable way to see their slots.
+  • Replacement removes a channel two gardeners may use. A printed list can preserve access, but it may miss swaps after printing.
+  • Confirmations may accumulate in the calendar. Rolling back without a record could lose swaps or create duplicate assignments.
+  • Unknown: who can export the calendar and who records phone requests.
+chain:
+  title: Write the exit plan
+  instructions: >-
+    The user message is JSON containing originalInput and stepOne. Use that
+    map to propose the smallest trial and a specific stop condition. List
+    backups or exports needed before the trial, then exact rollback actions
+    in order, ending with an observable check that work survived. Keep within
+    stated resource limits and mark unconfirmed capabilities or owners.
+    Plain text, up to 250 words.
+  sampleResult: |-
+    Trial · Use the calendar for two weeks and print the weekly roster for gardeners who need it. Keep one dated change log with confirmed swaps.
+    Stop condition · Roll back if a gardener misses a slot because a confirmed swap differed between the calendar and the printed roster.
+    Before starting · Save the paper roster and confirm somebody can export the calendar assignments.
+    Rollback · Stop taking new changes in the calendar. Export assignments. Reconcile them against confirmed swaps. Print the updated paper roster and tell everyone where new swaps go.
+    Check · Match each upcoming slot and confirmed swap against the change log before retiring the calendar.

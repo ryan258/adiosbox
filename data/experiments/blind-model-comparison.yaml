@@ -1,0 +1,27 @@
+slug: blind-model-comparison
+order: 280
+title: Blind model comparison
+description: Score two answers before you know who wrote which. Swap their positions and see whether the preference follows the text.
+inputLabel: Shared task
+placeholder: Give both models the exact same task…
+sampleNotes: >-
+  Explain in under 80 words why a higher number of newsletter clicks
+  can coexist with the same click rate. Use March 120 clicks to 2,000
+  subscribers and April 240 clicks to 4,000 subscribers.
+lab:
+  mode: blind
+  help: Choose two different models. Two requests use the same prompt and input. The answers are shuffled and you can swap them for a second rating before revealing the models.
+  runLabel: Run blind comparison
+  prompt: Answer the user's task directly. Preserve the supplied facts and requested constraints.
+  roles:
+    - { key: first, label: First candidate model }
+    - { key: second, label: Second candidate model }
+  fields:
+    - key: rubric
+      label: Criteria to rate before seeing the answers
+      sample: "Score from 0 to 5. Award two points for both correct rates, two for explaining denominator growth, and one for clarity."
+  samples:
+    - title: Written answer A
+      text: Both issues got 6 clicks per 100 subscribers. Clicks doubled because the subscriber count doubled at the same rate.
+    - title: Written answer B
+      text: April did better because clicks doubled. That means a much higher click rate.

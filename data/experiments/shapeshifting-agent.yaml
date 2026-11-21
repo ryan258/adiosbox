@@ -1,0 +1,63 @@
+slug: shapeshifting-agent
+order: 245
+title: Shapeshifting agent
+description: Give it a task and it proposes the role, method, and checks it needs. Approve or edit the assignment before it starts.
+inputLabel: Task, materials, and what a good answer would accomplish
+placeholder: Describe the deliverable, who will use it, and whatever material the agent can work from…
+maxRequests: 3
+checkpointQuestion: Review the proposed role
+method: A model designs a role for this task. LangGraph pauses for you to edit the assignment and answer any clarifying question. A second call produces the deliverable and a third reviews it against your approved checks. The agent works from what you provide.
+graph:
+  mode: adaptive
+  nodes:
+    profile:
+      title: Design the role
+      prompt: >-
+        Design a narrow assignment for a text assistant that will do the user's task.
+        Pick a role specific to the deliverable and audience. Do not claim the assistant
+        holds credentials or can access files, tools, accounts, or live facts.
+        Return JSON only with string fields role (up to 100 characters), deliverable
+        (240 characters), approach (900 characters), and question (240 characters),
+        plus checks, an array of two to four short, observable pass conditions of
+        at most 200 characters each. Ask one question only when its answer would
+        materially change the deliverable. Otherwise use an empty question.
+        Keep requirements and provided facts intact. Do not do the task yet.
+    execute:
+      title: Do the task in the approved role
+      prompt: >-
+        The user message is JSON containing originalInput and approvedBrief.
+        Produce the deliverable in the user-approved role, using its approach
+        and acceptance checks. Treat clarification as user context and keep
+        facts tied to the material provided. Say what is unknown when a gap matters.
+        Do not claim credentials, outside verification, or actions taken elsewhere.
+        Deliver the artifact itself in plain text, up to 320 words.
+    review:
+      title: Check the result against the assignment
+      prompt: >-
+        The user message is JSON containing originalInput, approvedBrief, and draft.
+        Review the draft against each approved check in order. Give each check a
+        verdict of Pass, Needs work, or Unverifiable and cite one detail from the
+        draft or supplied material that explains the verdict. Distinguish facts
+        you can verify from judgments about quality. End with the highest-impact
+        fix if one is needed. Plain text, up to 220 words.
+sampleNotes: |-
+  Pick one opening clip for a 90-second community-radio piece about a repair café. Give the editor a two-sentence cut note.
+  00:12 — Host explains where the event happens and when.
+  04:28 — A guest says, “I brought in a lamp and left knowing I could fix things.”
+  07:10 — The organizer describes the sign-in process.
+  These are the only timecodes available. Use a quote exactly as given if you include one.
+sampleTrace:
+  - title: Proposed assignment · Radio story editor
+    text: >-
+      Choose a clip that makes a listener want to hear the rest. Give one
+      supplied timecode and a two-sentence cut note. Preserve the exact quote.
+      Explain what the clip opens up for the story.
+  - title: Draft in the approved role
+    text: >-
+      Open at 04:28 with “I brought in a lamp and left knowing I could fix things.”
+      It gives the audience a personal change to listen for before the host supplies the practical details.
+  - title: Review against the approved checks
+    text: >-
+      Pass on timecode and wording. Both match the supplied notes.
+      Pass on explaining why it opens the piece. The cut note gives listeners
+      a reason to hear what follows. Clip duration remains unknown.

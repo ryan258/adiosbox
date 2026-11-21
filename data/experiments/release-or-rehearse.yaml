@@ -1,0 +1,45 @@
+slug: release-or-rehearse
+order: 240
+title: Release or rehearse
+description: Get a readiness assessment, then choose whether to turn it into a release checklist or a small rehearsal.
+inputLabel: Change you want to introduce and current readiness
+placeholder: Describe what will change, who will depend on it, and what you have already tested…
+maxRequests: 2
+checkpointQuestion: What should the next artifact be?
+method: The graph pauses after the readiness assessment. One choice drafts the checks for a bounded release. The other choice drafts a rehearsal that targets the biggest unknown. The graph waits until you choose.
+sampleNotes: >-
+  The neighborhood association wants to switch its agenda handoff to a
+  short voice note. One person tried it last week and the secretary found
+  it useful. We have not checked captions or whether anyone can retrieve an
+  old decision after the meeting.
+graph:
+  mode: checkpoint
+  options:
+    - id: release
+      label: Draft release checks
+      instruction: Draft a conditional release checklist with must-pass evidence, a stop condition, and a person to own each check. Do not assert readiness.
+    - id: rehearse
+      label: Design a rehearsal
+      instruction: Draft one small rehearsal that generates evidence about the most consequential unknown. Include a task, participant or role, and observed pass condition.
+  nodes:
+    prepare:
+      title: Separate what’s known from what’s open
+      prompt: >-
+        Summarize what the described test actually establishes. Name two
+        remaining unknowns with different consequences. For each, say what
+        a person would observe if it failed. Do not infer readiness from
+        a single successful example. Up to 160 words.
+    finish:
+      title: Build the artifact you chose
+      prompt: >-
+        The user JSON contains originalInput, assessment, and choice. Produce
+        the artifact described by choice. Cite the specific unknown it addresses,
+        preserve known constraints, and include at least one observable acceptance
+        check. Mark proposed owners or times as proposals. Up to 220 words.
+sampleTrace:
+  - title: Separate what’s known from what’s open
+    text: The secretary found one voice note useful. Captions could omit a decision, and an old decision could be hard to find even if the transcript is accurate.
+  - title: Paused for your choice
+    text: Draft release checks, design a rehearsal, or stop here.
+  - title: Sample path · Design a rehearsal
+    text: Give one volunteer a sample voice note with three decisions. Ask another person to find an old decision using the stored transcript a day later. Pass if they find the right decision and its owner without contacting the speaker.

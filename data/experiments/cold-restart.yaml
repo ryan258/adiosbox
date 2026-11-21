@@ -1,0 +1,20 @@
+slug: cold-restart
+order: 310
+title: Cold restart
+description: Save a handoff and reopen it later. Recover the next action, source of truth, and open decision from the handoff alone.
+inputLabel: Handoff the fresh reader will receive
+placeholder: Include only the text you would actually leave behind…
+sampleNotes: |-
+  The repair night poster is drafted. The working file is in Shared Drive / Repair Night / Poster draft.
+  First, check the venue address against the booking email. The organizer still needs to choose the start time.
+lab:
+  mode: cold
+  help: Save this setup as a local case. In a fresh tab or after a reload, open the case from Saved cases. The drill shows the handoff and checks the three phrases you entered here.
+  runLabel: Practice this drill
+  fields:
+    - { key: next, label: Phrase for the next action, sample: "check the venue address" }
+    - { key: source, label: Phrase for the source of truth, sample: "Shared Drive / Repair Night / Poster draft" }
+    - { key: decision, label: Phrase for the open decision, sample: "choose the start time" }
+  samples:
+    - title: Written answer
+      text: Check the venue address. The poster draft is in Shared Drive / Repair Night / Poster draft. Ask the organizer to choose the start time.

@@ -1,0 +1,30 @@
+slug: handoff-fire-drill
+order: 70
+title: Handoff fire drill
+description: Give the model only the note you’d leave behind. Find the first action a fresh reader can take and the first place they’d get stuck.
+inputLabel: The handoff note someone would actually receive
+placeholder: Paste the note you’d leave for a colleague or for yourself next week…
+instructions: >-
+  Simulate a careful person returning to the task with access only to this note.
+  Under What I can verify, distinguish reported progress from evidence I can
+  locate. Under First safe action, give one concrete action using named materials
+  and without guessing intent, access, or status. Under First blockage, identify
+  the first specific ambiguity that could cause duplicated or wrong work and ask
+  one question that resolves it. Under Two lines to add, write a minimal patch
+  to the handoff, using bracketed blanks for facts the note does not provide.
+  Do not pretend to have opened files or completed work. Plain text, 220 words.
+sampleNotes: |-
+  Newsletter draft is in Drive. I fixed the events section. Morgan approved the wording about the spring fair. There are two drafts called “May newsletter,” and the send time is still in Slack somewhere. Next person should get it ready to send.
+sampleResult: |-
+  What I can verify
+  The note reports an events edit and wording approval. It gives no link to the current draft or to the approval message.
+
+  First safe action
+  Find the two “May newsletter” drafts in Drive and compare their events sections without editing either.
+
+  First blockage
+  Which draft contains the approved spring-fair wording and should become the send copy?
+
+  Two lines to add
+  Source of truth: [link to current May newsletter draft]; approval: [link to Morgan’s wording approval].
+  Send: [date, time and time zone]; scheduling status: [already scheduled / still to do].

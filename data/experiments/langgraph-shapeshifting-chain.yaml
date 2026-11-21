@@ -1,0 +1,86 @@
+slug: langgraph-shapeshifting-chain
+order: 247
+title: LangGraph shapeshifting chain
+description: Approve a plan, then follow each specialist through its own graph for choosing a role, doing the job, and checking the handoff.
+inputLabel: Task, source material, audience, and constraints
+placeholder: Describe a task that needs several kinds of judgment and include the source material…
+maxRequests: 8
+checkpointQuestion: Review the orchestrator’s plan
+method: A parent LangGraph shapes the orchestrator and pauses for approval. Each approved job runs as a compiled specialist subgraph. Its role-design and execution nodes each use one model request. A code node checks the handoff before the parent moves to the next job. The orchestrator assembles the result in its approved role.
+graph:
+  mode: orchestrated-subgraphs
+  roleModels:
+    - { key: plan, title: Orchestrator · Plan }
+    - { key: specialist-1, title: Specialist 1 · Shape and execute }
+    - { key: specialist-2, title: Specialist 2 · Shape and execute }
+    - { key: specialist-3, title: Specialist 3 · Shape and execute (if used) }
+    - { key: assemble, title: Orchestrator · Assemble }
+  nodes:
+    plan:
+      title: Shape the orchestrator and plan the chain
+      prompt: >-
+        Design a role for an orchestrator that will assemble the user's
+        requested artifact. Break the work into two or three ordered jobs,
+        with a concrete handoff for each. Let specialists choose their own
+        roles later. Work from supplied material. Return JSON only with string
+        fields role (100 characters), deliverable (240), approach (900), and
+        question (240, empty unless a missing fact materially changes the job).
+        Include checks, an array of two to four observable checks of up to
+        200 characters each, and stages, an array of two or three single-line
+        jobs of up to 240 characters each. Do not execute the plan.
+    shape:
+      title: Design the specialist’s role
+      prompt: >-
+        The user message is JSON with originalInput, approvedBrief, job, and
+        previous. Choose a narrow specialist role based on this job and the
+        actual previous handoff. State how you will check facts against the
+        original input. Return JSON only with role (100 characters), approach
+        (280 characters), and checks, an array of one to three observable
+        checks of up to 120 characters each. Plan the job and leave execution
+        to the next node. Keep the approved scope and avoid claims of
+        credentials, outside access, or verification.
+    work:
+      title: Produce the specialist’s handoff
+      prompt: >-
+        The user message is JSON with originalInput, approvedBrief, job,
+        previous, and specialistBrief. Do only the assigned job in the
+        specialist role. Apply its approach and checks. Verify claims from
+        the previous handoff against the original material and mark open
+        questions when they matter. Return the usable handoff in plain text,
+        no more than 750 characters. Use source labels when the input has
+        them. Leave ownership, dates, and results unknown when the source
+        does not establish them.
+    assemble:
+      title: Assemble and check the final artifact
+      prompt: >-
+        The user message is JSON with originalInput, approvedBrief, and
+        handoffs. Use the approved orchestrator role to deliver the artifact.
+        Use the original material to resolve discrepancies between handoffs.
+        After the artifact, review each approved check with Pass, Needs work,
+        or Unverifiable and a short reason. Keep proposed actions and
+        confirmed facts clearly labeled. Plain text, up to 350 words.
+sampleNotes: |-
+  Write a handoff for the volunteer taking over our library newsletter update.
+  [A] Pat edited the event listing on Monday and marked it “ready for review.”
+  [B] Morgan approved the headline only. The current draft is in Drive / May newsletter / Review copy.
+  [C] The send time has not been decided. A volunteer can spend ten minutes today checking the draft.
+  Include the first useful action, where to work, and the one decision still open.
+sampleTrace:
+  - title: Proposed orchestrator · Newsletter handoff editor
+    text: |-
+      Make a handoff a new volunteer can use in ten minutes. Check the scope of approval, identify the current draft, and keep the send-time decision open.
+      1. Reconcile edit and approval status from the notes.
+      2. Turn the reconciled status into a ten-minute handoff with one next action.
+  - title: Specialist 1 · Role design
+    text: Source editor. Compare the words “ready for review” and “approved the headline only” before describing completion.
+  - title: Specialist 1 · Handoff
+    text: Pat edited the event listing and left it ready for review [A]. Morgan approved the headline only [B]. The send time is open [C].
+  - title: Specialist 2 · Role design
+    text: Volunteer workflow editor. Use the first handoff to turn the unreviewed listing into a single action with a named draft location.
+  - title: Specialist 2 · Handoff
+    text: Open Drive / May newsletter / Review copy. Use today’s ten minutes to read the event listing and flag anything unclear. Keep the approved headline. Ask the organizer to decide the send time.
+  - title: Orchestrator · Final handoff
+    text: |-
+      Open Drive / May newsletter / Review copy. Spend ten minutes reviewing the event listing and leave one note with any correction. The headline is already approved. The organizer still needs to choose the send time.
+
+      Checks · The draft location and approval scope match [B]. The review fits the available block in [C] as a proposed next action. The send time remains open.

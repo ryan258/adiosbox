@@ -1,0 +1,44 @@
+slug: choose-what-to-protect
+order: 230
+title: Choose what to protect
+description: Let the model make a trade-off visible. Choose what matters most before the graph drafts the plan.
+inputLabel: A decision with two needs in tension
+placeholder: Describe the choice, what is scarce, and who bears the cost…
+maxRequests: 2
+checkpointQuestion: What should the plan protect first?
+method: LangGraph saves an in-memory checkpoint before the planning node. Your choice becomes input to that node. You can also stop after the assessment.
+sampleNotes: >-
+  A community class has 16 places and a waitlist. Some people from last
+  month want a second session to finish their projects. First-timers have
+  waited weeks. We can only staff one class next month.
+graph:
+  mode: checkpoint
+  options:
+    - id: continuity
+      label: Protect continuity
+      instruction: Give priority to people whose existing work would otherwise stall. Make a concrete provision for first-timers.
+    - id: access
+      label: Protect first access
+      instruction: Give priority to people who have not had a chance yet. Make a concrete provision for people whose work is underway.
+  nodes:
+    prepare:
+      title: Map the two costs
+      prompt: >-
+        Describe the costs of prioritizing continuity for existing participants
+        and of prioritizing access for newcomers. Identify who bears each cost
+        and one relevant unknown. Preserve the hard constraints. Do not choose
+        for the user. Use ordinary language, at most 160 words.
+    finish:
+      title: Draft the plan you chose
+      prompt: >-
+        The user JSON contains originalInput, assessment, and choice. Draft a
+        bounded plan that follows the user's priority, names who still pays
+        a cost, and offers one mitigation without adding capacity the source
+        rules out. Explain how to tell whether the plan worked. Up to 210 words.
+sampleTrace:
+  - title: Map the two costs
+    text: Reserving seats for returning participants risks keeping newcomers on the waitlist. Giving all seats to first-timers risks leaving existing projects stranded. The number of unfinished projects is unknown.
+  - title: Paused for your choice
+    text: Protect continuity, protect first access, or stop here.
+  - title: Sample path · Protect first access
+    text: Offer seats first to newcomers and assign remaining seats to returning participants. For those still waiting, share a one-page continuation guide. Track first-time attendance and how many unfinished projects still need help.

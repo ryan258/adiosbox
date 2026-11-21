@@ -1,0 +1,47 @@
+slug: the-regression-you-would-miss
+order: 220
+title: The regression you’d miss
+description: Compare the proposed upgrade’s gains with the useful accidents of the old process. Turn the gap into a release check.
+inputLabel: Old workflow, proposed replacement, and who uses it
+placeholder: Describe a tool or process you are replacing and what people do with it now…
+maxRequests: 3
+method: One branch looks for improvement. Another independently reads the same input for behaviors people might already rely on. The merge writes a test around the most consequential trade-off.
+sampleNotes: >-
+  Replace our shared meeting-notes document with a searchable task board.
+  The board has owners and due dates. In the old document, members
+  can see several weeks of why a decision was made above its action items.
+  New volunteers reread the old notes while getting up to speed.
+graph:
+  mode: fork
+  nodes:
+    left:
+      title: Find the upgrade’s gain
+      prompt: >-
+        Identify two genuine improvements the proposed replacement could make
+        for the described users. Tie each to an observable difference and one
+        fact from the supplied material. Mark assumptions. Under 120 words.
+    right:
+      title: Find a behavior people rely on
+      prompt: >-
+        Identify two useful behaviors the old workflow already supports,
+        with concrete users and evidence from the input. Look for context,
+        recovery, and workarounds that might disappear. Mark what is unknown
+        about the replacement. Under 120 words.
+    merge:
+      title: Write before-and-after checks
+      prompt: >-
+        User JSON contains originalInput, left, and right. Write two acceptance
+        checks to run on old and new workflows. One should verify a real gain,
+        and the other should catch a consequential loss for a specific person.
+        Give a test task and a visible pass condition. If the new workflow
+        needs a small change, suggest one without assuming features it has.
+        Plain text, up to 210 words.
+sampleTrace:
+  - title: Find the upgrade’s gain
+    text: Assigned owners and due dates let someone identify pending actions without reading multiple meeting notes.
+  - title: Find a behavior people rely on
+    text: New volunteers use historical notes to reconstruct why a decision was made. Searchable tasks alone may omit that context.
+  - title: Write before-and-after checks
+    text: |-
+      Gain · Ask a coordinator for every open task due this week. Pass if individual owners and due dates are easy to recover.
+      Loss · Ask a new volunteer why the team changed a recurring event. Pass if they can find the rationale in a linked decision note without asking the meeting host.

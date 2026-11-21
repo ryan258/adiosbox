@@ -1,0 +1,31 @@
+slug: rubric-reversal
+order: 60
+title: Rubric reversal
+description: Score the same options twice with different priorities. See exactly what makes the winner flip.
+inputLabel: Two options and a decision
+placeholder: Give two options, the decision they serve, and any nonnegotiable constraints…
+instructions: >-
+  Compare options A and B using the user's supplied facts. Identify one hard
+  constraint if present and flag options that cannot meet it before comparing
+  preferences. Choose two plausible priorities that could lead to different choices.
+  For each priority, state the single deciding criterion before evaluating either
+  option. Cite one specific fact for each evaluation and mark missing information
+  unknown. Show the winner under each priority or say why the ranking stays the
+  same. Do not force a reversal or make up weights or data. Finish with the
+  concrete trade-off a human needs to decide. Use plain text, up to 230 words.
+sampleNotes: |-
+  Choose a venue for a free repair workshop. Both venues are within budget and have step-free access.
+  A · Main library. Seats 40. Five-minute walk from a bus stop. No workbench or tool storage.
+  B · Tool cooperative. Seats 18. Twenty-five-minute walk from a bus stop. Has workbenches and can keep tools set up between sessions.
+sampleResult: |-
+  Hard constraints
+  Both options meet the budget and step-free requirements.
+
+  Priority 1 · Easy arrival by bus
+  Criterion: Shorter walk from transit. A is five minutes from the bus stop and B is twenty-five. A wins.
+
+  Priority 2 · Easy setup for repeat sessions
+  Criterion: Ability to leave tools set up. A has no workbench or storage. B has workbenches and can keep tools set up. B wins.
+
+  Trade-off to decide
+  Which cost matters more here: a longer walk for bus riders or repeated setup for volunteers? Attendance and setup time are still unknown.

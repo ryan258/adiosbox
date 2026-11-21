@@ -1,0 +1,36 @@
+slug: pre-mortem-tripwires
+order: 90
+title: Pre-mortem with tripwires
+description: Reconstruct how a plan could fail, then translate the failure paths into signals you can act on early.
+inputLabel: Plan, constraints, and launch date
+placeholder: Describe a plan people are about to put into practice…
+instructions: >-
+  Map three plausible failure paths for this specific plan. For each, name an
+  assumption the plan relies on, a mechanism that could break it, and the
+  earliest observable event in that sequence. Label hypothetical conditions.
+  Use facts from the input and mark gaps. Do not prescribe fixes yet.
+  Keep the handoff under 180 words.
+sampleNotes: >-
+  The library is piloting a free repair night in three weeks. Volunteers bring
+  most tools. We can seat 18. Last event had 10 registrations and 6 walk-ins.
+  The organizer can spend no more than one hour monitoring before the event.
+stageOne: Map failure paths
+sampleResult: |-
+  1. Tool coverage · The event assumes volunteers bring complementary tools. The same tools could be volunteered twice while a needed one goes unclaimed. Earliest sign: no named owner for a tool on the checklist.
+  2. Capacity · A full signup list leaves no room for the kind of walk-in traffic seen last time. Earliest sign: confirmed reservations approach the seat limit.
+  3. Coverage · If the volunteer who opens the room is unavailable, attendees may arrive to a locked door. Earliest sign: nobody has confirmed they can open as backup.
+chain:
+  title: Define tripwires
+  instructions: >-
+    The user message is JSON containing originalInput and stepOne. Use the
+    failure map as hypotheses and check it against the original plan. Turn each
+    plausible failure into a simple observable trigger with a check time, response,
+    and role to own it, marking proposed thresholds as proposals. Keep total
+    monitoring within the stated budget. Drop unsupported specifics and explain
+    one thing the signals would still miss. Plain text, up to 260 words.
+  sampleResult: |-
+    • One week out, spend 20 minutes matching essential tools to confirmed owners. If any are unclaimed, ask for a specific loan or remove that repair category from the description.
+    • Two days out, spend 10 minutes checking signups. Proposed trigger: 14 of 18 seats reserved. Explain that remaining seats are first come, first served and plan for overflow.
+    • Two days out, spend 10 minutes confirming a backup opener with access. If no one confirms, arrange access with the library before advertising a firm opening time.
+
+    These checks use 40 minutes. They can still miss a last-minute cancellation.

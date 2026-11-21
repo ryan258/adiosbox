@@ -1,0 +1,33 @@
+slug: change-one-fact
+order: 250
+title: Change one fact
+description: Run a baseline and a one-fact variant. Check which decision should change and which details should survive.
+inputLabel: Shared scenario with one {{fact}} marker
+placeholder: Put {{fact}} wherever the single changed fact belongs…
+instructions: >-
+  Apply the rule in the scenario. Respond with a single JSON object containing
+  exactly three string fields: "decision" for the outcome, "invariant" for the value
+  the scenario tells you to retain, and "reason" for one short explanation.
+  Use the decision wording from the scenario. Copy the invariant exactly.
+sampleNotes: |-
+  A member who cancels at least 24 hours before class gets full credit. A later cancellation gets no credit.
+  Mina cancels booking R184 {{fact}} before class.
+  Use "full credit" or "no credit" as the decision. Retain the name and booking ID as "Mina | R184".
+sampleResult: |-
+  {
+    "decision": "full credit",
+    "invariant": "Mina | R184",
+    "reason": "Exactly 24 hours meets the minimum."
+  }
+factTest:
+  baseline: 24 hours
+  changed: 23 hours and 59 minutes
+  baselineDecision: full credit
+  changedDecision: no credit
+  invariant: Mina | R184
+  sampleResult: |-
+    {
+      "decision": "no credit",
+      "invariant": "Mina | R184",
+      "reason": "The cancellation is less than 24 hours before class."
+    }

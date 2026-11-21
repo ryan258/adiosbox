@@ -1,0 +1,34 @@
+slug: disagreement-compiler
+order: 110
+title: Disagreement compiler
+description: Recover each side’s strongest case, then find the factual crux, the value trade-off, and a next step both could accept.
+inputLabel: Two positions in the speakers’ own words
+placeholder: Paste an exchange or summarize each position with clear speaker labels…
+instructions: >-
+  Restate each speaker's strongest position in terms they might endorse.
+  Distinguish explicit statements from charitable inferences. Anchor each
+  position in one short quotation from the input. Identify any shared goal
+  and one claim each side would need evidence to support. Do not resolve the
+  dispute. Keep the handoff under 180 words.
+sampleNotes: |-
+  Ana: We should move the update to Monday morning. Friday replies arrive after the weekend anyway, and Monday gives people a full week to act.
+  Sam: Keep Friday. The update is how I catch decisions before I sign off. If we move it to Monday I might learn about a blocker after I’ve already made my plan.
+stageOne: Reconstruct both positions
+sampleResult: |-
+  Ana · Monday increases time for action. “Monday gives people a full week to act.” Her comment assumes the current Friday send rarely leads to a useful response before Monday.
+  Sam · Friday protects planning time. “The update is how I catch decisions before I sign off.” Sam worries a Monday update reaches people after they have committed to a plan.
+  Shared goal · Get important information to people before they need to act.
+chain:
+  title: Separate evidence from values
+  instructions: >-
+    The user message is JSON containing originalInput and stepOne. Check
+    the reconstructed positions against the source. Name a factual crux both
+    sides could investigate and a value trade-off that would remain even if
+    they agree on the facts. Suggest one reversible next step and what result
+    would change each person's view, using conditional language. Flag any
+    claim the reconstruction overstates. Plain text, up to 240 words.
+  sampleResult: |-
+    Factual crux · How often does a Friday update change someone’s plan before Monday, and how often does a late Friday send delay action?
+    Value trade-off · Friday protects early notice for planners. Monday concentrates attention at the start of the workweek.
+    Reversible step · For two weeks, send decisions and blockers Friday, then send action items Monday. Count which items changed a plan and when.
+    What might change minds · If Friday notices regularly change Monday plans, Ana has a reason to keep them. If most decisions can wait and Monday actions move faster, Sam has a reason to accept the split.

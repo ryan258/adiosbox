@@ -1,7 +1,6 @@
 slug: rough-notes
 title: Rough notes to next steps
 description: Paste a messy note or a voice transcript. Get a short action list and one thing you can do next.
-model: openrouter/free
 instructions: >-
   Turn the user's rough notes into a short plan. Use these headings: Summary, Actions,
   and Start here. Keep the summary to one sentence. List up to five concrete actions.
@@ -22,3 +21,6 @@ sampleResult: |-
 
   Start here
   Text Jo about the chairs.
+order: 40
+inputLabel: Your notes
+placeholder: Paste or dictate a few rough notes…

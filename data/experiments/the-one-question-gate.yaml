@@ -1,0 +1,44 @@
+slug: the-one-question-gate
+order: 180
+title: The one-question gate
+description: Make a brief earn a draft. The graph can spend its second call on one clarifying question instead.
+inputLabel: Brief for the thing you want made
+placeholder: Describe the deliverable, audience, and constraints you know…
+maxRequests: 2
+method: The graph drafts when the brief is runnable, asks one question when a missing fact would change the deliverable, or stops when the request has no identifiable goal.
+sampleNotes: >-
+  Write a short note to volunteers about changing next Tuesday’s event. The
+  room is unavailable. We can either move online or move to Thursday, but
+  the coordinator has not decided. The volunteers need to know what to do.
+graph:
+  mode: route
+  routes:
+    proceed: Draft the deliverable
+    alternate: Ask the deciding question
+    stop: Hold for a usable goal
+  nodes:
+    classify:
+      title: Check if the brief is runnable
+      prompt: >-
+        Decide whether the input has enough information to produce a useful complete
+        draft. Use proceed if harmless details can be assumed and marked. Use alternate
+        if one unresolved fact would materially change what the intended reader should
+        do. Use stop if there is no identifiable deliverable or goal. Return JSON only
+        with keys route (proceed, alternate, or stop) and reason (one specific sentence).
+    proceed:
+      title: Draft the deliverable
+      prompt: >-
+        The user JSON contains originalInput and decision. Draft the deliverable for
+        its stated audience. If a minor fact remains unknown, use a bracketed placeholder.
+        Keep any material unresolved decision visible and avoid inventing commitments.
+    alternate:
+      title: Ask the deciding question
+      prompt: >-
+        The user JSON contains originalInput and decision. Ask exactly one short
+        question whose answer would change what the audience should do. State in a
+        separate sentence what that answer will let you draft. Do not draft it yet.
+sampleTrace:
+  - title: Route selected · Ask the deciding question
+    text: The two event options tell volunteers to do different things, and the brief gives no chosen option.
+  - title: Ask the deciding question
+    text: Should volunteers join online on Tuesday or come in person on Thursday? With that decision, I can draft the instruction they need.
