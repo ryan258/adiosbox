@@ -1,0 +1,24 @@
+name: Set up Adiosbox
+description: Install the pinned Node, LangGraph, and Hugo dependencies
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: .node-version
+        cache: npm
+    - name: Install LangGraph
+      shell: bash
+      run: npm ci --ignore-scripts --no-audit --no-fund
+    - name: Install Hugo
+      shell: bash
+      env:
+        HUGO_VERSION: '0.168.0'
+        HUGO_SHA256: b7cd5087c39bf5584e40180bd04fab0c6fb19f2913cd63121da8663e112a08db
+      run: |
+        package="$RUNNER_TEMP/hugo.deb"
+        curl --fail --silent --show-error --location \
+          "https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.deb" \
+          --output "$package"
+        printf '%s  %s\n' "$HUGO_SHA256" "$package" | sha256sum --check
+        sudo dpkg -i "$package"
