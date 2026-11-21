@@ -68,8 +68,8 @@ Two ground rules apply throughout. Everything you run is sent to OpenRouter, so 
 48. **Blind model comparison.** Score two models on your task before you commit to the paid one.
 49. **What does the better model buy?** Compare two reviewers on tokens, cost, time, and issues found.
 50. **Three Answers, One Ballot.** Find out whether three calls and a majority vote beat one call by enough to justify the cost.
-51. **Prompt control group.** Keep the prompts identical and assign different models under **Models by prompt**.
-52. **Models by role.** Use a cheap model for drafting and a stronger one for review inside the same graph.
+51. **Prompt control group.** Keep the prompts identical and assign different models under **Pick a model for each prompt**.
+52. **A model for each role.** Use a cheap model for drafting and a stronger one for review inside the same graph.
 53. **Free router, then a specific model.** Explore on the free router, then lock one model for any comparison you report.
 54. **Call trace.** Read the exact request, reply, and reported usage when a result surprises you.
 55. **Dedicated OpenRouter key.** Give the playground its own capped key so you can see what experimenting costs.

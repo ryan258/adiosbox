@@ -6,15 +6,15 @@ This manual covers the 43 experiments in the current checkout. A hosted copy ref
 
 ## Start with one run
 
-1. Open the [local catalog](http://127.0.0.1:1313/#experiments). Start with **Rough notes to next steps** for a quick win or **Evidence audit** if you want to see how the workbench handles uncertainty.
-2. Read the prefilled input and the written sample result. The sample gives you a concrete idea of what the experiment asks for. You can read the whole catalog without an API key.
-3. Pick a model. The **Model** field searches by name or ID, and you can paste a full OpenRouter ID. **Use free router** returns to the default. Selecting a paid model can use your OpenRouter credits when you run it.
-4. Use the sample or paste your own input. Select **Run example**, **Run chain**, or **Run graph**, depending on the workbench. A graph lists its maximum request count beside the run button.
-5. Find one line you could verify or act on. If it introduces a new fact, check it against the input before using it. Use the **Export** buttons to download results, individual graph or lab steps, or the full run as HTML or Markdown before you rerun or refresh. HTML opens offline in a browser. Markdown is editable in a text editor.
+1. Open the [local catalog](http://127.0.0.1:1313/#experiments). It groups the experiments onto seven shelves by what you’re trying to do, and each card says roughly how many calls it uses. **New here?** offers three first picks. You could also start with **Rough notes to next steps** for a quick win or **Evidence audit** if you want to see how the workbench handles uncertainty.
+2. Read the prefilled input and the worked example. The sample gives you a concrete idea of what the experiment asks for. You can read the whole catalog without an API key.
+3. Pick a model under **Your setup**. The **Model** field searches by name or ID, and you can paste a full OpenRouter ID. **Use free router** returns to the default. Selecting a paid model can use your OpenRouter credits when you run it.
+4. Use the sample or paste your own input. Select **Run it**, **Run both steps**, or **Run the graph**, depending on the workbench. A graph lists its maximum call count beside the run button. On a free model, a run can also send up to two automatic retries.
+5. Find one line you could verify or act on. If it introduces a new fact, check it against the input before using it. Open **More** beside a result, a graph or lab step, or a run record to download it as a web page or as Markdown before you rerun or refresh. **Download both results** saves a paired run. HTML opens offline in a browser. Markdown is editable in a text editor.
 
 **Call trace** in the page header shows the exact JSON for the last 20 OpenRouter requests and responses on this page, prompts and replies included. The key is redacted. Use **Copy JSON** when you want to see why a call failed or what a model actually received. The trace clears when you clear the key, select **Clear trace**, or leave the page.
 
-You can keep one tab open and move among experiments. The main model selection follows you. A workbench can override it for specific prompts, steps, or graph roles. **Copy example link** shares the workbench address, including its anchor. The person who opens it sees the built-in sample.
+You can keep one tab open and move among experiments. The main model selection follows you. A workbench can override it for specific prompts, steps, or graph roles. **Copy link** shares the workbench address, including its anchor. The person who opens it sees the built-in sample.
 
 ## Run locally with a saved key
 
@@ -32,13 +32,13 @@ npm start
 
 `npm start` runs `python3 scripts/playground.py`. Open the [local playground](http://127.0.0.1:1313/). The launcher keeps your key in the local Python process and sends it to OpenRouter when you run an experiment. With the hosted visitor form, the browser sends the visitor’s own key and prompt directly to OpenRouter. The model catalog lookup uses the public model list without sending a key. Review anything sensitive in the input before you run it, including pasted source excerpts and handoff notes.
 
-The launcher builds a snapshot at startup. After a source edit or a key change, stop it with **Ctrl+C** and run the launcher again. Refresh the page to see the new build. Copy any draft or result you want to keep before a refresh. For the hosted visitor flow, open **OpenRouter connection**, enter a key once, and use **Clear key** when you’re done.
+The launcher builds a snapshot at startup. After a source edit or a key change, stop it with **Ctrl+C** and run the launcher again. Refresh the page to see the new build. Copy any draft or result you want to keep before a refresh. For the hosted visitor flow, enter a key once under **Your setup** and select **Clear** when you’re done.
 
 ## Choose the workbench that fits the question
 
 ### Single runs and a paired comparison
 
-Start here when you have a specific input and want one artifact back. Open **View or edit the prompt** to see what the model was asked to do.
+Start here when you have a specific input and want one artifact back. Open **Peek at the prompt** to see what the model was asked to do.
 
 | Experiment | Bring | Check before using the result |
 | --- | --- | --- |
@@ -52,11 +52,11 @@ Start here when you have a specific input and want one artifact back. Open **Vie
 | [Change one fact](http://127.0.0.1:1313/#change-one-fact) | A scenario with one replaceable fact and a decision you can check | Both decisions match your expectations and the chosen detail survives both runs. |
 | [Rule under pressure](http://127.0.0.1:1313/#rule-under-pressure) | A proposed rule, its purpose, and an ordinary case | Replay the ordinary case and both edge cases against the rewrite. Check who still needs to make a judgment. |
 
-**Prompt control group** sends one request per button. Run A and B separately. For a clean comparison, change one instruction and hold the input and model selection fixed. Open **Models by prompt** to run A and B on different OpenRouter models. Keep the prompts identical if you are comparing models, or keep the model fixed if you are comparing prompts. The workbench flags different inputs, model selections, or reported responding models. Even with a matched pair, model responses can vary from run to run.
+**Prompt control group** sends one request per button. Run A and B separately. For a clean comparison, change one instruction and hold the input and model selection fixed. Open **Pick a model for each prompt** to run A and B on different OpenRouter models. Keep the prompts identical if you are comparing models, or keep the model fixed if you are comparing prompts. The workbench flags different inputs, model selections, or reported responding models. Even with a matched pair, model responses can vary from run to run.
 
 ### Two-step chains
 
-Use a chain when producing a good answer takes two different kinds of work. Step 2 receives both your original input and the actual text produced by step 1. You can edit both prompts before running and inspect or copy both outputs afterward. Open **Models by step** to choose a model for each step. A blank field uses the main model. A chain sends up to two sequential requests. If the first result reaches its output limit, the chain stops there. If step 2 fails, the intermediate result stays available.
+Use a chain when producing a good answer takes two different kinds of work. Step 2 receives both your original input and the actual text produced by step 1. You can edit both prompts before running and inspect or copy both outputs afterward. Open **Pick a model for each step** to choose a model for each step. A blank field uses the main model. A chain sends up to two sequential requests. If the first result reaches its output limit, the chain stops there. If step 2 fails, the intermediate result stays available.
 
 | Experiment | First step | Second step |
 | --- | --- | --- |
@@ -73,7 +73,7 @@ When a chain gives a weak answer, start with the intermediate result. If it lost
 
 ### LangGraph experiments
 
-Use a graph when the next action depends on what happens during the run. Open **How the graph works** to read its node prompts. Open **Models by role** to choose which OpenRouter model handles each model node. Leave a role blank to inherit the main model. The graph keeps the selections it started with through any pause or retry within that run. The **Run record** shows completed nodes, their outputs, model information, and the decisions the graph recorded. Parallel branches can appear in either completion order. A checkpoint waits in the current tab for your choice. Select **Stop here** to end at the checkpoint, or make a choice to spend one more request. Copy the record before refreshing if you want to keep it.
+Use a graph when the next action depends on what happens during the run. Open **How this graph thinks** to read its node prompts. Open **Pick a model for each role** to choose which OpenRouter model handles each model node. Leave a role blank to inherit the main model. The graph keeps the selections it started with through any pause or retry within that run. The **Run record** shows completed nodes, their outputs, model information, and the decisions the graph recorded. Parallel branches can appear in either completion order. A checkpoint waits in the current tab for your choice. Select **Stop here** to end at the checkpoint, or make a choice to spend one more request. Copy the record before refreshing if you want to keep it.
 
 | Experiment | How it decides what happens next | Max requests |
 | --- | --- | ---: |
@@ -108,13 +108,13 @@ Read the record according to who made the judgment. A model routing reason is a 
 
 Give [Shapeshifting agent](http://127.0.0.1:1313/#shapeshifting-agent) the task, the material to work from, and the audience. Select **Propose an agent**. Edit the proposed role, deliverable, approach, and success checks. A useful check names something you can point to in the answer, such as one exact quote or a table that accounts for every item in a source list.
 
-If the agent asks a question, answer it or explain what is still unknown. Select **Use this assignment** to produce the draft and review, or **Stop here** to keep the proposal. **Models by role** lets you choose different models to design the role, do the work, and review it. The review gives you a second model judgment you can check against the source and the approved assignment.
+If the agent asks a question, answer it or explain what is still unknown. Select **Use this assignment** to produce the draft and review, or **Stop here** to keep the proposal. **Pick a model for each role** lets you choose different models to design the role, do the work, and review it. The review gives you a second model judgment you can check against the source and the approved assignment.
 
 ### Shape a chain of agents
 
 Open [Shapeshifting orchestrator](http://127.0.0.1:1313/#shapeshifting-orchestrator) when a task needs several different kinds of work. **Propose a chain** makes one request. Edit the orchestrator’s role, the final deliverable, and two or three ordered specialist jobs at the checkpoint. Name the handoff you want from each job so the next specialist has something specific to work with.
 
-**Run this chain** starts the approved plan. Each specialist receives the original task and the previous handoff, chooses a role, and produces a result for the next stage. The final orchestrator gets all handoffs in order and checks the assembled artifact against the criteria you approved. The run record shows each actual role and handoff. Under **Models by role**, you can give the planner, each specialist slot, and final assembler different model IDs. A two-specialist run uses four requests total. A three-specialist run uses five.
+**Run this chain** starts the approved plan. Each specialist receives the original task and the previous handoff, chooses a role, and produces a result for the next stage. The final orchestrator gets all handoffs in order and checks the assembled artifact against the criteria you approved. The run record shows each actual role and handoff. Under **Pick a model for each role**, you can give the planner, each specialist slot, and final assembler different model IDs. A two-specialist run uses four requests total. A three-specialist run uses five.
 
 The [LangGraph shapeshifting chain](http://127.0.0.1:1313/#langgraph-shapeshifting-chain) has the same approval workflow. Inside each specialist subgraph, one node proposes a role and another does the work in that role. A code node checks that the handoff has text and fits its length limit. The record shows these steps individually. A full run uses six requests for two specialists or eight for three.
 
@@ -124,7 +124,7 @@ Start with the cancellation example in **Change one fact**. The shared scenario 
 
 1. Write the shared scenario and mark the one fact that varies. Enter both fact values.
 2. Enter the two decisions you expect and one piece of information that should be identical in both answers.
-3. Choose a specific model and select **Run fact test**. Compare the answers and the three checks. If a router used two different responding models, the workbench flags that difference.
+3. Choose a specific model and select **Run both versions**. Compare the answers and the three checks. If a router used two different responding models, the workbench flags that difference.
 4. Select **Save case** in the local workbench to keep the setup. Give it a name you’ll recognize later, such as “Cancellation exactly at the cutoff.”
 
 The local **Saved cases** panel reopens the input, editable prompts, main model, role models, and any fact-test expectations. A saved graph records the revision it came from. After a revision changes, the workbench flags the difference before you rerun the current graph. Saving an unchanged setup after a completed fact test also keeps its three check outcomes. Reopen the case and rerun it with the same scenario and expectations to see which checks improved or regressed. Copy the full model outputs separately if you want them alongside the saved checks.
@@ -133,7 +133,7 @@ Cases live in this browser on this device. Use **Export cases** to make a JSON b
 
 ## Comparison lab
 
-Use these workbenches to vary one part of a run and see what happens downstream. The [Comparison lab](http://127.0.0.1:1313/#comparison-lab) sits below the LangGraph catalog. Each workbench shows a written sample before it makes any requests.
+Use these workbenches to vary one part of a run and see what happens downstream. Most of them sit on the **Put the AI on trial** shelf. Each workbench shows a written sample before it makes any requests.
 
 | Experiment | What to try | Requests |
 | --- | --- | ---: |
@@ -148,7 +148,7 @@ Keep the exact input fixed when you compare reviewers or repair a graph.
 
 ## Prompting techniques
 
-Each of these workbenches isolates one prompting technique and grades the replies in code against an answer key you can edit. Pick a sample case from **Sample case** and select **Load sample case**. Open **See the prompt** to read the exact prompt and any example sets. Leave the model field blank to use the main model. For a controlled comparison, choose one specific model. The free router can switch models between calls, and the record says when that happened.
+Each of these workbenches isolates one prompting technique and grades the replies in code against an answer key you can edit. Pick a sample case from **Sample case** and select **Use this case**. Open **Peek at the prompt** to read the exact prompt and any example sets. Leave the model field blank to use the main model. For a controlled comparison, choose one specific model. The free router can switch models between calls, and the record says when that happened.
 
 | Experiment | What changes between calls | Code checks | Requests |
 | --- | --- | --- | ---: |
@@ -162,7 +162,7 @@ Each of these workbenches isolates one prompting technique and grades the replie
 
 ## Combine experiments
 
-Select **Use in another experiment** beside a result, **Use this step** inside a step's **Step Options**, or **Use run record** for the full graph trace. Choose the next workbench and edit the text you want to carry forward. The next experiment opens with that text in its input so you can review it before running.
+Open **More** beside a result and select **Use in another experiment**. Under a graph or lab step, **More** offers **Use this step in another experiment**, and the run record’s **More** offers **Use the whole record in another experiment**. Choose the next workbench and edit the text you want to carry forward. The next experiment opens with that text in its input so you can review it before running.
 
 If the destination already has a draft, **Add to the existing input** is selected by default. That lets you bring over two results, such as both sides of a prompt comparison. If the pair is too long for the destination, the dialog asks you to shorten it before transferring. A fresh workbench starts with the transferred text in place of the sample.
 
@@ -184,7 +184,8 @@ Try **Evidence audit → Claim release gate**. Start by pasting your claim and e
 | The visitor form appears when you expected your saved key | Open the URL printed by `python3 scripts/playground.py`. The plain Hugo preview uses the visitor form. |
 | A key is rejected | Locally, update `.env` and restart the launcher. On the hosted site, reopen **OpenRouter connection** and check the key you entered. |
 | Model suggestions are unavailable | Paste a full model ID or select **Use free router**. |
-| The model is rate-limited or unavailable | Wait and retry, or deliberately select another model. Review the model selection before retrying a paid request. |
+| The model is rate-limited, unavailable, or returns an empty reply | A free model (the free router or any `:free` ID) retries rate limits, provider outages, dropped connections, and empty replies automatically. A run gets at most two retries in total, on top of the request counts listed for each workbench, and the run’s timeout covers the waits. Each attempt appears in **Call trace**, where `state` is the HTTP result and `outcome` says how the completion ended. A rejected key, a refusal, a malformed reply, or an answer cut off at its token limit stops at once. A paid model never retries on its own. Free models, including the free router, and both NVIDIA Nemotron 3.5 Super VL IDs send a 1,024-token reasoning cap and allow a 4,096-token reply. Without the cap, a reasoning model can spend the whole budget thinking and return nothing. A free model pinned to a provider keeps the standard 2,048-token ceiling. If a reply still runs out of room, choose another model. Review the model selection before retrying a paid request. |
+| A graph or chain step fails partway through | Finished steps are kept. A graph shows **Pick up where it stopped**: choose a different model for the rest of the run, or leave it blank to try the same one, then select **Pick up from here**. Only the unfinished steps run again. A chain or fact test shows **Pick up at step 2**, which reruns step 2 with step 1’s result and the current step 2 prompt and model. Editing the input or step 1 clears the pick-up. |
 | A graph stops after a routing decision | Read the raw node output and the recorded reason. A missing fact may be the result you needed. If the model returned malformed control data, try a specific model and a shorter input. |
 | A handoff exceeds the input limit | Keep the decisive excerpts, constraints, or examples. Shortening the original material makes room for the intermediate result. |
 | A run fails and the message quotes OpenRouter, such as a model not found | The model ID may have been retired. Choose another model or select **Use free router**. **Call trace** shows the full response. |
@@ -199,5 +200,7 @@ The catalog comes from [the experiment YAML files](../data/experiments/). Give a
 - **Tree of Thought.** Use `graph.mode: tree` with node keys `branchA`, `branchB`, `branchC`, `prune`, `childA`, `childB`, and `finish`, plus `maxRequests: 7`. The prune prompt must return JSON with `route` set to a branch key or `stop`. [The Last Ferry Before Dawn](../data/experiments/the-last-ferry-before-dawn.yaml) is the closest example.
 - **Prompting technique.** Use `lab.mode: prompt` with a `technique` the [prompt experiment module](../static/prompt-experiments.js) grades: `boundary`, `placement`, `dependencies`, `ballot`, or `schema`. Give it a `comparison` role, the answer-key `fields` (mark a field `optional: true` if it can be blank), and two or more `cases` with an `input` and field values. The first case fills the workbench.
 - **Graph.** Pick a mode already defined in the [LangGraph runtime](../assets/graph-runtime.js). Match the node keys to an existing experiment in that mode and keep the displayed request limit aligned with the runtime. For a new route or stop decision, check both the ordinary case and the failure case before relying on it.
+
+Give each new entry a `shelf:` from [data/shelves.yaml](../data/shelves.yaml). Results lay themselves out from their structure: bold section labels become cards, `Label · text` lines become labeled cards, `Supported —` lines get verdict badges, pipe rows become a table, a JSON object becomes labeled fields, a `Name: line` exchange becomes a dialogue, and Given/When/Then tests get their keywords marked. Name the sections in the prompt so live replies match the sample. An optional `layout:` block sets the emphasis: `lead`, `pin`, `takeaway`, `spread` (a section's bullets as side-by-side cards), `checklist`, `group` (sections with a shared prefix in a row), `grid`, `winners`, `columns`, `fields`, `headline`, and `tones` (good, warn, ask, act, decide). Anything the layout doesn't recognize falls back to formatted Markdown.
 
 Write the sample output yourself and check every number, quote, and implied outcome. Run `npm run check` after editing the catalog. It builds the site and confirms that each graph's displayed request limit matches the runtime. In the local playground, open the new anchor and try the shortest ordinary case you can reproduce. A useful graph also deserves a case that exercises its stop, correction, or checkpoint path.
