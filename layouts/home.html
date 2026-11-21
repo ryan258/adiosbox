@@ -1,56 +1,78 @@
-{{- $experiment := hugo.Data.experiment -}}
+{{- $experiments := sort hugo.Data.experiments "order" -}}
+{{- $local := and (eq hugo.Environment "local") (hasPrefix site.BaseURL "http://127.0.0.1:") -}}
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Ryan's AI playground. Open a small experiment, see the prompt, and try it with your own OpenRouter key.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://openrouter.ai; img-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src{{ if $local }} 'self'{{ end }} https://openrouter.ai; img-src 'self'; base-uri 'none'; form-action 'none'">
   {{ if eq hugo.Environment "staging" }}<meta name="robots" content="noindex">{{ end }}
   <link rel="canonical" href="{{ .Permalink }}">
   <title>Adiosbox — Ryan's AI playground</title>
   <link rel="icon" href="{{ "mark.svg" | relURL }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ "styles.css" | relURL }}">
+  {{ $graphModule := resources.Get "graph-runtime.js" | js.Build (dict "targetPath" "graph-runtime.js" "format" "esm" "target" "es2022" "minify" true) | fingerprint "sha256" }}
   <script type="module" src="{{ "app.js" | relURL }}"></script>
+  <script type="module" src="{{ "run-export.js" | relURL }}"></script>
 </head>
-<body>
-  <a class="skip-link" href="#notes">Skip to the notes</a>
+<body data-graph-module="{{ $graphModule.RelPermalink }}"{{ if $local }} data-local-openrouter data-graph-revision="{{ $graphModule.Data.Integrity }}"{{ end }}>
+  <a class="skip-link" href="#experiments">Skip to experiments</a>
   <header class="site-header">
     <div class="shell header-inner">
       <a class="wordmark" href="{{ .RelPermalink }}"><img src="{{ "mark.svg" | relURL }}" alt="" width="32" height="32"> Adiosbox</a>
-      <a class="header-link" href="#{{ $experiment.slug }}">Try the example</a>
+      <a class="header-link" href="#experiments">Experiments</a>
     </div>
   </header>
   <main class="shell">
     <section class="intro" aria-labelledby="page-title">
       <h1 id="page-title">Ryan’s AI playground<span>.</span></h1>
-      <p>Open an experiment, see the prompt behind it, and run it with your own OpenRouter key.</p>
+      <p>Open an experiment, see the prompt behind it, and run it with {{ if $local }}your local OpenRouter key{{ else }}your own OpenRouter key{{ end }}.</p>
     </section>
 
-    <section id="{{ $experiment.slug }}" class="experiment" aria-labelledby="experiment-title">
-      <header class="experiment-header">
-        <div>
-          <h2 id="experiment-title">{{ $experiment.title }}</h2>
-          <p>{{ $experiment.description }}</p>
-        </div>
-        <button type="button" class="secondary" id="share">Copy example link</button>
-        <p id="share-status" class="status share-status" role="status"></p>
-      </header>
-      <div class="workbench">
-        <form id="experiment-form" class="inputs" autocomplete="off" data-model="{{ $experiment.model }}" novalidate>
-          <noscript><p>This example needs JavaScript to run. You can still read the prompt and sample result.</p></noscript>
-          <div class="label-row">
-            <label for="notes">Your notes</label>
-            <button class="text-button" type="button" id="load-sample" data-notes="{{ $experiment.sampleNotes }}">Load sample notes</button>
-          </div>
-          <textarea id="notes" rows="6" maxlength="8000" required placeholder="Paste or dictate a few rough notes…">{{ $experiment.sampleNotes }}</textarea>
+    <nav id="experiments" class="catalog" aria-labelledby="catalog-title">
+      <h2 id="catalog-title">Experiments</h2>
+      <ul class="experiment-list">
+        {{ range $experiments }}
+        {{ if and (not .chain) (not .graph) (not .lab) }}
+        <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
+        {{ end }}
+        {{ end }}
+      </ul>
+      <h2 id="chains" class="chain-heading">Two-step chains</h2>
+      <ul class="experiment-list">
+        {{ range $experiments }}
+        {{ if .chain }}
+        <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
+        {{ end }}
+        {{ end }}
+      </ul>
+      <h2 id="graphs" class="chain-heading">LangGraph experiments</h2>
+      <ul class="experiment-list">
+        {{ range $experiments }}
+        {{ if .graph }}
+        <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
+        {{ end }}
+        {{ end }}
+      </ul>
+      <h2 id="comparison-lab" class="chain-heading">Comparison lab</h2>
+      <ul class="experiment-list">
+        {{ range $experiments }}
+        {{ if .lab }}
+        <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
+        {{ end }}
+        {{ end }}
+      </ul>
+    </nav>
 
-          <details class="prompt-editor" id="prompt">
-            <summary>View or edit the prompt</summary>
-            <label for="instructions">Instructions for the model</label>
-            <textarea id="instructions" rows="6" maxlength="4000" required>{{ $experiment.instructions }}</textarea>
-          </details>
+    {{ partial "model-picker.html" (dict "id" "model" "label" "Model" "helpID" "model-help") }}
 
+    {{ if $local }}
+    <p class="help local-connection">Using your local OpenRouter key. Each run sends your input and prompt to OpenRouter.</p>
+    {{ else }}
+    <details class="connection" id="connection">
+      <summary>OpenRouter connection</summary>
+      <div class="connection-fields">
           <div class="label-row key-label">
             <label for="api-key">OpenRouter API key</label>
             <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">Get a key</a>
@@ -59,27 +81,44 @@
             <input id="api-key" type="password" maxlength="512" autocomplete="off" autocapitalize="off" spellcheck="false" required aria-describedby="key-help">
             <button class="secondary" type="button" id="clear-key">Clear key</button>
           </div>
-          <p id="key-help" class="help">The key stays on this page until you reload or clear it. Running sends your key, notes, and instructions directly to OpenRouter.</p>
+          <p id="key-help" class="help">Use the same key across experiments. It stays on this page until you reload or clear it. Each run sends your key, input, and prompt directly to OpenRouter.</p>
 
-          <div class="actions">
-            <button class="primary" id="run" type="submit">Run example</button>
-            <button class="secondary" id="cancel" type="button" hidden>Cancel</button>
-            <span class="help">Uses the OpenRouter free model router.</span>
-          </div>
-          <p class="status" id="run-status" role="status"></p>
-        </form>
-
-        <section class="output" aria-labelledby="result-title">
-          <div class="label-row">
-            <h3 id="result-title">Sample result</h3>
-            <button type="button" class="text-button" id="copy-result">Copy result</button>
-          </div>
-          <p id="result-meta" class="help">Written for the sample notes. No key needed.</p>
-          <div id="result" class="result" tabindex="0" aria-labelledby="result-title">{{ $experiment.sampleResult }}</div>
-          <p class="status" id="copy-status" role="status"></p>
-        </section>
+        <p id="connection-status" class="status" role="status"></p>
       </div>
-    </section>
+    </details>
+    {{ end }}
+
+    {{ if $local }}{{ partial "case-library.html" . }}{{ end }}
+
+    {{ range $experiments }}
+      {{ if .lab }}{{ partial "lab-experiment.html" . }}{{ else if .graph }}{{ partial "graph-experiment.html" . }}{{ else }}{{ partial "experiment.html" . }}{{ end }}
+    {{ end }}
+    <p class="back-to-catalog"><a href="#experiments">Back to experiments</a></p>
+    <template id="trace-export-actions">{{ partial "export-actions.html" (dict "scope" "output" "label" "step") }}</template>
+    <dialog id="handoff" class="handoff" aria-labelledby="handoff-title" aria-describedby="handoff-source">
+      <form id="handoff-form" novalidate>
+        <h2 id="handoff-title">Use in another experiment</h2>
+        <p id="handoff-source" class="help"></p>
+        <label for="handoff-destination">Next experiment</label>
+        <select id="handoff-destination" required>
+          <option value="">Choose an experiment</option>
+          {{ range $experiments }}
+          <option value="{{ .slug }}">{{ .title }}</option>
+          {{ end }}
+        </select>
+        <label for="handoff-text">Text to carry forward</label>
+        <textarea id="handoff-text" rows="7" required></textarea>
+        <label class="handoff-append" for="handoff-append" hidden>
+          <input id="handoff-append" type="checkbox">
+          Add to the existing input
+        </label>
+        <p id="handoff-status" class="status" role="status"></p>
+        <div class="actions">
+          <button class="primary" type="submit">Open next experiment</button>
+          <button class="secondary" type="button" id="handoff-cancel">Cancel</button>
+        </div>
+      </form>
+    </dialog>
   </main>
 </body>
 </html>

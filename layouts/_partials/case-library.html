@@ -1,0 +1,33 @@
+<details id="saved-cases" class="case-library">
+  <summary>Saved cases</summary>
+  <p class="help">Cases live in this browser on this device. Export a backup to move them or keep a copy.</p>
+  <div class="case-library-fields">
+    <label for="saved-case">Saved case</label>
+    <select id="saved-case" aria-describedby="saved-case-summary"></select>
+    <p id="saved-case-summary" class="help"></p>
+    <div class="actions">
+      <button type="button" class="primary" id="case-open" disabled>Open case</button>
+      <button type="button" class="secondary" id="case-delete" disabled>Delete case</button>
+      <button type="button" class="secondary" id="case-export" disabled>Export cases</button>
+      <button type="button" class="secondary" id="case-import">Import cases</button>
+      <input type="file" id="case-file" accept=".json,application/json" hidden>
+    </div>
+    <p class="status" id="case-library-status" role="status"></p>
+  </div>
+</details>
+<dialog id="save-case" class="handoff" aria-labelledby="save-case-title" aria-describedby="save-case-source">
+  <form id="save-case-form" novalidate>
+    <h2 id="save-case-title">Save case</h2>
+    <p id="save-case-source" class="help"></p>
+    <label for="case-name">Case name</label>
+    <input id="case-name" type="text" maxlength="100" required>
+    <label for="case-expected">What should happen?</label>
+    <textarea id="case-expected" rows="3" maxlength="1500" placeholder="Write a result you can check."></textarea>
+    <p class="help">Saves the input, model choices, and editable prompts for another run.</p>
+    <p id="save-case-status" class="status" role="status"></p>
+    <div class="actions">
+      <button type="submit" class="primary">Save case</button>
+      <button type="button" class="secondary" id="save-case-cancel">Cancel</button>
+    </div>
+  </form>
+</dialog>

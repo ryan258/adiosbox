@@ -1,0 +1,111 @@
+{{- $lab := .lab -}}
+{{- $slug := .slug -}}
+{{- $local := and (eq hugo.Environment "local") (hasPrefix site.BaseURL "http://127.0.0.1:") -}}
+<section data-experiment data-lab="{{ $lab.mode }}"{{ with $lab.graph }} data-lab-graph="{{ . }}"{{ end }} data-case-revision="{{ sha256 (jsonify .) }}" id="{{ $slug }}" class="experiment" tabindex="-1" aria-labelledby="{{ $slug }}-experiment-title">
+  <header class="experiment-header">
+    <div>
+      <h2 id="{{ $slug }}-experiment-title">{{ .title }}</h2>
+      <p>{{ .description }}</p>
+    </div>
+    <div class="result-actions">
+      {{ partial "save-case-button.html" . }}
+      <button class="secondary" data-part="share" type="button">Copy example link</button>
+    </div>
+    <p class="status share-status" data-part="share-status" role="status"></p>
+  </header>
+  {{ if $local }}<p data-case-context class="case-context help" hidden></p>{{ end }}
+  <div class="workbench lab-workbench">
+    <div class="inputs">
+      <textarea data-part="spec" hidden>{{ $lab | jsonify }}</textarea>
+      <form data-part="experiment-form" autocomplete="off" novalidate>
+        <label for="{{ $slug }}-notes">{{ .inputLabel }}</label>
+        <textarea id="{{ $slug }}-notes" data-part="notes" rows="6" maxlength="3000" placeholder="{{ .placeholder }}">{{ .sampleNotes }}</textarea>
+        {{ range $lab.fields }}
+        <label for="{{ $slug }}-{{ .key }}">{{ .label }}</label>
+        <textarea id="{{ $slug }}-{{ .key }}" data-case-field="{{ .key }}" rows="2" maxlength="800">{{ .sample }}</textarea>
+        {{ end }}
+        {{ with $lab.roles }}
+        <details class="role-models">
+          {{ $helpID := printf "%s-model-help" $slug }}
+          <summary>Models by role</summary>
+          <p id="{{ $helpID }}" class="help">Search OpenRouter. A blank role uses the main model.</p>
+          <div class="role-model-grid">
+            {{ range . }}
+            {{ partial "model-picker.html" (dict "id" (printf "%s-role-model-%s" $slug .key) "label" .label "role" .key "helpID" $helpID) }}
+            {{ end }}
+          </div>
+        </details>
+        {{ end }}
+        <p class="help lab-help">{{ $lab.help }}</p>
+        <div class="actions">
+          <button type="submit" class="primary" data-part="run">{{ $lab.runLabel }}</button>
+          {{ if ne $lab.mode "cold" }}<button type="button" class="secondary" data-part="cancel" hidden>Cancel</button>{{ end }}
+        </div>
+      </form>
+      {{ if eq $lab.mode "repair" }}
+      <form class="lab-control" data-part="repair-form" hidden novalidate>
+        <label for="{{ $slug }}-branch">Finding to repair</label>
+        <select data-part="repair-node" id="{{ $slug }}-branch">
+          <option value="left">Outside the queue</option>
+          <option value="right">Inside the operation</option>
+        </select>
+        <label for="{{ $slug }}-edit">Corrected finding</label>
+        <textarea id="{{ $slug }}-edit" data-part="repair-text" rows="5" maxlength="3500"></textarea>
+        <p class="help">The other finding, original input, and originally selected merge model carry forward.</p>
+        <button class="primary" type="submit" data-part="repair-run">Rerun merge</button>
+      </form>
+      {{ end }}
+      {{ if eq $lab.mode "blind" }}
+      <form class="lab-control" data-part="blind-form" hidden novalidate>
+        <p class="help" data-part="frozen-rubric"></p>
+        <div class="fact-grid">
+          <div><label for="{{ $slug }}-score-a">Score answer A (0–5)</label><input id="{{ $slug }}-score-a" data-part="score-a" type="number" min="0" max="5" step="1"></div>
+          <div><label for="{{ $slug }}-score-b">Score answer B (0–5)</label><input id="{{ $slug }}-score-b" data-part="score-b" type="number" min="0" max="5" step="1"></div>
+        </div>
+        <div class="actions">
+          <button class="secondary" type="button" data-part="blind-swap">Swap and rate again</button>
+          <button class="primary" type="submit">Reveal models</button>
+        </div>
+      </form>
+      {{ end }}
+      {{ if eq $lab.mode "cold" }}
+      <form data-part="cold-form" hidden novalidate>
+        <h3>Handoff</h3>
+        <p class="result" data-part="cold-handoff"></p>
+        <label for="{{ $slug }}-next-answer">What is the next action?</label>
+        <input id="{{ $slug }}-next-answer" data-part="cold-next" type="text" maxlength="800">
+        <label for="{{ $slug }}-source-answer">Where is the source of truth?</label>
+        <input id="{{ $slug }}-source-answer" data-part="cold-source" type="text" maxlength="800">
+        <label for="{{ $slug }}-decision-answer">What decision is still open?</label>
+        <input id="{{ $slug }}-decision-answer" data-part="cold-decision" type="text" maxlength="800">
+        <div class="actions">
+          <button class="primary" type="submit">Check recall</button>
+          <button class="secondary" type="button" data-part="cold-back">Back to setup</button>
+        </div>
+      </form>
+      {{ end }}
+      <p class="status" data-part="run-status" role="status"></p>
+    </div>
+    <section class="output" aria-labelledby="{{ $slug }}-record-heading" data-handoff-output data-handoff-record>
+      <div class="label-row">
+        <h3 id="{{ $slug }}-record-heading" data-part="trace-title" data-handoff-title>Written sample</h3>
+        <div class="result-actions">
+          <button class="text-button" type="button" data-part="copy-trace">Copy run record</button>
+          <button class="text-button" type="button" data-handoff>Use run record</button>
+        </div>
+      </div>
+      {{ partial "export-actions.html" (dict "scope" "record" "label" "run record") }}
+      <ol data-part="trace" class="graph-trace">
+        {{ range $lab.samples }}
+        <li data-handoff-output>
+          <h4 data-handoff-title>{{ .title }}</h4>
+          <div class="result" data-handoff-text>{{ .text }}</div>
+          <button class="text-button" type="button" data-handoff>Use this step</button>
+          {{ partial "export-actions.html" (dict "scope" "output" "label" "step") }}
+        </li>
+        {{ end }}
+      </ol>
+      <p class="status" data-part="copy-status" role="status"></p>
+    </section>
+  </div>
+</section>

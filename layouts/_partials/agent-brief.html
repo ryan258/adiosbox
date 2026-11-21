@@ -1,0 +1,17 @@
+{{- $slug := .slug -}}
+{{- $orchestrated := or (eq .graph.mode "orchestrated") (eq .graph.mode "orchestrated-subgraphs") -}}
+<p class="help">{{ if $orchestrated }}Edit the orchestrator and its jobs before the run. {{ if eq .graph.mode "orchestrated-subgraphs" }}Each specialist uses one request to choose its role and one to do its job. Final assembly uses one request.{{ else }}Each job and the final assembly use one request.{{ end }}{{ else }}Edit the assignment as needed. Using it sends two more requests, one to do the work and one to review it.{{ end }}</p>
+<label for="{{ $slug }}-role">{{ if $orchestrated }}Orchestrator role{{ else }}Role{{ end }}</label>
+<input id="{{ $slug }}-role" data-part="agent-role" type="text" maxlength="100">
+<label for="{{ $slug }}-deliverable">Deliverable</label>
+<textarea id="{{ $slug }}-deliverable" data-part="agent-deliverable" rows="2" maxlength="240"></textarea>
+<label for="{{ $slug }}-approach">Approach</label>
+<textarea id="{{ $slug }}-approach" data-part="agent-approach" rows="3" maxlength="900"></textarea>
+<label for="{{ $slug }}-checks">Success checks, one per line</label>
+<textarea id="{{ $slug }}-checks" data-part="agent-checks" rows="4" maxlength="803"></textarea>
+{{ if $orchestrated }}
+<label for="{{ $slug }}-stages">Two or three specialist jobs in order, one per line</label>
+<textarea id="{{ $slug }}-stages" data-part="agent-stages" rows="5" maxlength="722"></textarea>
+{{ end }}
+<label for="{{ $slug }}-clarification" data-part="agent-question">Extra context</label>
+<textarea id="{{ $slug }}-clarification" data-part="agent-clarification" rows="2" maxlength="600"></textarea>

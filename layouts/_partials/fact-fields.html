@@ -1,0 +1,34 @@
+{{- $slug := .slug -}}
+{{- $fact := .factTest -}}
+<fieldset class="fact-fields" aria-describedby="{{ $slug }}-fact-help">
+  <legend>Fact under test</legend>
+  <p id="{{ $slug }}-fact-help" class="help">Adiosbox substitutes one value at a time. Both runs use the same prompt and requested model.</p>
+  <div class="fact-grid">
+    <div>
+      <label for="{{ $slug }}-baseline">Baseline fact</label>
+      <input id="{{ $slug }}-baseline" data-case-field="baseline" type="text" maxlength="300" value="{{ $fact.baseline }}">
+    </div>
+    <div>
+      <label for="{{ $slug }}-changed">Changed fact</label>
+      <input id="{{ $slug }}-changed" data-case-field="changed" type="text" maxlength="300" value="{{ $fact.changed }}">
+    </div>
+  </div>
+</fieldset>
+<fieldset class="fact-fields">
+  <legend>Expected behavior</legend>
+  <p class="help">These answers stay in the workbench. Adiosbox compares them with the model outputs after both runs.</p>
+  <div class="fact-grid">
+    <div>
+      <label for="{{ $slug }}-baseline-decision">Expected baseline decision</label>
+      <input id="{{ $slug }}-baseline-decision" data-case-field="baseline-decision" type="text" maxlength="240" value="{{ $fact.baselineDecision }}">
+    </div>
+    <div>
+      <label for="{{ $slug }}-changed-decision">Expected changed decision</label>
+      <input id="{{ $slug }}-changed-decision" data-case-field="changed-decision" type="text" maxlength="240" value="{{ $fact.changedDecision }}">
+    </div>
+    <div class="fact-invariant">
+      <label for="{{ $slug }}-invariant">Expected value in both answers</label>
+      <input id="{{ $slug }}-invariant" data-case-field="invariant" type="text" maxlength="240" value="{{ $fact.invariant }}">
+    </div>
+  </div>
+</fieldset>

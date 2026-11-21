@@ -1,0 +1,101 @@
+{{- $experiment := . -}}
+{{- $second := or $experiment.chain $experiment.comparison $experiment.factTest -}}
+    <section data-experiment data-case-revision="{{ sha256 (jsonify $experiment) }}"{{ if $experiment.chain }} data-chain{{ end }}{{ if $experiment.factTest }} data-fact-test{{ end }} id="{{ $experiment.slug }}" class="experiment" tabindex="-1" aria-labelledby="{{ $experiment.slug }}-experiment-title">
+      <header class="experiment-header">
+        <div>
+          <h2 id="{{ $experiment.slug }}-experiment-title">{{ $experiment.title }}</h2>
+          <p>{{ $experiment.description }}</p>
+        </div>
+        <div class="result-actions">
+          {{ partial "save-case-button.html" . }}
+          <button type="button" class="secondary" data-part="share">Copy example link</button>
+        </div>
+        <p data-part="share-status" class="status share-status" role="status"></p>
+      </header>
+      {{ if and (eq hugo.Environment "local") (hasPrefix site.BaseURL "http://127.0.0.1:") }}<p data-case-context class="case-context help" hidden></p>{{ end }}
+      <div class="workbench{{ if $second }} workbench--comparison{{ end }}">
+        <form data-part="experiment-form" class="inputs" autocomplete="off" novalidate>
+          <noscript><p>This example needs JavaScript to run. You can still read the prompt and sample result.</p></noscript>
+          <div class="label-row">
+            <label for="{{ $experiment.slug }}-notes">{{ $experiment.inputLabel }}</label>
+            <button class="text-button" type="button" data-part="load-sample">Load sample input</button>
+          </div>
+          <textarea id="{{ $experiment.slug }}-notes" data-part="notes" rows="6" maxlength="{{ if or $experiment.chain $experiment.factTest }}4000{{ else }}8000{{ end }}" required placeholder="{{ $experiment.placeholder }}">{{ $experiment.sampleNotes }}</textarea>
+
+          {{ if $experiment.factTest }}{{ partial "fact-fields.html" $experiment }}{{ end }}
+
+          <details class="prompt-editor" data-part="prompt">
+            <summary>{{ if $experiment.chain }}View or edit step prompts{{ else if $experiment.comparison }}View or edit prompts A and B{{ else }}View or edit the prompt{{ end }}</summary>
+            <label for="{{ $experiment.slug }}-instructions">{{ if $experiment.chain }}Step 1 · {{ $experiment.stageOne }}{{ else if $experiment.comparison }}Prompt A{{ else }}Instructions for the model{{ end }}</label>
+            <textarea id="{{ $experiment.slug }}-instructions" data-part="instructions" rows="6" maxlength="4000" required>{{ $experiment.instructions }}</textarea>
+            {{ with (or $experiment.chain $experiment.comparison) }}
+            <label for="{{ $experiment.slug }}-instructions-b">{{ if $experiment.chain }}Step 2 · {{ .title }}{{ else }}Prompt B{{ end }}</label>
+            <textarea id="{{ $experiment.slug }}-instructions-b" data-part="instructions-b" rows="6" maxlength="4000" required>{{ .instructions }}</textarea>
+            {{ end }}
+          </details>
+
+          {{ with (or $experiment.chain $experiment.comparison) }}
+          {{ $modelPrefix := printf "%s-role-model" $experiment.slug }}
+          {{ $modelHelp := printf "%s-help" $modelPrefix }}
+          <details class="role-models" data-part="role-models">
+            <summary>{{ if $experiment.chain }}Models by step{{ else }}Models by prompt{{ end }}</summary>
+            <p id="{{ $modelHelp }}" class="help">Leave a field blank to use the main model. Search by name or paste an OpenRouter model ID.</p>
+            <div class="role-model-grid">
+              {{ $firstLabel := "Prompt A" }}
+              {{ $secondLabel := "Prompt B" }}
+              {{ if $experiment.chain }}
+              {{ $firstLabel = printf "Step 1 · %s" $experiment.stageOne }}
+              {{ $secondLabel = printf "Step 2 · %s" .title }}
+              {{ end }}
+              {{ partial "model-picker.html" (dict "id" (printf "%s-first" $modelPrefix) "label" $firstLabel "role" "first" "helpID" $modelHelp) }}
+              {{ partial "model-picker.html" (dict "id" (printf "%s-second" $modelPrefix) "label" $secondLabel "role" "second" "helpID" $modelHelp) }}
+            </div>
+          </details>
+          {{ end }}
+
+          {{ with $experiment.comparison }}
+          <p class="help">{{ .guide }} Each Run button sends one request. Keep the model fixed to isolate a prompt change.</p>
+          {{ end }}
+
+          {{ if $experiment.chain }}
+          <p class="help">Step 2 gets the original input and the result from step 1. Running the chain sends up to two OpenRouter requests.</p>
+          {{ end }}
+          <div class="actions">
+            {{ if $experiment.factTest }}
+            <button class="primary" data-part="run" type="submit">Run fact test</button>
+            <span class="help">Up to two requests</span>
+            {{ else if $experiment.chain }}
+            <button class="primary" data-part="run" type="submit">Run chain</button>
+            {{ else if $experiment.comparison }}
+            <button class="primary" data-part="run" type="submit">Run A</button>
+            <button class="primary" data-part="run-b" type="submit">Run B</button>
+            {{ else }}
+            <button class="primary" data-part="run" type="submit">Run example</button>
+            {{ end }}
+            <button class="secondary" data-part="cancel" type="button" hidden>Cancel</button>
+          </div>
+          <p class="status" data-part="run-status" role="status"></p>
+        </form>
+
+        {{ with $second }}
+        {{ if or $experiment.comparison $experiment.factTest }}<p class="help comparison-status" data-part="comparison-status" role="status"></p>{{ end }}
+        <div class="comparison-status">
+          {{ partial "export-actions.html" (dict "scope" "pair" "label" "run") }}
+        </div>
+        <div class="comparison-results">
+          {{ if $experiment.factTest }}
+          {{ partial "experiment-result.html" (dict "slug" $experiment.slug "sample" $experiment.sampleResult "suffix" "" "heading" "Baseline" "label" "baseline" "sampleNote" "Written baseline sample") }}
+          {{ partial "experiment-result.html" (dict "slug" $experiment.slug "sample" .sampleResult "suffix" "-b" "heading" "Changed" "label" "changed" "sampleNote" "Written changed sample") }}
+          {{ else if $experiment.chain }}
+          {{ partial "experiment-result.html" (dict "slug" $experiment.slug "sample" $experiment.sampleResult "suffix" "" "heading" $experiment.stageOne "label" "1") }}
+          {{ partial "experiment-result.html" (dict "slug" $experiment.slug "sample" .sampleResult "suffix" "-b" "heading" .title "label" "2") }}
+          {{ else }}
+          {{ partial "experiment-result.html" (dict "slug" $experiment.slug "sample" $experiment.sampleResult "suffix" "" "label" "A") }}
+          {{ partial "experiment-result.html" (dict "slug" $experiment.slug "sample" .sampleResult "suffix" "-b" "label" "B") }}
+          {{ end }}
+        </div>
+        {{ else }}
+        {{ partial "experiment-result.html" (dict "slug" $experiment.slug "sample" $experiment.sampleResult "suffix" "") }}
+        {{ end }}
+      </div>
+    </section>

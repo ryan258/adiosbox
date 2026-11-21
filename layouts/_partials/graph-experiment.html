@@ -1,0 +1,103 @@
+{{- $experiment := . -}}
+{{- $graph := .graph -}}
+{{- $orchestrated := or (eq $graph.mode "orchestrated") (eq $graph.mode "orchestrated-subgraphs") -}}
+{{- $editableBrief := or (eq $graph.mode "adaptive") $orchestrated -}}
+<section data-experiment data-graph data-case-revision="{{ sha256 (jsonify .) }}" id="{{ .slug }}" class="experiment" tabindex="-1" aria-labelledby="{{ .slug }}-experiment-title">
+  <header class="experiment-header">
+    <div>
+      <h2 id="{{ .slug }}-experiment-title">{{ .title }}</h2>
+      <p>{{ .description }}</p>
+    </div>
+    <div class="result-actions">
+      {{ partial "save-case-button.html" . }}
+      <button type="button" class="secondary" data-part="share">Copy example link</button>
+    </div>
+    <p data-part="share-status" class="status share-status" role="status"></p>
+  </header>
+  {{ if and (eq hugo.Environment "local") (hasPrefix site.BaseURL "http://127.0.0.1:") }}<p data-case-context class="case-context help" hidden></p>{{ end }}
+  <div class="workbench graph-workbench">
+    <form data-part="experiment-form" class="inputs" autocomplete="off" novalidate>
+      <textarea data-part="spec" hidden>{{ $graph | jsonify }}</textarea>
+      <div class="label-row">
+        <label for="{{ .slug }}-notes">{{ .inputLabel }}</label>
+        <button class="text-button" type="button" data-part="load-sample">Load sample input</button>
+      </div>
+      <textarea id="{{ .slug }}-notes" data-part="notes" rows="6" maxlength="{{ if $orchestrated }}2400{{ else }}3000{{ end }}" required placeholder="{{ .placeholder }}">{{ .sampleNotes }}</textarea>
+      {{ if eq $graph.mode "ledger" }}
+      <label class="graph-budget" for="{{ .slug }}-minutes">Available minutes</label>
+      <input id="{{ .slug }}-minutes" data-part="minutes" type="number" min="1" max="720" step="1" value="{{ .sampleMinutes }}">
+      {{ end }}
+      <details class="prompt-editor">
+        <summary>How the graph works</summary>
+        <p class="help">{{ .method }}</p>
+        {{ range $graph.nodes }}
+        <details class="graph-node-prompt">
+          <summary>{{ .title }}</summary>
+          <p class="help">{{ .prompt }}</p>
+        </details>
+        {{ end }}
+      </details>
+      {{ $modelHelp := printf "%s-role-model-help" .slug }}
+      <details class="role-models" data-part="role-models">
+        <summary>Models by role</summary>
+        <p id="{{ $modelHelp }}" class="help">Leave a role blank to use the main model. The graph keeps these selections if it pauses for your choice.</p>
+        <div class="role-model-grid">
+          {{ if $graph.roleModels }}
+          {{ range $graph.roleModels }}
+          {{ partial "model-picker.html" (dict "id" (printf "%s-role-model-%s" $experiment.slug .key) "label" .title "role" .key "helpID" $modelHelp) }}
+          {{ end }}
+          {{ else }}
+          {{ range $role, $node := $graph.nodes }}
+          {{ partial "model-picker.html" (dict "id" (printf "%s-role-model-%s" $experiment.slug $role) "label" $node.title "role" $role "helpID" $modelHelp) }}
+          {{ end }}
+          {{ end }}
+        </div>
+      </details>
+      <p class="help">{{ if $editableBrief }}One request proposes the {{ if $orchestrated }}chain{{ else }}role{{ end }}. The full run uses up to {{ .maxRequests }} requests.{{ else }}Run graph sends up to {{ .maxRequests }} OpenRouter requests.{{ end }}</p>
+      <div class="actions">
+        <button class="primary" data-part="run" type="submit">{{ if $orchestrated }}Propose a chain{{ else if $editableBrief }}Propose an agent{{ else }}Run graph{{ end }}</button>
+        <button class="secondary" data-part="cancel" type="button" hidden>Cancel</button>
+      </div>
+      <fieldset class="graph-choices" data-part="choices" hidden>
+        <legend>{{ .checkpointQuestion }}</legend>
+        {{ if $editableBrief }}
+        {{ partial "agent-brief.html" . }}
+        {{ else }}
+        <p class="help">Read the run record, then choose how to continue. Either choice sends one more request.</p>
+        {{ end }}
+        <div class="actions">
+          {{ if $editableBrief }}
+          <button class="primary" type="button" data-choice="use-assignment">{{ if $orchestrated }}Run this chain{{ else }}Use this assignment{{ end }}</button>
+          {{ end }}
+          {{ range $graph.options }}
+          <button class="primary" type="button" data-choice="{{ .id }}">{{ .label }}</button>
+          {{ end }}
+          <button class="secondary" type="button" data-choice="stop">Stop here</button>
+        </div>
+      </fieldset>
+      <p data-part="run-status" class="status" role="status"></p>
+    </form>
+    <section class="output" data-handoff-output data-handoff-record aria-labelledby="{{ .slug }}-trace-title">
+      <div class="label-row">
+        <h3 data-handoff-title id="{{ .slug }}-trace-title" data-part="trace-title">Sample run record</h3>
+        <div class="result-actions">
+          <button class="text-button" type="button" data-part="copy-trace">Copy run record</button>
+          <button class="text-button" type="button" data-handoff>Use run record</button>
+        </div>
+      </div>
+      <p data-part="trace-meta" class="help">Written for the sample input. No key needed.</p>
+      {{ partial "export-actions.html" (dict "scope" "record" "label" "run record") }}
+      <ol data-part="trace" class="graph-trace">
+        {{ range .sampleTrace }}
+        <li data-handoff-output>
+          <h4 data-handoff-title>{{ .title }}</h4>
+          <div class="result" data-handoff-text>{{ .text }}</div>
+          <button type="button" class="text-button" data-handoff>Use this step</button>
+          {{ partial "export-actions.html" (dict "scope" "output" "label" "step") }}
+        </li>
+        {{ end }}
+      </ol>
+      <p data-part="copy-status" class="status" role="status"></p>
+    </section>
+  </div>
+</section>
