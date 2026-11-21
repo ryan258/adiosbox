@@ -1,0 +1,24 @@
+# The catalog's shelves, in display order. Each experiment names its shelf with `shelf:`.
+startHere: [competing-explanations, prompt-control-group, the-last-ferry-before-dawn]
+shelves:
+  - key: explain
+    title: Figure out what’s going on
+    blurb: Something changed and you’re not sure why. Get rival explanations and a way to tell them apart.
+  - key: check
+    title: Check before you claim
+    blurb: Hold a statement up against its evidence and see what survives.
+  - key: plan
+    title: Plan it, then poke holes
+    blurb: Plans, trade-offs, and schedules, plus the ways they could go sideways.
+  - key: handoff
+    title: Explain it and hand it off
+    blurb: Turn messy notes into next steps, and test whether someone else could pick up where you left off.
+  - key: team
+    title: Build a little AI team
+    blurb: The model hires its own specialists. You approve the plan before anything runs.
+  - key: puzzles
+    title: Puzzle boxes
+    blurb: Branching puzzles with real constraints. The model tries three paths and keeps the most promising one.
+  - key: trial
+    title: Put the AI on trial
+    blurb: Change one thing about a prompt or a model and see what actually moves.

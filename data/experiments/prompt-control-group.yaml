@@ -1,7 +1,10 @@
 slug: prompt-control-group
 order: 50
+shelf: trial
+layout:
+  columns: [Action, Owner, Due]
 title: Prompt control group
-description: Run two prompts on the same input. Change one sentence and see what moves in the output.
+description: "Same input, two prompts that differ by one sentence. Spot what that sentence actually changed."
 inputLabel: Shared input for both runs
 placeholder: Paste the same material you want both prompts to work on…
 instructions: |-
@@ -17,4 +20,4 @@ comparison:
   sampleResult: |-
     Send the survey summary | Priya | Friday
     Post a reminder | unassigned | unscheduled
-  guide: Start with the two prompts as written. Check whether either one turns Lee’s question into an assignment or copies Friday onto the reminder. The written samples show two possible outcomes.
+  guide: "Start with the two prompts as written. Does either one turn Lee’s question into an assignment, or stick Friday onto the reminder? The worked examples show two ways it can go."

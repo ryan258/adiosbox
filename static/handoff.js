@@ -1,7 +1,10 @@
+import { sourceText } from './markdown.js';
+import { layoutTrace, renderResult } from './layouts.js';
+
 export function runRecordText(trace) {
   return [...trace.querySelectorAll('[data-handoff-output]')].map(entry =>
     [...entry.querySelectorAll('[data-handoff-title], [data-handoff-model], [data-handoff-text]')]
-      .map(item => item.textContent.trim()).join('\n')).join('\n\n');
+      .map(item => (item.hasAttribute('data-handoff-text') ? sourceText(item) : item.textContent).trim()).join('\n')).join('\n\n');
 }
 
 export function setupHandoff(experiments, openExperiment) {
@@ -82,7 +85,7 @@ export function setupHandoff(experiments, openExperiment) {
       const output = event.target.closest('[data-handoff-output]');
       const content = output.hasAttribute('data-handoff-record')
         ? runRecordText(output)
-        : output.querySelector('[data-handoff-text]').textContent.trim();
+        : sourceText(output.querySelector('[data-handoff-text]')).trim();
       if (!content) return;
 
       const experimentTitle = experiment.querySelector('h2').textContent.trim();
@@ -118,9 +121,11 @@ export function appendRunRecord(trace, title, content, model = '') {
   const text = document.createElement('div');
   text.className = 'result';
   text.setAttribute('data-handoff-text', '');
-  text.textContent = content;
   entry.append(text);
   const options = document.getElementById('step-options');
   if (options) entry.append(options.content.cloneNode(true));
   trace.append(entry);
+  // Render once attached, so the layout knows this text is a run-record step.
+  renderResult(text, content);
+  layoutTrace(trace);
 }

@@ -1,7 +1,14 @@
 slug: change-one-fact
 order: 250
+shelf: check
+layout:
+  headline: decision
+  fields:
+    decision: Decision
+    invariant: Kept the same
+    reason: Why
 title: Change one fact
-description: Run a baseline and a one-fact variant. Check which decision should change and which details should survive.
+description: "Run a case, then the same case with one fact changed. Which decision should move, and what should stay put?"
 inputLabel: Shared scenario with one {{fact}} marker
 placeholder: Put {{fact}} wherever the single changed fact belongs…
 instructions: >-

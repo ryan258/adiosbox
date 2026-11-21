@@ -1,7 +1,14 @@
 slug: disagreement-compiler
 order: 110
+shelf: explain
+layout:
+  tones:
+    Factual crux: ask
+    Value trade-off: decide
+    Reversible step: act
+    Shared goal: good
 title: Disagreement compiler
-description: Recover each side’s strongest case, then find the factual crux, the value trade-off, and a next step both could accept.
+description: "Give both sides their best case. Find the factual crux, the value trade-off, and a next step both could live with."
 inputLabel: Two positions in the speakers’ own words
 placeholder: Paste an exchange or summarize each position with clear speaker labels…
 instructions: >-
@@ -26,7 +33,7 @@ chain:
     sides could investigate and a value trade-off that would remain even if
     they agree on the facts. Suggest one reversible next step and what result
     would change each person's view, using conditional language. Flag any
-    claim the reconstruction overstates. Plain text, up to 240 words.
+    claim the reconstruction overstates. Light Markdown (bold section labels, - bullets), up to 240 words.
   sampleResult: |-
     Factual crux · How often does a Friday update change someone’s plan before Monday, and how often does a late Friday send delay action?
     Value trade-off · Friday protects early notice for planners. Monday concentrates attention at the start of the workweek.

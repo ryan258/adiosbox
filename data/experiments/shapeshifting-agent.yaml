@@ -1,7 +1,8 @@
 slug: shapeshifting-agent
 order: 245
+shelf: team
 title: Shapeshifting agent
-description: Give it a task and it proposes the role, method, and checks it needs. Approve or edit the assignment before it starts.
+description: "Give it a task and it designs its own role, method, and checks. You approve before it starts."
 inputLabel: Task, materials, and what a good answer would accomplish
 placeholder: Describe the deliverable, who will use it, and whatever material the agent can work from…
 maxRequests: 3
@@ -30,7 +31,7 @@ graph:
         and acceptance checks. Treat clarification as user context and keep
         facts tied to the material provided. Say what is unknown when a gap matters.
         Do not claim credentials, outside verification, or actions taken elsewhere.
-        Deliver the artifact itself in plain text, up to 320 words.
+        Deliver the artifact itself in light Markdown, up to 320 words.
     review:
       title: Check the result against the assignment
       prompt: >-
@@ -39,7 +40,7 @@ graph:
         verdict of Pass, Needs work, or Unverifiable and cite one detail from the
         draft or supplied material that explains the verdict. Distinguish facts
         you can verify from judgments about quality. End with the highest-impact
-        fix if one is needed. Plain text, up to 220 words.
+        fix if one is needed. Light Markdown (bold section labels, - bullets), up to 220 words.
 sampleNotes: |-
   Pick one opening clip for a 90-second community-radio piece about a repair café. Give the editor a two-sentence cut note.
   00:12 — Host explains where the event happens and when.

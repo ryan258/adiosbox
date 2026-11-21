@@ -1,7 +1,14 @@
 slug: undo-plan
 order: 120
+shelf: plan
+layout:
+  tones:
+    Trial: act
+    Before starting: good
+    Stop condition: warn
+    Rollback: warn
 title: Undo plan
-description: Find where a decision becomes hard to reverse, then design an exit you can actually use.
+description: "Find the moment a decision gets hard to reverse, then build an exit you’d actually use."
 inputLabel: Proposed change and what you need to preserve
 placeholder: Describe a change, who depends on it, and anything that must survive a rollback…
 instructions: >-
@@ -9,7 +16,7 @@ instructions: >-
   relies on it according to the input, and what would become harder to undo.
   Distinguish technical reversibility from the work of telling people or
   recovering records. Mark unknown dependencies. Do not design rollback yet.
-  Plain text, under 180 words.
+  Light Markdown (bold section labels, - bullets), under 180 words.
 sampleNotes: >-
   Next month the community garden wants to replace its paper watering roster
   with a shared calendar. Two gardeners do not use smartphones. The coordinator
@@ -17,10 +24,10 @@ sampleNotes: >-
   and whether swaps were confirmed.
 stageOne: Find the commitments
 sampleResult: |-
-  • Calendar becomes the source for assignments. The coordinator needs access and gardeners need a dependable way to see their slots.
-  • Replacement removes a channel two gardeners may use. A printed list can preserve access, but it may miss swaps after printing.
-  • Confirmations may accumulate in the calendar. Rolling back without a record could lose swaps or create duplicate assignments.
-  • Unknown: who can export the calendar and who records phone requests.
+  - Calendar becomes the source for assignments. The coordinator needs access and gardeners need a dependable way to see their slots.
+  - Replacement removes a channel two gardeners may use. A printed list can preserve access, but it may miss swaps after printing.
+  - Confirmations may accumulate in the calendar. Rolling back without a record could lose swaps or create duplicate assignments.
+  - Unknown: who can export the calendar and who records phone requests.
 chain:
   title: Write the exit plan
   instructions: >-
@@ -29,7 +36,7 @@ chain:
     backups or exports needed before the trial, then exact rollback actions
     in order, ending with an observable check that work survived. Keep within
     stated resource limits and mark unconfirmed capabilities or owners.
-    Plain text, up to 250 words.
+    Light Markdown (bold section labels, - bullets), up to 250 words.
   sampleResult: |-
     Trial · Use the calendar for two weeks and print the weekly roster for gardeners who need it. Keep one dated change log with confirmed swaps.
     Stop condition · Roll back if a gardener misses a slot because a confirmed swap differed between the calendar and the printed roster.

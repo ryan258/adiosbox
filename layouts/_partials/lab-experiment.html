@@ -16,7 +16,7 @@
     </div>
     <div class="result-actions">
       {{ partial "save-case-button.html" . }}
-      <button class="secondary" data-part="share" type="button">Copy example link</button>
+      <button type="button" class="text-button" data-part="share">Copy link</button>
     </div>
     <p class="status share-status" data-part="share-status" role="status"></p>
   </header>
@@ -30,7 +30,7 @@
         <select id="{{ $slug }}-sample" data-part="prompt-sample">
           {{ range $index, $case := . }}<option value="{{ $index }}">{{ $case.title }}</option>{{ end }}
         </select>
-        <button class="text-button" type="button" data-part="load-prompt-sample">Load sample case</button>
+        <button class="text-button" type="button" data-part="load-prompt-sample">Use this case</button>
         {{ end }}
         <label for="{{ $slug }}-notes">{{ .inputLabel }}</label>
         <textarea id="{{ $slug }}-notes" data-part="notes" rows="6" maxlength="{{ if eq $lab.technique "placement" }}7000{{ else }}3000{{ end }}" placeholder="{{ .placeholder }}">{{ $sampleInput }}</textarea>
@@ -42,7 +42,7 @@
         {{- $prompt := $lab.prompt -}}
         {{- with $lab.graph }}{{ range hugo.Data.experiments }}{{ if eq .slug $lab.graph }}{{ $prompt = .graph.nodes.review.prompt }}{{ end }}{{ end }}{{ end -}}
         <details class="prompt-editor">
-          <summary>See the prompt</summary>
+          <summary>Peek at the prompt</summary>
           <h4>{{ if $lab.graph }}Reviewer prompt, shared with the graph{{ else }}Prompt{{ end }}</h4>
           <p class="result">{{ $prompt }}</p>
           {{ with $lab.dependencyPrompt }}<h4>Dependency map prompt</h4><p class="result">{{ . }}</p>{{ end }}
@@ -52,8 +52,8 @@
         {{ with $lab.roles }}
         <details class="role-models">
           {{ $helpID := printf "%s-model-help" $slug }}
-          <summary>Models by role</summary>
-          <p id="{{ $helpID }}" class="help">Search OpenRouter. A blank role uses the main model.</p>
+          <summary>Pick a model for each role</summary>
+          <p id="{{ $helpID }}" class="help">Blank means your main model from Setup. Search by name or paste a model ID.</p>
           <div class="role-model-grid">
             {{ range . }}
             {{ partial "model-picker.html" (dict "id" (printf "%s-role-model-%s" $slug .key) "label" .label "role" .key "helpID" $helpID "value" .defaultModel) }}
@@ -76,7 +76,7 @@
         </select>
         <label for="{{ $slug }}-edit">Corrected finding</label>
         <textarea id="{{ $slug }}-edit" data-part="repair-text" rows="5" maxlength="3500"></textarea>
-        <p class="help">The other finding, original input, and originally selected merge model carry forward.</p>
+        <p class="help">Everything else stays put: the other finding, your input, and the merge model.</p>
         <button class="primary" type="submit" data-part="repair-run">Rerun merge</button>
       </form>
       {{ end }}
@@ -113,14 +113,19 @@
     </div>
     <section class="output" aria-labelledby="{{ $slug }}-record-heading" data-handoff-output data-handoff-record>
       <div class="label-row">
-        <h3 id="{{ $slug }}-record-heading" data-part="trace-title" data-handoff-title>Written sample</h3>
+        <h3 id="{{ $slug }}-record-heading" data-part="trace-title" data-handoff-title>Worked example</h3>
         <div class="result-actions">
-          <button class="text-button" type="button" data-part="copy-trace">Copy run record</button>
-          <button class="text-button" type="button" data-handoff>Use run record</button>
+          <button class="text-button" type="button" data-part="copy-trace">Copy<span class="visually-hidden"> run record</span></button>
+          <details class="more">
+            <summary>More<span class="visually-hidden"> for the run record</span></summary>
+            <div class="more-panel">
+              <button class="text-button" type="button" data-handoff>Use the whole record in another experiment</button>
+              {{ partial "export-actions.html" (dict "scope" "record" "label" "the run record") }}
+            </div>
+          </details>
         </div>
       </div>
-      {{ partial "export-actions.html" (dict "scope" "record" "label" "run record") }}
-      <ol data-part="trace" class="graph-trace">
+      <ol data-part="trace" class="graph-trace" data-flow="{{ $lab.mode }}">
         {{ range $lab.samples }}
         <li data-handoff-output>
           <h4 data-handoff-title>{{ .title }}</h4>

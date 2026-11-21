@@ -1,7 +1,10 @@
 slug: evidence-audit
 order: 20
+shelf: check
+layout:
+  takeaway: Defensible rewrite
 title: Evidence audit
-description: Put a confident claim next to its sources. See which parts hold up, which conflict, and what you can safely say.
+description: "Line up a confident claim with its sources. Find what holds, what clashes, and what you can safely say."
 inputLabel: Claim and source excerpts
 placeholder: Paste a claim and the excerpts you want to check it against…
 instructions: >-
@@ -12,7 +15,7 @@ instructions: >-
   distinctions such as counts vs rates, correlation vs causation, and plans vs
   completed events. If sources conflict, show the conflict and leave it unresolved.
   Give a defensible rewrite and the most important missing evidence. Never invent
-  quotations, sources, or missing facts. Use plain text, up to 250 words.
+  quotations, sources, or missing facts. Put each claim part on its own line starting “Supported —”, “Contradicted —”, or “Unclear —”, then use the bold section labels Defensible rewrite and Missing evidence. Use light Markdown (bold section labels, - bullets), up to 250 words.
 sampleNotes: |-
   Claim: The library’s newsletter redesign doubled the share of subscribers who clicked the events link.
 
@@ -24,8 +27,8 @@ sampleResult: |-
   Supported — Reported events-link clicks doubled, from “120 clicks” (A) to “240 clicks” (B).
   Unclear — The share of subscribers who clicked. Clicks per subscriber stayed at 6 per 100, but the reports don’t say whether repeat clicks were counted. They also provide no evidence isolating the redesign’s effect.
 
-  Defensible rewrite
+  **Defensible rewrite**
   Events-link clicks doubled in the month the redesign launched, while the number of subscribers also doubled.
 
-  Missing evidence
+  **Missing evidence**
   Get unique clicks and delivered-email counts for both issues. An A/B test would help isolate the redesign’s effect.

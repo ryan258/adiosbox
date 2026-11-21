@@ -1,7 +1,11 @@
 slug: pre-mortem-tripwires
 order: 90
+shelf: plan
+layout:
+  tones:
+    Earliest signal: ask
 title: Pre-mortem with tripwires
-description: Reconstruct how a plan could fail, then translate the failure paths into signals you can act on early.
+description: "Pretend the plan already failed. Work out how, then turn each way it failed into an early warning sign."
 inputLabel: Plan, constraints, and launch date
 placeholder: Describe a plan people are about to put into practice…
 instructions: >-
@@ -27,10 +31,10 @@ chain:
     plausible failure into a simple observable trigger with a check time, response,
     and role to own it, marking proposed thresholds as proposals. Keep total
     monitoring within the stated budget. Drop unsupported specifics and explain
-    one thing the signals would still miss. Plain text, up to 260 words.
+    one thing the signals would still miss. Light Markdown (bold section labels, - bullets), up to 260 words.
   sampleResult: |-
-    • One week out, spend 20 minutes matching essential tools to confirmed owners. If any are unclaimed, ask for a specific loan or remove that repair category from the description.
-    • Two days out, spend 10 minutes checking signups. Proposed trigger: 14 of 18 seats reserved. Explain that remaining seats are first come, first served and plan for overflow.
-    • Two days out, spend 10 minutes confirming a backup opener with access. If no one confirms, arrange access with the library before advertising a firm opening time.
+    - One week out, spend 20 minutes matching essential tools to confirmed owners. If any are unclaimed, ask for a specific loan or remove that repair category from the description.
+    - Two days out, spend 10 minutes checking signups. Proposed trigger: 14 of 18 seats reserved. Explain that remaining seats are first come, first served and plan for overflow.
+    - Two days out, spend 10 minutes confirming a backup opener with access. If no one confirms, arrange access with the library before advertising a firm opening time.
 
     These checks use 40 minutes. They can still miss a last-minute cancellation.

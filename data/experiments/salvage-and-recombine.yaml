@@ -1,7 +1,10 @@
 slug: salvage-and-recombine
 order: 160
+shelf: team
+layout:
+  grid: true
 title: Salvage and recombine
-description: Pull reusable parts out of old work, then assemble one small new project with a traceable source for each part.
+description: "Mine old work for reusable parts, then build one small new thing that credits every piece."
 inputLabel: Old work and one new thing you want to make
 placeholder: List a few notes, drafts, or artifacts and a concrete goal for reusing them…
 instructions: >-
@@ -9,7 +12,7 @@ instructions: >-
   reusable elements, each with its source label, the job it already does,
   and any dependency or permission the input leaves uncertain. Name one
   element to leave out because it does not serve the new goal. Do not build
-  the new artifact yet. Plain text, under 180 words.
+  the new artifact yet. Light Markdown (bold section labels, - bullets), under 180 words.
 sampleNotes: |-
   Goal: Draft a one-page welcome guide for new community-radio volunteers.
   A · An old show outline with on-air handoff cues.
@@ -18,10 +21,10 @@ sampleNotes: |-
   D · An FAQ with advice for a guest who goes quiet on mic.
 stageOne: Inventory reusable parts
 sampleResult: |-
-  • A · Handoff cues. Helps a volunteer know when to speak or pass control. Verify that current shows still use the cues.
-  • B · Studio opening and sound check. Helps volunteers get ready without a trainer. Verify that the equipment still matches.
-  • D · Quiet guest advice. Gives a novice a fallback during a pause. Check that the advice fits current interviewing practice.
-  • Leave out C. The jingle does not help a new volunteer operate the studio, and ownership is unclear.
+  - A · Handoff cues. Helps a volunteer know when to speak or pass control. Verify that current shows still use the cues.
+  - B · Studio opening and sound check. Helps volunteers get ready without a trainer. Verify that the equipment still matches.
+  - D · Quiet guest advice. Gives a novice a fallback during a pause. Check that the advice fits current interviewing practice.
+  - Leave out C. The jingle does not help a new volunteer operate the studio, and ownership is unclear.
 chain:
   title: Assemble a usable draft
   instructions: >-
@@ -30,17 +33,17 @@ chain:
     in the inventory. Tag each reused section with its source label. When
     source details are absent, insert an explicit placeholder instead of
     inventing content. Name the one missing detail or validation step that
-    would most improve the draft. Plain text, up to 250 words.
+    would most improve the draft. Light Markdown (bold section labels, - bullets), up to 250 words.
   sampleResult: |-
     First shift at the studio
 
-    Before you go live [B]
+    **Before you go live [B]**
     Open the studio with [current opening steps]. Run [current sound check] and confirm someone can hear you.
 
-    On-air handoff [A]
+    **On-air handoff [A]**
     Wait for [current cue] before speaking. Use [handoff cue] when passing control to the next host.
 
-    If a guest goes quiet [D]
+    **If a guest goes quiet [D]**
     Use [one recovery line from the FAQ] and allow the guest time to answer.
 
     Confirm first: Have a current operator replace the equipment placeholders using the actual console and document the result.

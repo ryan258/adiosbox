@@ -4,16 +4,22 @@ import { checkFactPair, compareFactChecks, prepareFactInputs, sameFactScenario }
 import { appendRunRecord, runRecordText, setupHandoff } from './handoff.js';
 import { setupLab } from './comparison-lab.js';
 import { setupCallTrace, traceBody } from './call-trace.js';
-import { completionBody } from './completion-options.js';
+import { sourceText } from './markdown.js';
+import { layoutTrace, renderResult } from './layouts.js';
+import {
+  CompletionError, completionBody, describeModel, readCompletion, withFreeRetries,
+} from './completion-options.js';
 
 const local = document.body.hasAttribute('data-local-openrouter');
 const modelIdPattern = /^[\w.-]+\/[\w.:@+-]+$/;
 const endpoint = local ? '/api/complete' : 'https://openrouter.ai/api/v1/chat/completions';
 const model = document.getElementById('model');
 document.querySelectorAll('[data-model-picker]').forEach(setupModelPicker);
+// Format the written samples before any workbench keeps a copy of them.
+document.querySelectorAll('[data-handoff-text]').forEach(element => renderResult(element, element.textContent.trim()));
+document.querySelectorAll('.graph-trace').forEach(layoutTrace);
 
 const key = document.getElementById('api-key');
-const connection = document.getElementById('connection');
 const connectionStatus = document.getElementById('connection-status');
 const experiments = [...document.querySelectorAll('[data-experiment]')];
 const catalogLinks = document.querySelectorAll('.experiment-list a');
@@ -25,15 +31,9 @@ function chooseModel(override, defaultId) {
 }
 
 function revealField(experiment, field) {
-  if (field === key) connection.open = true;
   const details = field.closest('details');
   if (details && experiment.contains(details)) details.open = true;
   field.focus();
-}
-
-function describeModel(requested, reported) {
-  if (!reported) return `Requested ${requested} · OpenRouter did not report the responding model`;
-  return requested === reported ? reported : `Requested ${requested} · Responded with ${reported}`;
 }
 
 function setStatus(element, message, error = false) {
@@ -50,33 +50,12 @@ async function copy(value, status, success, failure) {
   }
 }
 
-function providerError(status) {
-  switch (status) {
-    case 401: return local
-      ? 'OpenRouter rejected the key. Update .env and restart the local playground.'
-      : 'OpenRouter rejected the key. Check it or create a new one.';
-    case 402: return 'OpenRouter requires attention to your account balance or key limit.';
-    case 403: return 'OpenRouter denied the request. Check your account and key settings.';
-    case 429: return 'OpenRouter or the model is rate-limited. Try again in a moment.';
-    case 504: return 'OpenRouter took too long. Try again.';
-    case 502:
-    case 503: return 'The selected model is temporarily unavailable. Try again in a moment.';
-    default: return `OpenRouter returned an error (${status}). Try again or check your account.`;
-  }
+function complete(options) {
+  return withFreeRetries(options.modelId, options.signal, tries => completeOnce(
+    tries ? { ...options, step: `${options.step ?? 'call'} · retry ${tries}` } : options));
 }
 
-function openRouterMessage(text) {
-  try {
-    const message = JSON.parse(text)?.error?.message;
-    return typeof message === 'string' && message.trim() ? `OpenRouter said: ${message.trim().slice(0, 300)}` : '';
-  } catch {
-    return '';
-  }
-}
-
-class CompletionError extends Error {}
-
-async function complete({
+async function completeOnce({
   input, prompt, modelId, apiKey, signal, includeUsage = false, experiment, step, provider, enforceTeachbackSchema,
 }) {
   signal.throwIfAborted();
@@ -99,6 +78,7 @@ async function complete({
     responseText = await response.text();
   } catch (error) {
     finishTrace({ state: signal.aborted ? 'aborted' : 'transport_error', http_status: response?.status ?? null });
+    if (!signal.aborted && error instanceof Error) error.retryable = true;
     throw error;
   }
   let tracedResponse;
@@ -119,38 +99,15 @@ async function complete({
     ...tracedResponse,
   });
   signal.throwIfAborted();
-  if (!response.ok) {
-    if (provider && response.status === 404) {
-      throw new CompletionError(`OpenRouter found no matching endpoint for ${modelId} at ${provider}. Check the provider and its supported parameters.`);
-    }
-    throw new CompletionError([providerError(response.status), openRouterMessage(responseText)].filter(Boolean).join(' '));
+  // The trace's state is the HTTP result; outcome says how the completion itself ended.
+  try {
+    const result = readCompletion(response, responseText, { modelId, provider, includeUsage, local });
+    finishTrace({ outcome: result.truncated ? 'truncated' : 'completed' });
+    return result;
+  } catch (error) {
+    if (!signal.aborted) finishTrace({ outcome: 'failed', error: error.message, retryable: error.retryable === true });
+    throw error;
   }
-
-  const payload = JSON.parse(responseText);
-  signal.throwIfAborted();
-  const choice = payload?.choices?.[0];
-  const content = choice?.message?.content;
-  const reportedModel = typeof payload?.model === 'string' ? payload.model : '';
-  const truncated = choice?.finish_reason === 'length';
-  if (payload?.error || choice?.error || choice?.finish_reason === 'error') {
-    throw new CompletionError(`OpenRouter reported a completion error. ${describeModel(modelId, reportedModel)}. Try again or choose another model.`);
-  }
-  if (typeof content !== 'string' || !content.trim()) {
-    const modelDetails = describeModel(modelId, reportedModel);
-    if (truncated) {
-      throw new CompletionError(`The model reached its token limit before returning an answer. ${modelDetails}. Try a shorter task or choose a non-reasoning model.`);
-    }
-    if (choice?.finish_reason === 'content_filter' || choice?.message?.refusal) {
-      throw new CompletionError(`The model declined to answer. ${modelDetails}. Revise the prompt or input and try again.`);
-    }
-    throw new CompletionError(`OpenRouter returned an empty reply. ${modelDetails}. Try choosing another model.`);
-  }
-  return {
-    content: content.trim(),
-    reportedModel,
-    truncated,
-    usage: includeUsage ? payload.usage : undefined,
-  };
 }
 
 function setupExperiment(experiment) {
@@ -175,12 +132,23 @@ function setupExperiment(experiment) {
     copyStatus: part('copy-status' + suffix),
     handoff: part('result' + suffix).closest('[data-handoff-output]').querySelector('[data-handoff]'),
     label: comparisonStatus && !factTest ? (suffix ? 'B' : 'A') : '',
-    sample: part('result' + suffix).textContent,
+    sample: sourceText(part('result' + suffix)),
     sampleTitle: part('result-title' + suffix).textContent,
     sampleMeta: part('result-meta' + suffix).textContent,
   }));
   let activeRequest;
   let savedCase;
+  // When step 2 fails, its input is kept so the run can pick up there with a different model or prompt.
+  const pickupButton = part('pickup');
+  let pickupState;
+  function clearPickup() {
+    pickupState = undefined;
+    if (pickupButton) pickupButton.hidden = true;
+  }
+  form.addEventListener('input', event => {
+    if (event.target === notes || event.target === variants[0]?.instructions || [...factFields.values()].includes(event.target)) clearPickup();
+  });
+  experiment.addEventListener('input-handoff', clearPickup);
 
   part('load-sample').addEventListener('click', () => {
     const edited = (notes.value.trim() && notes.value !== notes.defaultValue) ||
@@ -190,6 +158,7 @@ function setupExperiment(experiment) {
     }
     notes.value = notes.defaultValue;
     for (const field of factFields.values()) field.value = field.defaultValue;
+    clearPickup();
     notes.focus();
   });
 
@@ -202,15 +171,16 @@ function setupExperiment(experiment) {
 
   for (const variant of variants) {
     variant.copy.addEventListener('click', () => {
-      copy(variant.result.textContent, variant.copyStatus, 'Result copied.', 'Select the result text and copy it.');
+      copy(sourceText(variant.result), variant.copyStatus, 'Result copied.', 'Select the result text and copy it.');
     });
   }
 
   experiment.addEventListener('case-restored', event => {
     savedCase = event.detail;
+    clearPickup();
     for (const variant of variants) {
       variant.snapshot = undefined;
-      variant.result.textContent = variant.sample;
+      renderResult(variant.result, variant.sample);
       variant.title.textContent = variant.sampleTitle;
       variant.meta.textContent = variant.sampleMeta;
       variant.copy.disabled = false;
@@ -246,6 +216,7 @@ function setupExperiment(experiment) {
     event.preventDefault();
     if (activeRequest) return;
 
+    const resuming = Boolean(pickupState) && event.submitter === pickupButton;
     const selected = variants.find(item => item.run === event.submitter) ?? variants[0];
     const run = selected.run;
     const defaultModel = model.value.trim();
@@ -293,6 +264,8 @@ function setupExperiment(experiment) {
     let timeout;
     let step = 0;
     let handoff = input;
+    if (resuming) ({ handoff, factInputs, expectations } = pickupState);
+    clearPickup();
     const buttons = variants.map(variant => variant.run).filter(Boolean);
     const focusOnRun = document.activeElement === run;
     buttons.forEach(button => { button.disabled = true; });
@@ -302,8 +275,9 @@ function setupExperiment(experiment) {
     try {
       for (const { variant, prompt, selection: { id: modelId } } of stages) {
         step += 1;
+        if (resuming && step === 1) continue;
         const { label, result, title, meta, copy: copyButton, copyStatus } = variant;
-        const progress = factTest ? (step === 1 ? 'Running baseline…' : 'Running changed fact…')
+        const progress = resuming ? (factTest ? 'Picking up at the changed case…' : 'Picking up at step 2…') : factTest ? (step === 1 ? 'Running baseline…' : 'Running changed fact…')
           : chain ? `Running step ${step} of ${stages.length}…` : label ? `Running prompt ${label}…` : 'Waiting for OpenRouter…';
         setStatus(runStatus, progress);
         setStatus(copyStatus, '');
@@ -314,7 +288,7 @@ function setupExperiment(experiment) {
         });
         window.clearTimeout(timeout);
 
-        result.textContent = content;
+        renderResult(result, content);
         if (!chain && !factTest) title.textContent = label ? `Result ${label}` : 'Your result';
         meta.textContent = describeModel(modelId, reportedModel);
         copyButton.disabled = false;
@@ -326,7 +300,7 @@ function setupExperiment(experiment) {
 
         if ((chain || factTest) && step === 1) {
           const next = stages[1].variant;
-          next.result.textContent = '';
+          renderResult(next.result, '');
           next.copy.disabled = true;
           next.handoff.disabled = true;
           setStatus(next.copyStatus, '');
@@ -383,8 +357,13 @@ function setupExperiment(experiment) {
       const showFailure = (message, isError = true) => {
         if ((chain || factTest) && step === 2) {
           stages[1].variant.meta.textContent = factTest ? 'The changed case did not finish.' : 'Step 2 did not finish.';
-          const remaining = factTest ? 'The baseline is still available.' : 'Step 1 is still available.';
+          const remaining = factTest ? 'The baseline is kept. Pick a different model if you like, then pick up at the changed case.'
+            : 'Step 1 is kept. Pick a different model for step 2 if you like, then pick up at step 2.';
           setStatus(runStatus, `${message} ${remaining}`, isError);
+          if (request.signal.reason !== 'key-cleared') {
+            pickupState = { handoff, factInputs, expectations };
+            pickupButton.hidden = false;
+          }
         } else {
           setStatus(runStatus, message, isError);
         }
@@ -420,6 +399,8 @@ function setupGraph(experiment) {
   const run = part('run');
   const cancel = part('cancel');
   const choices = part('choices');
+  const pickup = part('pickup');
+  const pickupModel = pickup.querySelector('[data-pickup-model]');
   const orchestrated = spec.mode === 'orchestrated' || spec.mode === 'orchestrated-subgraphs';
   const editableBrief = spec.mode === 'adaptive' || orchestrated;
   const briefFields = ['role', 'deliverable', 'approach', 'checks', 'clarification', ...(orchestrated ? ['stages'] : [])];
@@ -443,6 +424,7 @@ function setupGraph(experiment) {
     setStatus(runStatus, '');
     setStatus(copyStatus, '');
   });
+  experiment.addEventListener('input-handoff', () => { if (active?.failed) finishRun(); });
 
   function record(title, content, respondingModel, requestedModel) {
     const model = requestedModel ? describeModel(requestedModel, respondingModel) : '';
@@ -451,6 +433,7 @@ function setupGraph(experiment) {
 
   function finishRun() {
     choices.hidden = true;
+    pickup.hidden = true;
     run.disabled = false;
     if (cancel === document.activeElement || choices.contains(document.activeElement)) run.focus();
     cancel.hidden = true;
@@ -459,6 +442,10 @@ function setupGraph(experiment) {
 
   function stopRun(message) {
     if (!active) return;
+    if (active.failed) {
+      finishRun();
+      return;
+    }
     active.controller.abort(message);
     if (active.paused) {
       record('Stopped at checkpoint', message);
@@ -506,8 +493,20 @@ function setupGraph(experiment) {
       if (!canceled) active.controller.abort(message);
       record('Graph stopped', message);
       setStatus(runStatus, message, !canceled || message === 'OpenRouter took too long.');
+      // Finished steps are checkpointed, so offer to rerun only the step that failed.
+      const point = message !== 'Run canceled because the key was cleared.' && await active.graph?.pickupPoint().catch(() => null);
+      if (point) {
+        active.failed = point;
+        pickup.querySelector('[data-part="pickup-reason"]').textContent =
+          `It stopped at “${point.title}”. Finished steps are kept, so picking up sends only the unfinished ones.`;
+        pickupModel.value = '';
+        pickup.hidden = false;
+        run.disabled = false;
+        cancel.hidden = true;
+        pickup.querySelector('[data-pickup="go"]').focus();
+      }
     } finally {
-      if (!active.paused) finishRun();
+      if (!active.paused && !active.failed) finishRun();
     }
   }
 
@@ -531,7 +530,8 @@ function setupGraph(experiment) {
 
   part('experiment-form').addEventListener('submit', async event => {
     event.preventDefault();
-    if (active) return;
+    if (active && !active.failed) return;
+    if (active) finishRun();
     const input = notes.value.trim();
     const defaultModel = model.value.trim();
     const modelRoles = spec.roleModels ? spec.roleModels.map(({ key }) => key) : Object.keys(spec.nodes);
@@ -553,7 +553,8 @@ function setupGraph(experiment) {
     }
 
     const controller = new AbortController();
-    active = { controller, paused: false, apiKey };
+    const current = { controller, paused: false, apiKey, roleModels };
+    active = current;
     trace.replaceChildren();
     traceTitle.textContent = 'Run record';
     const modelCount = new Set([...roleModels.values()].map(selection => selection.id)).size;
@@ -571,11 +572,13 @@ function setupGraph(experiment) {
         signal: controller.signal,
         record,
         async complete({ input: nodeInput, prompt, node }) {
-          const modelId = roleModels.get(node).id;
-          const timer = window.setTimeout(() => controller.abort('OpenRouter took too long.'), 60_000);
+          // A pick-up swaps in a new controller, key, and model selection, so read them from the run each call.
+          const modelId = current.roleModels.get(node).id;
+          const { controller: attempt } = current;
+          const timer = window.setTimeout(() => attempt.abort('OpenRouter took too long.'), 60_000);
           try {
             const result = await complete({
-              input: nodeInput, prompt, modelId, apiKey, signal: controller.signal, experiment: experiment.id, step: node,
+              input: nodeInput, prompt, modelId, apiKey: current.apiKey, signal: attempt.signal, experiment: experiment.id, step: node,
             });
             return { ...result, requestedModel: modelId };
           } finally {
@@ -629,6 +632,46 @@ function setupGraph(experiment) {
     setStatus(runStatus, orchestrated ? 'Running the approved chain…'
       : editableBrief ? 'Working from the approved assignment…' : 'Continuing from the checkpoint…');
     await advance(async () => ({ result: await active.graph.resume(selection) }));
+  });
+
+  pickup.addEventListener('click', async event => {
+    const action = event.target.closest('[data-pickup]')?.dataset.pickup;
+    if (!action || !active?.failed) return;
+    if (action === 'stop') {
+      setStatus(runStatus, 'Left as it is. Run the graph to start over.');
+      finishRun();
+      run.focus();
+      return;
+    }
+    const chosen = pickupModel.value.trim();
+    const apiKey = key?.value.trim();
+    if (chosen && !modelIdPattern.test(chosen)) {
+      setStatus(runStatus, 'Choose a model or enter its full OpenRouter ID.', true);
+      pickupModel.focus();
+      return;
+    }
+    if (!local && !apiKey) {
+      revealField(experiment, key);
+      setStatus(runStatus, 'Enter your OpenRouter key to pick up the run.', true);
+      return;
+    }
+    const { failed, roleModels } = active;
+    if (chosen) {
+      const previous = roleModels.get(failed.role)?.id;
+      for (const [role, selection] of roleModels) {
+        if (!failed.role || role === failed.role || selection.id === previous) roleModels.set(role, { ...selection, id: chosen });
+      }
+    }
+    active.apiKey = apiKey;
+    active.controller = new AbortController();
+    active.failed = undefined;
+    pickup.hidden = true;
+    run.disabled = true;
+    cancel.hidden = false;
+    cancel.focus();
+    record('Picked up', chosen ? `Continuing from “${failed.title}” with ${chosen}.` : `Trying “${failed.title}” again with the same model.`);
+    setStatus(runStatus, 'Picking up where it stopped…');
+    await advance(() => active.graph.pickUp(active.controller.signal));
   });
 
   cancel.addEventListener('click', () => stopRun('Run canceled.'));
@@ -706,3 +749,16 @@ window.addEventListener('hashchange', () => {
 });
 
 if (initialExperiment) initialExperiment.scrollIntoView();
+
+// A More menu closes on a click elsewhere, after it hands off to a dialog, or on Escape.
+document.addEventListener('click', event => {
+  for (const menu of document.querySelectorAll('details.more[open]')) {
+    if (!menu.contains(event.target) || event.target.closest('[data-handoff]')) menu.open = false;
+  }
+});
+document.addEventListener('keydown', event => {
+  const menu = event.key === 'Escape' && event.target.closest?.('details.more[open]');
+  if (!menu) return;
+  menu.open = false;
+  menu.querySelector('summary').focus();
+});

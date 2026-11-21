@@ -1,7 +1,8 @@
 slug: the-museum-of-the-missing-hour
 order: 321
+shelf: puzzles
 title: The Museum of the Missing Hour
-description: Build a fair-play mystery around an impossible timestamp, then test whether the audience can solve it before the reveal.
+description: "Build a fair-play mystery around an impossible timestamp. Can the audience solve it before the reveal?"
 inputLabel: Setting, apparent impossibility, clues, and rules for the reveal
 placeholder: Give the audience the evidence they can see and the facts the solution must preserve…
 maxRequests: 7

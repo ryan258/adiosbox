@@ -1,7 +1,8 @@
 slug: blind-model-comparison
 order: 280
+shelf: trial
 title: Blind model comparison
-description: Score two answers before you know who wrote which. Swap their positions and see whether the preference follows the text.
+description: "Score two answers before you know who wrote them. Swap their order and see whether your pick follows the text."
 inputLabel: Shared task
 placeholder: Give both models the exact same task…
 sampleNotes: >-
@@ -10,7 +11,7 @@ sampleNotes: >-
   subscribers and April 240 clicks to 4,000 subscribers.
 lab:
   mode: blind
-  help: Choose two different models. Two requests use the same prompt and input. The answers are shuffled and you can swap them for a second rating before revealing the models.
+  help: "Pick two different models. Both get the same prompt and input, then the answers are shuffled. Rate them, swap their order and rate again, then reveal who wrote what."
   runLabel: Run blind comparison
   prompt: Answer the user's task directly. Preserve the supplied facts and requested constraints.
   roles:

@@ -2,7 +2,7 @@
 {{- $fact := .factTest -}}
 <fieldset class="fact-fields" aria-describedby="{{ $slug }}-fact-help">
   <legend>Fact under test</legend>
-  <p id="{{ $slug }}-fact-help" class="help">Adiosbox substitutes one value at a time. Both runs use the same prompt and requested model.</p>
+  <p id="{{ $slug }}-fact-help" class="help">Only this one value changes between runs. The prompt and model stay the same.</p>
   <div class="fact-grid">
     <div>
       <label for="{{ $slug }}-baseline">Baseline fact</label>
@@ -16,7 +16,7 @@
 </fieldset>
 <fieldset class="fact-fields">
   <legend>Expected behavior</legend>
-  <p class="help">These answers stay in the workbench. Adiosbox compares them with the model outputs after both runs.</p>
+  <p class="help">Your expected answers. They stay here and never go to the model; Adiosbox checks both replies against them.</p>
   <div class="fact-grid">
     <div>
       <label for="{{ $slug }}-baseline-decision">Expected baseline decision</label>

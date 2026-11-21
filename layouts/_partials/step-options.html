@@ -1,5 +1,7 @@
-<details class="step-options">
-  <summary>Step Options</summary>
-  <button type="button" class="text-button" data-handoff>Use this step</button>
-  {{ partial "export-actions.html" (dict "scope" "output" "label" "step") }}
+<details class="more step-more">
+  <summary>More<span class="visually-hidden"> for this step</span></summary>
+  <div class="more-panel">
+    <button type="button" class="text-button" data-handoff>Use this step in another experiment</button>
+    {{ partial "export-actions.html" (dict "scope" "output" "label" "this step") }}
+  </div>
 </details>

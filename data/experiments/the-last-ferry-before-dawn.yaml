@@ -1,7 +1,8 @@
 slug: the-last-ferry-before-dawn
 order: 320
+shelf: puzzles
 title: The Last Ferry Before Dawn
-description: Get an island festival’s crew and guests across the water with tight boarding windows and a possible loss of seats.
+description: "Get a festival crew and guests across the water before dawn, with tight boarding windows and seats that might vanish."
 inputLabel: Passengers, ferry capacities, timing, and possible disruptions
 placeholder: Give the routes, capacities, deadlines, and constraints you want the plan to survive…
 maxRequests: 7

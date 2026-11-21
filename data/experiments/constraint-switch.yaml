@@ -1,7 +1,10 @@
 slug: constraint-switch
 order: 100
+shelf: plan
+layout:
+  grid: true
 title: Constraint switch
-description: Strip a workflow down to what it must accomplish, then rebuild it for a constraint its current design assumes away.
+description: "Strip a workflow down to its job, then rebuild it for a limit it quietly assumes away."
 inputLabel: Current workflow and the constraint to change
 placeholder: Describe the steps you take now and name one condition that will change…
 instructions: >-
@@ -9,7 +12,7 @@ instructions: >-
   choices. For every essential outcome, state how a person would tell it was
   achieved. Identify exactly which implementation choices the new constraint
   invalidates. Separate any assumptions from facts. Do not redesign it yet.
-  Use plain text, up to 180 words.
+  Use light Markdown (bold section labels, - bullets), up to 180 words.
 sampleNotes: >-
   I prepare a weekly project update in one uninterrupted 45-minute session.
   I reread notes, choose one decision and one open question, edit the update
@@ -17,17 +20,17 @@ sampleNotes: >-
   three five-minute slots and can dictate, but typing is difficult.
 stageOne: Find what must survive
 sampleResult: |-
-  Essential outcomes
-  • One decision and one open question are recoverable from the update.
-  • The draft fits 150 words and has a saved location for human review.
+  **Essential outcomes**
+  - One decision and one open question are recoverable from the update.
+  - The draft fits 150 words and has a saved location for human review.
 
-  Current dependencies
-  • Project notes contain or point to the decision and question.
-  • The author can reread, edit, and save in one uninterrupted sitting.
+  **Current dependencies**
+  - Project notes contain or point to the decision and question.
+  - The author can reread, edit, and save in one uninterrupted sitting.
 
-  Choices the constraint invalidates
-  • Reviewing all notes at once.
-  • Relying on detailed keyboard editing to compress the draft.
+  **Choices the constraint invalidates**
+  - Reviewing all notes at once.
+  - Relying on detailed keyboard editing to compress the draft.
 chain:
   title: Rebuild the workflow
   instructions: >-
@@ -36,7 +39,7 @@ chain:
     from the map unless it conflicts with the original. Give the shortest
     sequence of actions, state what is saved after each interruptible unit,
     and name one observable acceptance check. Mark any required tool
-    capability as an assumption. Plain text, up to 250 words.
+    capability as an assumption. Light Markdown (bold section labels, - bullets), up to 250 words.
   sampleResult: |-
     Slot 1 · Dictate the decision and question into the draft. Save with the project name and week.
     Slot 2 · Ask for a 150-word version using only those two items and the linked notes. Save it in the same draft.

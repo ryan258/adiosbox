@@ -1,7 +1,8 @@
 slug: the-regression-you-would-miss
 order: 220
+shelf: plan
 title: The regression you’d miss
-description: Compare the proposed upgrade’s gains with the useful accidents of the old process. Turn the gap into a release check.
+description: "An upgrade fixes things. Which useful accidents of the old way would quietly vanish? Turn that into a release check."
 inputLabel: Old workflow, proposed replacement, and who uses it
 placeholder: Describe a tool or process you are replacing and what people do with it now…
 maxRequests: 3
@@ -35,7 +36,7 @@ graph:
         and the other should catch a consequential loss for a specific person.
         Give a test task and a visible pass condition. If the new workflow
         needs a small change, suggest one without assuming features it has.
-        Plain text, up to 210 words.
+        Light Markdown (bold section labels, - bullets), up to 210 words.
 sampleTrace:
   - title: Find the upgrade’s gain
     text: Assigned owners and due dates let someone identify pending actions without reading multiple meeting notes.

@@ -1,7 +1,10 @@
 slug: examples-to-acceptance-tests
 order: 130
+shelf: plan
+layout:
+  grid: true
 title: Examples to acceptance tests
-description: Infer the rules hiding inside a few examples, then generate tests that expose what still needs a decision.
+description: "Pull the hidden rules out of a few examples, then write tests that show what’s still undecided."
 inputLabel: Examples with observed or expected outcomes
 placeholder: Paste a few cases, including what happened or should happen in each…
 instructions: >-
@@ -9,7 +12,7 @@ instructions: >-
   the example that supports it and distinguish stated requirements from
   guesses based on a pattern. Flag conflicting outcomes and one boundary
   that none of the examples settles. Use short example labels or make labels
-  from their order. Plain text, under 180 words.
+  from their order. Light Markdown (bold section labels, - bullets), under 180 words.
 sampleNotes: |-
   A · A member cancels exactly 24 hours before a class: full credit.
   B · A member cancels 3 hours before: no credit.
@@ -17,10 +20,10 @@ sampleNotes: |-
   D · A member cancels 25 hours before a sold-out class: full credit.
 stageOne: Infer the rules
 sampleResult: |-
-  • Member cancellation at or above 24 hours appears eligible. A and D support that reading.
-  • Member cancellation at 3 hours is ineligible in B. The examples do not establish what happens just under 24 hours.
-  • Instructor cancellation earns full credit at 2 hours in C. A universal instructor exception is plausible but still inferred.
-  • D does not establish whether sold-out status matters because it already meets the apparent time threshold.
+  - Member cancellation at or above 24 hours appears eligible. A and D support that reading.
+  - Member cancellation at 3 hours is ineligible in B. The examples do not establish what happens just under 24 hours.
+  - Instructor cancellation earns full credit at 2 hours in C. A universal instructor exception is plausible but still inferred.
+  - D does not establish whether sold-out status matters because it already meets the apparent time threshold.
 chain:
   title: Turn uncertainty into tests
   instructions: >-
@@ -29,9 +32,9 @@ chain:
     exact known boundary, a near-boundary case, a precedence case, and one
     missing or conflicting fact. Label outcomes confirmed only if supplied
     examples settle them. For unsettled outcomes write “Needs decision” and
-    state the choice the owner must make. Plain text, up to 250 words.
+    state the choice the owner must make. Light Markdown (bold section labels, - bullets), up to 250 words.
   sampleResult: |-
-    • Given a member booking, when the member cancels exactly 24 hours before the class, then grant full credit. Confirmed by A.
-    • Given a member booking, when the member cancels 23 hours and 59 minutes before class, then needs decision. Is 24 hours a hard threshold?
-    • Given an active booking, when the instructor cancels 2 hours before class, then grant full credit. Confirmed by C.
-    • Given a sold-out class, when a member cancels 3 hours before and a waitlisted member takes the slot, then needs decision. Does filling a seat override the apparent late-cancellation rule?
+    - Given a member booking, when the member cancels exactly 24 hours before the class, then grant full credit. Confirmed by A.
+    - Given a member booking, when the member cancels 23 hours and 59 minutes before class, then needs decision. Is 24 hours a hard threshold?
+    - Given an active booking, when the instructor cancels 2 hours before class, then grant full credit. Confirmed by C.
+    - Given a sold-out class, when a member cancels 3 hours before and a waitlisted member takes the slot, then needs decision. Does filling a seat override the apparent late-cancellation rule?

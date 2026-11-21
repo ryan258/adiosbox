@@ -1,7 +1,8 @@
 slug: release-or-rehearse
 order: 240
+shelf: plan
 title: Release or rehearse
-description: Get a readiness assessment, then choose whether to turn it into a release checklist or a small rehearsal.
+description: "Get a readiness check, then choose: a release checklist, or a small practice run first."
 inputLabel: Change you want to introduce and current readiness
 placeholder: Describe what will change, who will depend on it, and what you have already tested…
 maxRequests: 2

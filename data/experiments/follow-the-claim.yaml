@@ -1,7 +1,8 @@
 slug: follow-the-claim
 order: 270
+shelf: check
 title: Follow the claim
-description: Carry source labels and exact quotes through a rewrite. See which evidence survived and where the rewritten claims need another look.
+description: "Carry sources and exact quotes through a rewrite. See which evidence made it and which claims drifted."
 inputLabel: Source excerpts, each beginning with a label such as [A]
 placeholder: Paste labeled source excerpts, one source block after another…
 sampleNotes: |-
@@ -10,7 +11,7 @@ sampleNotes: |-
   [C] The organizer proposed a second pilot for June.
 lab:
   mode: evidence
-  help: Two model requests extract and rewrite claims. A code check looks for each quote in the named excerpt and checks whether the quote came from the first pass. Read each quote to judge whether it supports the claim.
+  help: "Two calls: one pulls out the claims, one rewrites them. Then code checks that each quote really sits in the excerpt it names and came from the first pass. Whether a quote actually supports its claim is your call."
   runLabel: Trace claims
   roles:
     - { key: extract, label: Extract claims }

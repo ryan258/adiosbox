@@ -20,104 +20,82 @@
   <a class="skip-link" href="#experiments">Skip to experiments</a>
   <header class="site-header">
     <div class="shell header-inner">
-      <a class="wordmark" href="{{ .RelPermalink }}"><img src="{{ "mark.svg" | relURL }}" alt="" width="32" height="32"> Adiosbox</a>
+      <a class="wordmark" href="{{ .RelPermalink }}"><img src="{{ "mark.svg" | relURL }}" alt="" width="32" height="32"> <span class="wordmark-text">Adiosbox</span></a>
       <div class="header-actions">
         <button class="text-button header-link" type="button" id="call-trace-open" aria-haspopup="dialog">Call trace</button>
+        <a class="header-link" href="#setup">Setup</a>
         <a class="header-link" href="#experiments">Experiments</a>
       </div>
     </div>
   </header>
   <main class="shell">
     <section class="intro" aria-labelledby="page-title">
-      <h1 id="page-title">Ryan’s AI playground<span>.</span></h1>
-      <p>Open an experiment, see the prompt behind it, and run it with {{ if $local }}your local OpenRouter key{{ else }}your own OpenRouter key{{ end }}.</p>
+      <div>
+        <h1 id="page-title">Ryan’s AI playground<span>.</span></h1>
+        <p>Small AI experiments you can poke at. Each one comes with a worked example, so you can see the trick before spending a single call.</p>
+      </div>
+      <dl class="title-block">
+        <div><dt>Experiments</dt><dd class="title-count">{{ len $experiments }}</dd></div>
+        <div><dt>To read</dt><dd>Free, no key needed</dd></div>
+        <div><dt>To run</dt><dd>{{ if $local }}Your local key{{ else }}Your OpenRouter key, never saved{{ end }}</dd></div>
+      </dl>
     </section>
 
     <nav id="experiments" class="catalog" aria-labelledby="catalog-title">
-      <h2 id="catalog-title">Experiments</h2>
-      <ul class="experiment-list">
-        {{ range $experiments }}
-        {{ if and (not .chain) (not .graph) (not .lab) }}
-        <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
-        {{ end }}
-        {{ end }}
-      </ul>
-      <h2 id="chains" class="chain-heading">Two-step chains</h2>
-      <ul class="experiment-list">
-        {{ range $experiments }}
-        {{ if .chain }}
-        <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
-        {{ end }}
-        {{ end }}
-      </ul>
-      <h2 id="graphs" class="chain-heading">LangGraph experiments</h2>
-      <ul class="experiment-list">
-        {{ range $experiments }}
-        {{ if and .graph (ne .graph.mode "tree") }}
-        <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
-        {{ end }}
-        {{ end }}
-      </ul>
-      <h2 id="tree-of-thought" class="chain-heading">Tree of Thought experiments</h2>
-      <ul class="experiment-list">
-        {{ range $experiments }}
-        {{ if and .graph (eq .graph.mode "tree") }}
-        <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
-        {{ end }}
-        {{ end }}
-      </ul>
-      <h2 id="comparison-lab" class="chain-heading">Comparison lab</h2>
-      <ul class="experiment-list">
-        {{ range $experiments }}
-        {{ if and .lab (ne .lab.mode "prompt") }}
-        <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
-        {{ end }}
-        {{ end }}
-      </ul>
-      <h2 id="prompting-techniques" class="chain-heading">Prompting techniques</h2>
-      <ul class="experiment-list">
-        {{ range $experiments }}
-        {{ if and .lab (eq .lab.mode "prompt") }}
-        <li><a href="#{{ .slug }}"><strong>{{ .title }}</strong><span>{{ .description }}</span></a></li>
-        {{ end }}
-        {{ end }}
-      </ul>
+      <h2 id="catalog-title" class="visually-hidden">Experiments</h2>
+      <section class="start-here" aria-labelledby="start-here-title">
+        <h3 id="start-here-title">New here? Start with one of these</h3>
+        <ul class="experiment-list">
+          {{ range hugo.Data.shelves.startHere }}{{ with index (where $experiments "slug" .) 0 }}
+          <li>{{ partial "catalog-card.html" . }}</li>
+          {{ end }}{{ end }}
+        </ul>
+      </section>
+      {{ range $index, $shelf := hugo.Data.shelves.shelves }}
+      {{ $items := where $experiments "shelf" $shelf.key }}
+      <section class="shelf" aria-labelledby="shelf-{{ $shelf.key }}">
+        <h3 id="shelf-{{ $shelf.key }}"><span class="shelf-number" aria-hidden="true">{{ add $index 1 }}</span> {{ $shelf.title }} <span class="shelf-count">{{ len $items }}</span></h3>
+        <p class="shelf-blurb">{{ $shelf.blurb }}</p>
+        <ul class="experiment-list">
+          {{ range $items }}<li>{{ partial "catalog-card.html" . }}</li>{{ end }}
+        </ul>
+      </section>
+      {{ end }}
     </nav>
 
-    {{ partial "model-picker.html" (dict "id" "model" "label" "Model" "helpID" "model-help") }}
-
-    {{ if $local }}
-    <p class="help local-connection">Using your local OpenRouter key. Each run sends your input and prompt to OpenRouter.</p>
-    {{ else }}
-    <details class="connection" id="connection">
-      <summary>OpenRouter connection</summary>
-      <div class="connection-fields">
+    <section class="setup" id="setup" aria-labelledby="setup-title">
+      <h2 id="setup-title">Your setup</h2>
+      <p class="help">{{ if $local }}Your local key is ready. Pick a model and run anything.{{ else }}You only need this to run your own input. The worked examples are free to read.{{ end }}</p>
+      <div class="setup-grid">
+        {{ partial "model-picker.html" (dict "id" "model" "label" "Model" "helpID" "model-help") }}
+        {{ if not $local }}
+        <div class="connection" id="connection">
           <div class="label-row key-label">
-            <label for="api-key">OpenRouter API key</label>
+            <label for="api-key">OpenRouter key</label>
             <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">Get a key</a>
           </div>
           <div class="key-row">
             <input id="api-key" type="password" maxlength="512" autocomplete="off" autocapitalize="off" spellcheck="false" required aria-describedby="key-help">
-            <button class="secondary" type="button" id="clear-key">Clear key</button>
+            <button class="secondary" type="button" id="clear-key">Clear</button>
           </div>
-          <p id="key-help" class="help">Use the same key across experiments. It stays on this page until you reload or clear it. Each run sends your key, input, and prompt directly to OpenRouter.</p>
-
-        <p id="connection-status" class="status" role="status"></p>
+          <p id="key-help" class="help">Kept on this page only, never saved. Gone when you reload or clear it. A run sends your key, input, and prompt straight to OpenRouter.</p>
+          <p id="connection-status" class="status" role="status"></p>
+        </div>
+        {{ end }}
       </div>
-    </details>
-    {{ end }}
+    </section>
 
     {{ if $local }}{{ partial "case-library.html" . }}{{ end }}
 
     {{ range $experiments }}
       {{ if .lab }}{{ partial "lab-experiment.html" . }}{{ else if .graph }}{{ partial "graph-experiment.html" . }}{{ else }}{{ partial "experiment.html" . }}{{ end }}
     {{ end }}
-    <p class="back-to-catalog"><a href="#experiments">Back to experiments</a></p>
+    <p class="back-to-catalog"><a href="#experiments">← All experiments</a></p>
     <dialog id="call-trace" class="handoff call-trace" aria-labelledby="call-trace-title" aria-describedby="call-trace-help">
       <h2 id="call-trace-title">OpenRouter call trace</h2>
-      <p id="call-trace-help" class="help">The last 20 calls on this page, including prompts and replies. Authorization headers are excluded.</p>
+      <p id="call-trace-help" class="help">The raw conversation behind your last 20 calls: every prompt, reply, and retry. Your key is never included.</p>
       <label for="call-trace-json">Request and response JSON</label>
-      <textarea id="call-trace-json" rows="16" readonly spellcheck="false" placeholder="Run an experiment to see its calls."></textarea>
+      <textarea id="call-trace-json" rows="16" readonly spellcheck="false" placeholder="Nothing yet. Run an experiment and its calls show up here."></textarea>
       <div class="actions">
         <button class="secondary" type="button" id="call-trace-close" autofocus>Close</button>
         <button class="secondary" type="button" id="call-trace-copy">Copy JSON</button>

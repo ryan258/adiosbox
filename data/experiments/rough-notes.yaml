@@ -1,26 +1,31 @@
 slug: rough-notes
 title: Rough notes to next steps
-description: Paste a messy note or a voice transcript. Get a short action list and one thing you can do next.
+description: "Dump a messy note or voice memo. Get a short to-do list and the one thing to do first."
 instructions: >-
   Turn the user's rough notes into a short plan. Use these headings: Summary, Actions,
   and Start here. Keep the summary to one sentence. List up to five concrete actions.
   Mention deadlines and owners only when the notes provide them. Mark unclear
   decisions as questions. Under Start here, suggest one small action the user can
-  do first. Use plain text.
+  do first. Use light Markdown (bold section labels, - bullets).
 sampleNotes: >-
   Cookout Saturday. If it rains we can move indoors. Ask Jo if she can bring extra
   chairs. Need buns by Friday. Check the forecast and make the indoor call by noon Saturday.
 sampleResult: |-
-  Summary
+  **Summary**
   Saturday’s cookout will move indoors if it rains.
 
-  Actions
-  • Text Jo to ask whether she can bring extra chairs.
-  • Pick up the buns by Friday.
-  • Check the forecast and make the indoor call by noon Saturday.
+  **Actions**
+  - Text Jo to ask whether she can bring extra chairs.
+  - Pick up the buns by Friday.
+  - Check the forecast and make the indoor call by noon Saturday.
 
-  Start here
+  **Start here**
   Text Jo about the chairs.
 order: 40
+shelf: handoff
+layout:
+  lead: Summary
+  pin: Start here
+  checklist: Actions
 inputLabel: Your notes
 placeholder: Paste or dictate a few rough notes…

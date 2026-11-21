@@ -1,6 +1,6 @@
 {{- $slug := .slug -}}
 {{- $orchestrated := or (eq .graph.mode "orchestrated") (eq .graph.mode "orchestrated-subgraphs") -}}
-<p class="help">{{ if $orchestrated }}Edit the orchestrator and its jobs before the run. {{ if eq .graph.mode "orchestrated-subgraphs" }}Each specialist uses one request to choose its role and one to do its job. Final assembly uses one request.{{ else }}Each job and the final assembly use one request.{{ end }}{{ else }}Edit the assignment as needed. Using it sends two more requests, one to do the work and one to review it.{{ end }}</p>
+<p class="help">{{ if $orchestrated }}Tweak the plan before anything runs. {{ if eq .graph.mode "orchestrated-subgraphs" }}Each specialist uses one call to pick a role and one to do the job, plus one call to put it all together.{{ else }}Each job is one call, plus one to put it all together.{{ end }}{{ else }}Edit the assignment however you like. Approving it uses two more calls: one does the work, one reviews it.{{ end }}</p>
 <label for="{{ $slug }}-role">{{ if $orchestrated }}Orchestrator role{{ else }}Role{{ end }}</label>
 <input id="{{ $slug }}-role" data-part="agent-role" type="text" maxlength="100">
 <label for="{{ $slug }}-deliverable">Deliverable</label>

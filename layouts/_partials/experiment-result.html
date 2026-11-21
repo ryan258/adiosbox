@@ -1,13 +1,18 @@
         <section class="output" data-handoff-output aria-labelledby="{{ .slug }}-result-title{{ .suffix }}">
           <div class="label-row">
-            <h3 data-handoff-title id="{{ .slug }}-result-title{{ .suffix }}" data-part="result-title{{ .suffix }}">{{ if .heading }}{{ .heading }}{{ else }}Sample result{{ with .label }} {{ . }}{{ end }}{{ end }}</h3>
+            <h3 data-handoff-title id="{{ .slug }}-result-title{{ .suffix }}" data-part="result-title{{ .suffix }}">{{ if .heading }}{{ .heading }}{{ else }}Worked example{{ with .label }} {{ . }}{{ end }}{{ end }}</h3>
             <div class="result-actions">
-              <button type="button" class="text-button" data-part="copy-result{{ .suffix }}">Copy result{{ with .label }} {{ . }}{{ end }}</button>
-              <button type="button" class="text-button" data-handoff>Use in another experiment</button>
+              <button type="button" class="text-button" data-part="copy-result{{ .suffix }}">Copy<span class="visually-hidden"> result{{ with .label }} {{ . }}{{ end }}</span></button>
+              <details class="more">
+                <summary>More<span class="visually-hidden"> for result{{ with .label }} {{ . }}{{ end }}</span></summary>
+                <div class="more-panel">
+                  <button type="button" class="text-button" data-handoff>Use in another experiment</button>
+                  {{ partial "export-actions.html" (dict "scope" "output" "label" "this result") }}
+                </div>
+              </details>
             </div>
           </div>
-          <p data-part="result-meta{{ .suffix }}" data-handoff-model class="help">{{ if .sampleNote }}{{ .sampleNote }}. No key needed.{{ else if .heading }}Sample output for step {{ .label }}. No key needed.{{ else }}Written for the sample input. No key needed.{{ end }}</p>
+          <p data-part="result-meta{{ .suffix }}" data-handoff-model class="help">{{ if .sampleNote }}{{ .sampleNote }}. Free to read.{{ else if .heading }}What step {{ .label }} might say about the sample. Free to read.{{ else }}What a good answer to the sample looks like. Free to read.{{ end }}</p>
           <div data-part="result{{ .suffix }}" class="result" data-handoff-text tabindex="0" aria-labelledby="{{ .slug }}-result-title{{ .suffix }}">{{ .sample }}</div>
-          {{ partial "export-actions.html" (dict "scope" "output" "label" "result") }}
           <p class="status" data-part="copy-status{{ .suffix }}" role="status"></p>
         </section>

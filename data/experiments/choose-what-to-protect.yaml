@@ -1,7 +1,8 @@
 slug: choose-what-to-protect
 order: 230
+shelf: plan
 title: Choose what to protect
-description: Let the model make a trade-off visible. Choose what matters most before the graph drafts the plan.
+description: "The model lays out the trade-off. You pick what matters most, then it drafts the plan."
 inputLabel: A decision with two needs in tension
 placeholder: Describe the choice, what is scarce, and who bears the cost…
 maxRequests: 2

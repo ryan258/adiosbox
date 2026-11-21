@@ -1,7 +1,8 @@
 slug: the-festival-with-one-pair-of-hands
 order: 323
+shelf: puzzles
 title: The Festival With One Pair of Hands
-description: Design a one-person premiere that still works when your second work block disappears.
+description: "Plan a one-person premiere that still works when your second block of time disappears."
 inputLabel: Premiere, must-have pieces, available time, and interruption risk
 placeholder: Describe what the audience needs, what’s ready, and how much effort you can count on…
 maxRequests: 7

@@ -1,7 +1,8 @@
 slug: teachback-loop
 order: 190
+shelf: handoff
 title: Teachback loop
-description: Ask a simulated novice to explain the idea back. The explanation gets one repair if the learner misses a key distinction.
+description: "A pretend beginner explains your idea back. If they miss the key point, the explanation gets one repair."
 inputLabel: Idea, audience, and what the audience should be able to do
 placeholder: Name a concept and how you would know the listener understood it…
 maxRequests: 4

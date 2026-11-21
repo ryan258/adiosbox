@@ -1,7 +1,8 @@
 slug: claim-release-gate
 order: 170
+shelf: check
 title: Claim release gate
-description: Give a draft claim a route it has to earn. Keep it, narrow it, or stop with the one missing piece of evidence.
+description: "A draft claim has to earn its way out: kept, narrowed, or stopped with the one missing piece of evidence."
 inputLabel: Proposed claim and labeled evidence
 placeholder: Paste one claim and what you can actually cite…
 maxRequests: 2

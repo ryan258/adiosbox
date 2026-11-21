@@ -1,14 +1,15 @@
 slug: bury-the-deciding-fact
 order: 331
+shelf: trial
 title: Bury the Deciding Fact
-description: Move one decisive source from the middle of a packet to the end and see if the archive label changes.
+description: "Move the deciding source from the middle of a pile to the end. Does the answer change?"
 inputLabel: Source packet with one {{fact}} marker between excerpts
 placeholder: Put {{fact}} on a line between the excerpts…
 lab:
   mode: prompt
   technique: placement
   runLabel: Compare fact placement
-  help: Two calls with the same prompt and excerpts. The decisive excerpt appears once per call. Only its position changes.
+  help: "Two calls, same prompt, same excerpts. The deciding excerpt shows up once in each. Only its position moves."
   roles:
     - key: comparison
       label: Model used for both placements

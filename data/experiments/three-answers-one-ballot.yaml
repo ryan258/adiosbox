@@ -1,14 +1,15 @@
 slug: three-answers-one-ballot
 order: 333
+shelf: trial
 title: Three Answers, One Ballot
-description: Compare the first answer to a logic puzzle with the majority vote across three independent calls.
+description: "Ask a logic puzzle three times and take a vote. Does the crowd beat the first answer?"
 inputLabel: Logic puzzle with answers labeled A through D
 placeholder: Paste a puzzle with exactly one correct letter…
 lab:
   mode: prompt
   technique: ballot
   runLabel: Run the ballot
-  help: Three fresh calls use the same model and prompt. The first response is the single-call baseline and also casts a vote. At least two of the three attempts must agree for a majority.
+  help: "Three fresh calls, same model and prompt. The first answer is the solo baseline and also casts a vote. A majority needs at least two of the three to agree."
   roles:
     - key: comparison
       label: Model used for all three attempts

@@ -1,7 +1,8 @@
 slug: the-long-lost-broadcast
 order: 322
+shelf: puzzles
 title: The Long-Lost Broadcast
-description: Reconstruct a fictional midnight broadcast from an off-air recording, a station log, and a conflicting tape label.
+description: "Piece together a midnight radio broadcast from a scratchy recording, a station log, and a tape label that disagrees."
 inputLabel: Source excerpts, what conflicts, and the claim you need to publish
 placeholder: Paste numbered sources and the historical claim you want the archive to support…
 maxRequests: 7

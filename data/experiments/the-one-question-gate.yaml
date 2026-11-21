@@ -1,7 +1,8 @@
 slug: the-one-question-gate
 order: 180
+shelf: handoff
 title: The one-question gate
-description: Make a brief earn a draft. The graph can spend its second call on one clarifying question instead.
+description: "The model writes a draft, or spends its turn on one good clarifying question if the brief is too thin."
 inputLabel: Brief for the thing you want made
 placeholder: Describe the deliverable, audience, and constraints you know…
 maxRequests: 2

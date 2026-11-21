@@ -1,14 +1,15 @@
 slug: solve-the-dependencies-first
 order: 332
+shelf: plan
 title: Solve the Dependencies First
-description: Compare a one-pass museum installation schedule with a schedule that starts from a dependency map.
+description: "Plan a museum install in one pass, then again starting from what depends on what. Which schedule holds up?"
 inputLabel: Installation jobs and deadline in minutes
 placeholder: Load a sample with job IDs, durations, resources, and prerequisites…
 lab:
   mode: prompt
   technique: dependencies
   runLabel: Compare schedules
-  help: Three calls. The same model schedules with and without a dependency map. The page checks deadlines, prerequisites, and shared resources using the supplied job durations.
+  help: "Three calls, same model, with and without a dependency map. The page checks deadlines, prerequisites, and shared resources against the job durations you gave it."
   roles:
     - key: comparison
       label: Model used for all three calls

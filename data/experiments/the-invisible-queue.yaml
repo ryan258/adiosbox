@@ -1,7 +1,8 @@
 slug: the-invisible-queue
 order: 210
+shelf: explain
 title: The invisible queue
-description: Investigate the people who disappear before a service records them, alongside what the staff can actually observe.
+description: "Find the people who give up before a service ever counts them, using only what staff can actually see."
 inputLabel: A workflow and the numbers you already track
 placeholder: Explain what people try to do, where the process starts, and which events show up in reports…
 maxRequests: 3

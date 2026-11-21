@@ -1,7 +1,11 @@
 slug: practice-the-interruption
 order: 150
+shelf: handoff
+layout:
+  tones:
+    Bridge: act
 title: Practice the interruption
-description: Identify where a reasonable listener would stop your explanation, then rehearse answering and getting back on track.
+description: "Find where a listener would cut you off, then rehearse answering and finding your way back."
 inputLabel: What you plan to say and who will hear it
 placeholder: Paste an explanation and describe the audience and decision at stake…
 instructions: >-
@@ -9,16 +13,16 @@ instructions: >-
   For each, quote the phrase that triggers the interruption, infer the
   missing fact or concern, and write one plausible question in the listener's
   own voice. Keep guesses conditional. Do not write answers yet.
-  Plain text, under 170 words.
+  Light Markdown (bold section labels, - bullets), under 170 words.
 sampleNotes: >-
   I’ll tell the library board: “We’re replacing the weekly kids’ craft
   signup with a monthly lottery. It will be fairer. We’ll keep a few seats
   for late arrivals.” The board has to say yes or no this evening.
 stageOne: Locate the interruption
 sampleResult: |-
-  • “Monthly lottery” · “Does a family apply once per month or again for every session?”
-  • “It will be fairer” · “Fairer for whom? What problem with the current system are we trying to solve?”
-  • “A few seats” · “How many, and who decides if a late arrival gets one?”
+  - “Monthly lottery” · “Does a family apply once per month or again for every session?”
+  - “It will be fairer” · “Fairer for whom? What problem with the current system are we trying to solve?”
+  - “A few seats” · “How many, and who decides if a late arrival gets one?”
 chain:
   title: Rehearse the recovery
   instructions: >-

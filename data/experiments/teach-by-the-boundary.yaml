@@ -1,14 +1,15 @@
 slug: teach-by-the-boundary
 order: 330
+shelf: trial
 title: Teach by the Boundary
-description: See whether examples that straddle a decision teach it better than two straightforward examples.
+description: "Do examples right on the edge of a rule teach it better than two easy ones? Let the scores decide."
 inputLabel: Announcement brief
 placeholder: Describe the start time and whether the organizer approved publication…
 lab:
   mode: prompt
   technique: boundary
   runLabel: Compare example sets
-  help: Two calls with the same model, rule, and brief. Each prompt has two examples. Use the deciding phrase to check the question, and read paraphrases yourself.
+  help: "Two calls, same model, rule, and brief. Each prompt gets two examples. The deciding phrase checks the question for you; paraphrases are yours to judge."
   roles:
     - key: comparison
       label: Model used for both prompts

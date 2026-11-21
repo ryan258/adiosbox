@@ -1,7 +1,8 @@
 slug: what-does-the-better-model-buy
 order: 300
+shelf: trial
 title: What does the better model buy?
-description: Change only the reviewer in a teachback graph and compare what it caught, how long it took, and what OpenRouter reported.
+description: "Swap only the reviewer model. Compare what it caught, how long it took, and what OpenRouter reported."
 inputLabel: Idea and how you want a learner to explain it back
 placeholder: Supply a teaching task with at least one concrete distinction to check…
 sampleNotes: >-
@@ -11,7 +12,7 @@ sampleNotes: >-
 lab:
   mode: cost
   graph: teachback-loop
-  help: Choose two different reviewer IDs. Both graphs review the same first draft. Each can revise once with the same writer model, for up to seven requests total. Timing and usage describe this run.
+  help: "Pick two different reviewer models. Both review the same first draft, and each can send it back once to the same writer. Up to seven calls in all. Timing and usage describe this run only."
   runLabel: Compare reviewers
   roles:
     - { key: writer, label: Shared writer }

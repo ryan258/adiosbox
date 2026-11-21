@@ -25,7 +25,7 @@
     </div>
     <div class="result-actions">
       {{ partial "save-case-button.html" . }}
-      <button type="button" class="secondary" data-part="share">Copy example link</button>
+      <button type="button" class="text-button" data-part="share">Copy link</button>
     </div>
     <p data-part="share-status" class="status share-status" role="status"></p>
   </header>
@@ -35,7 +35,7 @@
       <textarea data-part="spec" hidden>{{ $graph | jsonify }}</textarea>
       <div class="label-row">
         <label for="{{ .slug }}-notes">{{ .inputLabel }}</label>
-        <button class="text-button" type="button" data-part="load-sample">Load sample input</button>
+        <button class="text-button" type="button" data-part="load-sample">Use the sample</button>
       </div>
       <textarea id="{{ .slug }}-notes" data-part="notes" rows="6" maxlength="{{ if $orchestrated }}2400{{ else }}3000{{ end }}" required placeholder="{{ .placeholder }}">{{ .sampleNotes }}</textarea>
       {{ if eq $graph.mode "ledger" }}
@@ -43,7 +43,7 @@
       <input id="{{ .slug }}-minutes" data-part="minutes" type="number" min="1" max="720" step="1" value="{{ .sampleMinutes }}">
       {{ end }}
       <details class="prompt-editor">
-        <summary>How the graph works</summary>
+        <summary>How this graph thinks</summary>
         <p class="help">{{ .method }}</p>
         {{ range $nodeOrder }}{{ with index $graph.nodes . }}
         <details class="graph-node-prompt">
@@ -54,8 +54,8 @@
       </details>
       {{ $modelHelp := printf "%s-role-model-help" .slug }}
       <details class="role-models" data-part="role-models">
-        <summary>Models by role</summary>
-        <p id="{{ $modelHelp }}" class="help">Leave a role blank to use the main model. The graph keeps these selections if it pauses for your choice.</p>
+        <summary>Pick a model for each role</summary>
+        <p id="{{ $modelHelp }}" class="help">Blank means your main model from Setup. If the graph pauses for you, it keeps these picks.</p>
         <div class="role-model-grid">
           {{ if $graph.roleModels }}
           {{ range $graph.roleModels }}
@@ -68,9 +68,9 @@
           {{ end }}
         </div>
       </details>
-      <p class="help">{{ if $editableBrief }}One request proposes the {{ if $orchestrated }}chain{{ else }}role{{ end }}. The full run uses up to {{ .maxRequests }} requests.{{ else }}Run graph sends up to {{ .maxRequests }} OpenRouter requests.{{ end }}</p>
+      <p class="help">{{ if $editableBrief }}First, one call drafts the {{ if $orchestrated }}plan{{ else }}role{{ end }} for you to approve. The whole run uses up to {{ .maxRequests }} calls.{{ else }}Up to {{ .maxRequests }} calls. It may stop sooner if it has what it needs.{{ end }}</p>
       <div class="actions">
-        <button class="primary" data-part="run" type="submit">{{ if $orchestrated }}Propose a chain{{ else if $editableBrief }}Propose an agent{{ else }}Run graph{{ end }}</button>
+        <button class="primary" data-part="run" type="submit">{{ if $orchestrated }}Propose a chain{{ else if $editableBrief }}Propose an agent{{ else }}Run the graph{{ end }}</button>
         <button class="secondary" data-part="cancel" type="button" hidden>Cancel</button>
       </div>
       <fieldset class="graph-choices" data-part="choices" hidden>
@@ -78,7 +78,7 @@
         {{ if $editableBrief }}
         {{ partial "agent-brief.html" . }}
         {{ else }}
-        <p class="help">Read the run record, then choose how to continue. Either choice sends one more request.</p>
+        <p class="help">Your call. Read what it found, then pick a direction. Either choice uses one more call.</p>
         {{ end }}
         <div class="actions">
           {{ if $editableBrief }}
@@ -90,19 +90,34 @@
           <button class="secondary" type="button" data-choice="stop">Stop here</button>
         </div>
       </fieldset>
+      <fieldset class="graph-choices pickup" data-part="pickup" hidden>
+        <legend>Pick up where it stopped</legend>
+        <p class="help" data-part="pickup-reason"></p>
+        {{ partial "model-picker.html" (dict "id" (printf "%s-pickup-model" .slug) "label" "Model for the rest of this run" "role" "pickup" "helpID" (printf "%s-pickup-help" .slug)) }}
+        <p id="{{ .slug }}-pickup-help" class="help">Leave it blank to try the same model again. Every unfinished step that used that model switches too. Finished steps stay as they are.</p>
+        <div class="actions">
+          <button class="primary" type="button" data-pickup="go">Pick up from here</button>
+          <button class="secondary" type="button" data-pickup="stop">Leave it here</button>
+        </div>
+      </fieldset>
       <p data-part="run-status" class="status" role="status"></p>
     </form>
     <section class="output" data-handoff-output data-handoff-record aria-labelledby="{{ .slug }}-trace-title">
       <div class="label-row">
-        <h3 data-handoff-title id="{{ .slug }}-trace-title" data-part="trace-title">Sample run record</h3>
+        <h3 data-handoff-title id="{{ .slug }}-trace-title" data-part="trace-title">Worked example</h3>
         <div class="result-actions">
-          <button class="text-button" type="button" data-part="copy-trace">Copy run record</button>
-          <button class="text-button" type="button" data-handoff>Use run record</button>
+          <button class="text-button" type="button" data-part="copy-trace">Copy<span class="visually-hidden"> run record</span></button>
+          <details class="more">
+            <summary>More<span class="visually-hidden"> for the run record</span></summary>
+            <div class="more-panel">
+              <button class="text-button" type="button" data-handoff>Use the whole record in another experiment</button>
+              {{ partial "export-actions.html" (dict "scope" "record" "label" "the run record") }}
+            </div>
+          </details>
         </div>
       </div>
-      <p data-part="trace-meta" class="help">Written for the sample input. No key needed.</p>
-      {{ partial "export-actions.html" (dict "scope" "record" "label" "run record") }}
-      <ol data-part="trace" class="graph-trace">
+      <p data-part="trace-meta" class="help">How the graph handled the sample, step by step. Free to read.</p>
+      <ol data-part="trace" class="graph-trace" data-flow="{{ $graph.mode }}">
         {{ range .sampleTrace }}
         <li data-handoff-output>
           <h4 data-handoff-title>{{ .title }}</h4>

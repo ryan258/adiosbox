@@ -1,7 +1,10 @@
 slug: transfer-without-the-jargon
 order: 140
+shelf: handoff
+layout:
+  grid: true
 title: Transfer without the jargon
-description: Isolate the mechanism behind a technique, then try it in another domain and name where the analogy fails.
+description: "Find what makes a technique work, try it somewhere new, and spot where the comparison breaks."
 inputLabel: Source technique and target situation
 placeholder: Explain an idea from one setting and what you want to change in another…
 instructions: >-
@@ -9,7 +12,7 @@ instructions: >-
   the immediate effect, the desired downstream effect, and the conditions
   it depends on. Separate observed facts from guesses. Remove domain
   vocabulary where a plain term works. Do not propose the transfer yet.
-  Plain text, under 160 words.
+  Light Markdown (bold section labels, - bullets), under 160 words.
 sampleNotes: >-
   In a busy kitchen, cooks put the tools and measured ingredients in reach
   before orders start. That lets them cook without repeatedly searching or
@@ -27,10 +30,10 @@ chain:
     source actions to target actions, name one source assumption that fails
     in the target, and state how the trial will preserve flexibility. End with
     one observation that would count against the transfer being useful.
-    Use plain text, up to 240 words.
+    Use light Markdown (bold section labels, - bullets), up to 240 words.
   sampleResult: |-
-    • Putting tools in reach becomes making one folder with the three audio files, headphones, and the editor already open.
-    • Measuring ingredients becomes preparing a short review checklist and a place to record timestamped notes before listening.
-    • Unlike ingredients, some questions emerge only after hearing a surprising answer. Leave a blank note section for discoveries.
+    - Putting tools in reach becomes making one folder with the three audio files, headphones, and the editor already open.
+    - Measuring ingredients becomes preparing a short review checklist and a place to record timestamped notes before listening.
+    - Unlike ingredients, some questions emerge only after hearing a surprising answer. Leave a blank note section for discoveries.
 
     Trial: prepare for one interview this way. If setup takes longer than the time you save finding files or recalling the criteria, simplify or drop the routine.

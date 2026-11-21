@@ -1,7 +1,8 @@
 slug: minutes-have-to-add-up
 order: 200
+shelf: plan
 title: Make the minutes add up
-description: Let the model propose a schedule, then let code do the arithmetic. An over-budget draft gets one correction.
+description: "The model drafts a schedule and code checks the math. Over budget? It gets one shot at a fix."
 inputLabel: Tasks, priorities, and what can be deferred
 placeholder: List what you would like to do with a short block of time…
 sampleMinutes: 25

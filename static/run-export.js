@@ -1,3 +1,5 @@
+import { sourceText } from './markdown.js';
+
 const outputSelector = '[data-handoff-output]';
 const htmlEntities = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
 
@@ -9,7 +11,7 @@ function readOutput(output) {
   return {
     title: readText(output, '[data-handoff-title]').trim(),
     note: readText(output, '[data-handoff-model]').trim(),
-    text: readText(output, '[data-handoff-text]'),
+    text: sourceText(output.querySelector('[data-handoff-text]')),
   };
 }
 
@@ -52,8 +54,8 @@ function renderHtml(title, note, entries, timestamp) {
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <title>${escapeHtml(title)}</title>
 <style>
-  body { margin: 2rem auto; padding: 0 1rem; max-width: 54rem; font: 1rem/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
-  .result { padding: 1rem; border: 1px solid #c3bed0; border-radius: .5rem; white-space: pre-wrap; }
+  body { margin: 2rem auto; padding: 0 1rem; max-width: 54rem; color: #1e2321; background: #fbfcf8; font: 1rem/1.6 system-ui, sans-serif; overflow-wrap: anywhere; }
+  .result { padding: 1rem; border: 1px solid #cdd5c8; border-radius: .2rem; background: #f2f5ee; white-space: pre-wrap; }
   h1, h2 { line-height: 1.25; }
 </style>
 </head>

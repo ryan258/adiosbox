@@ -1,7 +1,8 @@
 slug: shapeshifting-orchestrator
 order: 246
+shelf: team
 title: Shapeshifting orchestrator
-description: Let an orchestrator take on a role, design a short chain of jobs, and hand each job to a specialist that adapts to what the previous one found.
+description: "An orchestrator plans a short relay of jobs, and each specialist adapts to what the last one found."
 inputLabel: Task, source material, audience, and constraints
 placeholder: Describe a job that needs several kinds of judgment and give the chain material to work from…
 maxRequests: 5
@@ -53,7 +54,7 @@ graph:
         Resolve conflicts using the original material. Keep uncertainties
         visible where they affect the answer. Then list the approved checks with
         Pass, Needs work, or Unverifiable and a short reason. Distinguish source
-        checks from model judgment. Plain text, up to 350 words.
+        checks from model judgment. Light Markdown (bold section labels, - bullets), up to 350 words.
 sampleNotes: |-
   A library is piloting a repair café. Write a 100-word announcement and a short organizer checklist.
   Records: May had 8 of 40 bookings miss their appointment. June had 4 of 20 miss theirs. The pilot began June 1.
@@ -73,8 +74,8 @@ sampleTrace:
     text: |-
       Bring a small item you’d like to repair to the library’s next repair café. It’s a chance to talk through what went wrong and explore whether the item can be fixed. If you have a manual, a spare part, or a short description of the problem, bring that along too. We’ll post the confirmed date and time once the schedule is set. Tool availability will depend on which volunteers can attend, so watch the library’s usual announcements for details before you make a special trip. The repair café is a pilot, and we welcome feedback about what would help.
 
-      Organizer checklist
-      • Confirm the date and time before publishing.
-      • Plan around 18 seats and confirm who will bring which tools.
+      **Organizer checklist**
+      - Confirm the date and time before publishing.
+      - Plan around 18 seats and confirm who will bring which tools.
   - title: Orchestrator’s final checks
     text: The public draft keeps the date open and makes no claim that the pilot lowered missed-appointment rates. The checklist records the room capacity and the remaining tool question.

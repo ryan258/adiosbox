@@ -4,16 +4,16 @@
     {{ if not .role }}<button class="text-button" data-model-reset type="button">Use free router</button>{{ end }}
   </div>
   <div class="model-control">
-    <input id="{{ .id }}" data-model-input{{ with .role }} data-role-model="{{ . }}"{{ end }}
+    <input id="{{ .id }}" data-model-input{{ with .role }}{{ if eq . "pickup" }} data-pickup-model{{ else }} data-role-model="{{ . }}"{{ end }}{{ end }}
       type="text" {{ with .value }}value="{{ . }}"{{ else }}{{ if not .role }}value="openrouter/free"{{ end }}{{ end }}
-      placeholder="{{ if .role }}Use main model{{ else }}Search by name or paste a model ID{{ end }}"
+      placeholder="{{ if eq .role "pickup" }}Same model as before{{ else if .role }}Use main model{{ else }}Search by name or paste a model ID{{ end }}"
       maxlength="200" autocomplete="off" autocapitalize="off" spellcheck="false"
       role="combobox" aria-autocomplete="list" aria-controls="{{ .id }}-options" aria-expanded="false"
       aria-describedby="{{ .helpID }}">
     <ul id="{{ .id }}-options" class="model-options" data-model-options role="listbox" aria-label="Matching models" hidden></ul>
   </div>
   {{ if not .role }}
-  <p id="{{ .helpID }}" class="help">Default for all experiments. Paid models can use your OpenRouter credits.</p>
+  <p id="{{ .helpID }}" class="help">Used everywhere unless an experiment says otherwise. The free router costs nothing; paid models spend your OpenRouter credits. A free model may retry a failed call on its own, at most twice per run.</p>
   {{ end }}
   <p class="status" data-model-status role="status"></p>
 </div>

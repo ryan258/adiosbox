@@ -1,7 +1,8 @@
 slug: know-when-to-stop
 order: 290
+shelf: trial
 title: Know when to stop
-description: Run the same decision graph with and without the deciding fact. Check that it drafts when it can and asks when it needs to.
+description: "Run the same decision with and without the deciding fact. Does it draft when it can and ask when it can’t?"
 inputLabel: Shared brief with one {{fact}} marker
 placeholder: Put {{fact}} where the decision goes…
 sampleNotes: >-
@@ -12,7 +13,7 @@ sampleNotes: >-
 lab:
   mode: stop
   graph: the-one-question-gate
-  help: Both cases use the same graph and model selections. The test expects a draft when the fact is present and a question when it is missing. It sends up to four requests.
+  help: "Both cases use the same graph and models. With the fact, it should draft. Without it, it should ask. Up to four calls."
   runLabel: Run both cases
   roles:
     - { key: classify, label: Check the brief }

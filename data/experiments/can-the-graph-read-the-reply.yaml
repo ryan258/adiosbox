@@ -1,7 +1,8 @@
 slug: can-the-graph-read-the-reply
 order: 334
+shelf: trial
 title: Can the Graph Read the Reply?
-description: Send the same Teachback review prompt twice and test what schema enforcement changes about the handoff.
+description: "Send the same review twice, once with a strict reply format. Can the next step actually read it?"
 inputLabel: Teachback input and the draft to review
 placeholder: Supply JSON with originalInput and draft strings…
 lab:
@@ -9,7 +10,7 @@ lab:
   technique: schema
   graph: teachback-loop
   runLabel: Compare review formats
-  help: Two review calls share a draft, model, and requested provider. The second enforces the route and reason schema. The preselected reviewer is a paid OpenRouter model. Choose a compatible model and provider before running if you want a different endpoint.
+  help: "Two review calls with the same draft, model, and provider. The second has to follow a strict reply format. Heads up: the preselected reviewer is a paid model, so swap it under the model picks if you’d rather not spend credits."
   roles:
     - key: comparison
       label: Reviewer for both calls (paid by default)

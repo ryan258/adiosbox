@@ -1,29 +1,34 @@
 slug: competing-explanations
 order: 10
+shelf: explain
+layout:
+  lead: Observation
+  spread: Rival explanations
+  takeaway: Discriminating check
 title: Competing explanations
-description: Give the model an observation. Make it propose rival explanations and name a test that would actually distinguish them.
+description: "What happened? The model offers three rival reasons and one cheap test to tell them apart."
 inputLabel: What you observed
 placeholder: Describe what changed and what you think caused it…
 instructions: >-
   Use the user's observation to design a small inquiry. Under Observation, restate
   what was observed without assuming a cause. Under Rival explanations, give
-  three distinct plausible causes, with a different observable prediction for each.
+  three distinct plausible causes as - bullets, with a different observable prediction for each.
   Label details that are assumptions. Under Discriminating check, propose one
   cheap, reversible check that could distinguish at least two rivals. State which
   result would favor each and name one confound the check leaves open. Treat
-  absent facts as unknown. Keep the response under 250 words in plain text.
+  absent facts as unknown. Keep the response under 250 words, in light Markdown (bold section labels, - bullets).
 sampleNotes: >-
   We cut the monthly book club meeting from 90 minutes to 45 minutes in October.
   Attendance rose from 8 to 14. I think the shorter meeting brought people back.
   We also moved to a room next to the library entrance and picked a popular mystery.
 sampleResult: |-
-  Observation
+  **Observation**
   Attendance went from 8 to 14 in the same month the meeting got shorter, the room moved, and the book changed.
 
-  Rival explanations
-  • Time commitment. People with a tight evening schedule would attend another short meeting even with a less popular book.
-  • Visibility. Some attendees would report seeing the room or signage as they walked in.
-  • Book choice. Some attendees would say they came for this title and would skip another selection at the same meeting length.
+  **Rival explanations**
+  - Time commitment. People with a tight evening schedule would attend another short meeting even with a less popular book.
+  - Visibility. Some attendees would report seeing the room or signage as they walked in.
+  - Book choice. Some attendees would say they came for this title and would skip another selection at the same meeting length.
 
-  Discriminating check
+  **Discriminating check**
   Ask October attendees whether they had attended before, how they heard about this meeting, and which change mattered most to them. Mentions of walk-ins favor visibility. Mentions of being able to leave early favor duration. Title-specific answers favor book choice. Memory and self-report may miss influences people didn’t notice.

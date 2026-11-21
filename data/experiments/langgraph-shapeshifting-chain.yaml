@@ -1,7 +1,8 @@
 slug: langgraph-shapeshifting-chain
 order: 247
+shelf: team
 title: LangGraph shapeshifting chain
-description: Approve a plan, then follow each specialist through its own graph for choosing a role, doing the job, and checking the handoff.
+description: "Approve the plan, then watch each specialist pick a role, do the job, and check its handoff."
 inputLabel: Task, source material, audience, and constraints
 placeholder: Describe a task that needs several kinds of judgment and include the source material…
 maxRequests: 8
@@ -46,7 +47,7 @@ graph:
         previous, and specialistBrief. Do only the assigned job in the
         specialist role. Apply its approach and checks. Verify claims from
         the previous handoff against the original material and mark open
-        questions when they matter. Return the usable handoff in plain text,
+        questions when they matter. Return the usable handoff in light Markdown,
         no more than 750 characters. Use source labels when the input has
         them. Leave ownership, dates, and results unknown when the source
         does not establish them.
@@ -58,7 +59,7 @@ graph:
         Use the original material to resolve discrepancies between handoffs.
         After the artifact, review each approved check with Pass, Needs work,
         or Unverifiable and a short reason. Keep proposed actions and
-        confirmed facts clearly labeled. Plain text, up to 350 words.
+        confirmed facts clearly labeled. Light Markdown (bold section labels, - bullets), up to 350 words.
 sampleNotes: |-
   Write a handoff for the volunteer taking over our library newsletter update.
   [A] Pat edited the event listing on Monday and marked it “ready for review.”
