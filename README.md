@@ -1,8 +1,8 @@
 # Adiosbox
 
-Ryan's AI playground has 43 experiments on seven shelves. Try a single prompt, compare two prompts or facts, run a two-step chain, or follow a branching LangGraph run. Every experiment has a share link and a written sample you can read without a key. Beside each Run button you can see the model picks and base call budget. Free models can send up to two additional automatic retries per run.
+Ryan's AI playground has 59 experiments on ten shelves. Try a single prompt, compare two prompts or facts, run a two-step chain, or follow a branching LangGraph run. Every experiment has a share link, a written sample, and a beer-themed example you can read without a key. Open **Beer example** inside any workbench to see the input and written result, then load it when you want to try it. Open **Canary** for a harder case built to break that technique today, with a pass check you can read in the result. The Run and Pick-up actions show their own model picks and base call budgets. Free models can send up to two additional automatic retries per run.
 
-Start with [The Missing Manual](docs/the-missing-manual.md) for a walkthrough or [101 Ways to Use Adiosbox](docs/101-ways-to-use-this-project-for-fun-and-profit.md) for ideas.
+Start with [The Missing Manual](docs/the-missing-manual.md) for a walkthrough or [101 Ways to Use Adiosbox](docs/101-ways-to-use-this-project-for-fun-and-profit.md) for ideas. See [Agent companies: where they stand](docs/agent-companies-reality.md) for the evidence behind the reality-check shelf and [Canaries in the coal mine](docs/canaries-in-the-coal-mine.md) for how to run and log the scored canaries.
 
 ## Run locally
 
@@ -28,15 +28,22 @@ npm start
 
 Open [the local playground](http://127.0.0.1:1313/#experiments), pick a model, and run an example. The launcher redirects `localhost:1313` to `127.0.0.1:1313`. It builds on startup and reads the key once, so restart it after editing either the site or `.env`. Press Ctrl+C to stop. The launcher listens only on loopback and sends the key to OpenRouter from the local Python process. Keep `.env` private. Git ignores it and Hugo publishes only generated site files.
 
-For the public visitor preview, use `hugo server --disableLiveReload` and open [the visitor preview](http://localhost:1313/#experiments). Hugo rebuilds after edits. Refresh the page to see them. Stop the local launcher first so the port is free. Hugo validates the catalog from [data/experiments](data/experiments) at build time. Each experiment's unique `slug` is its share-link anchor. Run `npm run check` for the strict Hugo build, rendered sample checks, and tests. The test suite uses Python 3 for the launcher request contract and rendered HTML checks.
+For the public visitor preview, use `hugo server --disableLiveReload` and open [the visitor preview](http://localhost:1313/#experiments). Hugo rebuilds after edits. Refresh the page to see them. Stop the local launcher first so the port is free. Hugo validates the catalog from [data/experiments](data/experiments) at build time. Each experiment's unique `slug` is its share-link anchor. Run `npm run check` for strict local and staging builds in temporary folders, rendered fixture and canary-key checks, and tests. Manual staging runs the same gate against the artifact it uploads. The test suite uses Python 3 for the launcher request contract and rendered HTML checks.
 
 ## Keep a case
 
-In the local launcher, **Save case** keeps inputs, model picks, and prompt edits in your browser. Open **Saved cases** to restore or back up a setup. When you edit an open case, you can update it or save a copy. Enable draft recovery there to keep the most recently edited workbench setup between sessions. The graph checkpoint and approved brief live in the tab. Export the results you want to keep, along with their request and outcome details.
+In the local launcher, **Save case** keeps inputs, model picks, and prompt edits in your browser. Open **Saved cases** to restore or back up a setup. When you edit an open case, you can update it or save a copy. Enable draft recovery there to keep one edited workbench setup between sessions. **Restore latest draft** is available above the catalog once a draft exists. Save that setup as a case and export cases to back it up. The graph checkpoint and approved brief live in the tab. A result download carries its own request receipt. A run-record download carries the run ID, revisions, and recorded attempts, including retries and pick-up.
+
+## Add or edit an experiment
+
+1. Copy a definition with the same workbench type from [data/experiments](data/experiments). Keep existing slugs stable because links and saved cases use them. Give a new entry a unique order and a shelf from [data/shelves.yaml](data/shelves.yaml).
+2. Write the input, instructions, and worked result together. Add an entry under the same slug in [beer examples](data/beer_examples.yaml) and [canary examples](data/canary_examples.yaml). Use the same fields as the workbench. Give scored shelf cases stable IDs and compute their keys using the [canary guide](docs/canaries-in-the-coal-mine.md).
+3. Use the [catalog validator](layouts/_partials/validate-catalog.html) and [graph contract](layouts/_partials/graph-contract.html) for required fields and budgets. The browser entry point is [app.js](static/app.js), graph execution is in [graph-runtime.js](assets/graph-runtime.js), and the [comparison lab](static/comparison-lab.js) handles graded comparisons. The [Python launcher](scripts/playground.py) validates local completion requests.
+4. Run `npm run check`. For browser acceptance, load the worked case and both alternatives. Check that labels, fields, call budgets, and output provenance stay with the case through navigation, a stopped run, and export.
 
 ## Comparison lab
 
-The comparison lab covers fork repair, evidence tracing, blind model ratings, paired stop tests, reviewer comparisons, and a cold restart drill. Usage totals describe the replies that reported usage. The request details in a result export show which model and endpoint the app requested and what OpenRouter reported.
+The comparison lab covers fork repair, evidence tracing, blind model ratings, paired stop tests, reviewer comparisons, and a cold restart drill. Usage totals describe the replies that reported usage. Attempts and retries appear in the downloaded run record. Exact-text and shape checks measure matching text and format. A person still evaluates meaning and evidence. The request details in a result export show which model and endpoint the app requested and what OpenRouter reported.
 
 ## Prompting techniques
 
@@ -48,7 +55,7 @@ Five lab workbenches test one prompting technique each: boundary examples, fact 
 
 ## OpenRouter in hosted builds
 
-GitHub Pages and Cloudflare Pages show a visitor key field. A run sends the visitor's key and the two text fields straight to OpenRouter. The visitor can reuse the key until the page is reloaded or the key is cleared. The site uses no persistent browser storage for keys, notes, or results.
+GitHub Pages and Cloudflare Pages show a visitor key field. A run sends the visitor’s key and the prompt and input for each call straight to OpenRouter. Later calls can include generated handoffs, review replies, and approved assignment details. The visitor can reuse the key until the page is reloaded or the key is cleared. The site uses no persistent browser storage for keys, notes, or results.
 
 The model picker uses the public OpenRouter catalog and accepts a full model ID by paste. It defaults to the [OpenRouter free model router](https://openrouter.ai/openrouter/free), subject to availability and rate limits. A share link includes only the page address and experiment anchor.
 
@@ -58,7 +65,7 @@ Keep the source in `ryan258/adiosbox`. In the repository, set **Settings → Pag
 
 The staging build uses the Pages URL reported by GitHub, including the repository path, and marks the page `noindex`. Treat the staging URL and repository as public. **Verify Adiosbox** builds and runs checks for pull requests and pushes to `main`. Staging publication uses the separate manual workflow. [GitHub Pages setup](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)
 
-Record the tested commit SHA and URL. Check a deep link and its written sample without a key. In the browser, check the catalog and run controls with the keyboard at a narrow viewport and at increased zoom. On loopback, save, update, export, and import a case. Turn draft recovery on, edit an input, reload, and restore it. Check the hosted CSP and robots directives over HTTPS. If live calls are authorized, try one specific-model single run and one provider-pinned schema comparison. Check the displayed call counts, requested model, reported result, and available usage.
+Record the tested commit SHA and URL. Check a deep link, its written sample, its beer example, and its canary without a key. In the browser, check the catalog, sample loading, model picker, approval, pick-up, and handoff with keyboard and Voice Control at a narrow viewport and increased zoom. Measure first page and graph load on the device you plan to use. On loopback, save, update, export, and import a case. Turn draft recovery on, edit an input, reload, and restore it. Check the hosted CSP and robots directives over HTTPS. If live calls are authorized, try one specific-model single run and one provider-pinned schema comparison. Check the displayed call counts, requested model, reported result, and available usage.
 
 ## Cloudflare Pages
 
