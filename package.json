@@ -7,7 +7,7 @@
   },
   "scripts": {
     "start": "python3 scripts/playground.py",
-    "check": "hugo --panicOnWarning --quiet && node --test tests/*.test.mjs"
+    "check": "sh scripts/check.sh"
   },
   "dependencies": {
     "@langchain/langgraph": "1.7.5"

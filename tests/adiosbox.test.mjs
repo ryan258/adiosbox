@@ -1,9 +1,9 @@
 // Run with: npm run check   (or: node --test tests/*.test.mjs)
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
-import { cleanCase } from '../static/cases.js';
+import { cleanCase, matchingCaseReceipt } from '../static/cases.js';
 import { redactTraceText, traceBody } from '../static/call-trace.js';
 import { checkRecall, checkStopCases, formatReportedUsage } from '../static/comparison-lab.js';
 import { checkFactPair, compareFactChecks, prepareFactInputs, sameFactScenario } from '../static/fact-test.js';
@@ -12,11 +12,45 @@ import { enrich, readFields, sections, stepKind, toneFor } from '../static/layou
 import {
   CompletionError, completionBody, freeRetryLimit, readCompletion, withFreeRetries,
 } from '../static/completion-options.js';
-import { checkSchedule, readVote, runPromptExperiment, validatePromptCase } from '../static/prompt-experiments.js';
+import { checkSchedule, gradeCanary, readVote, runPromptExperiment, validatePromptCase } from '../static/prompt-experiments.js';
+import { readExport } from '../static/run-export.js';
+import { beginRun, linkRunOutput, publicRunRecord, receipts, recordAttempt } from '../static/run-state.js';
 import { createExperimentGraph, requestLimits } from '../assets/graph-runtime.js';
 
 const root = new URL('../', import.meta.url);
 const read = path => readFileSync(new URL(path, root), 'utf8');
+const stagingHtml = process.env.ADIOSBOX_STAGING_HTML;
+const localHtml = process.env.ADIOSBOX_LOCAL_HTML;
+
+test('an unchanged case keeps its verdict through rename, copy, or an incomplete run', () => {
+  const setup = { model: 'openrouter/free', fields: { notes: 'scenario', instructions: 'prompt' } };
+  const receipt = [true, false, true];
+  const saved = { ...setup, receipt, revision: 'r1', name: 'Old name' };
+  assert.deepEqual(matchingCaseReceipt(setup, 'r1', undefined, saved), receipt);
+  assert.deepEqual(matchingCaseReceipt(setup, 'r1', { setup, checks: null }, saved), receipt);
+  assert.deepEqual(matchingCaseReceipt(setup, 'r1', { setup, checks: [false, false, false] }, saved), [false, false, false]);
+  assert.equal(matchingCaseReceipt({ ...setup, model: 'test/changed' }, 'r1', null, saved), null);
+  assert.equal(matchingCaseReceipt(setup, 'r2', null, saved), null);
+});
+
+test('run receipts retain failed and retried requests across pick-up and respect blind reveal', () => {
+  const experiment = { id: 'test-run', dataset: { caseRevision: 'r1' }, hasAttribute: () => false };
+  const first = new AbortController().signal;
+  const run = beginRun(experiment, first);
+  const failed = recordAttempt(first, { step: 'write', modelId: 'test/first' });
+  failed.update({ outcome: 'failed', response: 'not part of the attempt summary' });
+  const resumed = new AbortController().signal;
+  assert.equal(beginRun(experiment, resumed, null, run).id, run.id);
+  const visibility = { revealed: false };
+  const second = recordAttempt(resumed, { step: 'write', modelId: 'test/second', visibility });
+  second.update({ outcome: 'completed', usage: { total_tokens: 10 } });
+  assert.deepEqual(publicRunRecord(run).attempts.map(attempt => attempt.outcome), ['failed']);
+  visibility.revealed = true;
+  const record = publicRunRecord(run);
+  assert.deepEqual(record.attempts.map(attempt => attempt.outcome), ['failed', 'completed']);
+  assert.equal(record.attempts[0].response, undefined);
+  assert.deepEqual(record.attempts[1].usage, { total_tokens: 10 });
+});
 
 test('saved cases accept camelCase role keys from tree graphs', () => {
   const record = cleanCase({
@@ -26,6 +60,30 @@ test('saved cases accept camelCase role keys from tree graphs', () => {
   });
   assert.equal(record.fields['role:branchA'], '');
   assert.throws(() => cleanCase({ ...record, fields: { 'role:bad key': '' } }));
+});
+
+test('individual exports carry only their receipt and a latest-run export excludes the previous result', () => {
+  const previous = { id: 'previous', attempts: [{ request: 'previous input' }] };
+  const current = { id: 'current', attempts: [{ request: 'other step input' }] };
+  const result = { dataset: { source: 'kept result', resultState: 'previous' } };
+  const output = {
+    querySelector(selector) {
+      if (selector === '[data-handoff-text]') return result;
+      if (selector === '[data-handoff-title]') return { textContent: 'Step 1' };
+    },
+  };
+  const experiment = { querySelector: () => null, querySelectorAll: () => [output] };
+  linkRunOutput(result, previous);
+  linkRunOutput(experiment, current);
+  receipts.set(result, { runId: 'previous', request: 'selected input' });
+  const controls = { dataset: { exportScope: 'output' }, closest: () => output };
+  const individual = readExport(experiment, controls);
+  assert.equal(individual.entries[0].receipt.request, 'selected input');
+  assert.deepEqual(individual.runs, []);
+  controls.dataset.exportScope = 'run';
+  const latest = readExport(experiment, controls);
+  assert.deepEqual(latest.entries, []);
+  assert.deepEqual(latest.runs, [current]);
 });
 
 test('ballot votes tolerate light formatting only', () => {
@@ -45,6 +103,47 @@ test('schedule checker catches a prerequisite violation and passes a valid plan'
   assert.deepEqual(checkSchedule(plan({ unpack: 0, mount: 10, wire: 10, test: 30, labels: 30 }), brief), []);
   assert.deepEqual(checkSchedule(plan({ unpack: 0, mount: 10, wire: 10, test: 25, labels: 30 }), brief),
     ['test starts before mount finishes.']);
+});
+
+test('a cyclic dependency brief fails before requests can be sent', () => {
+  const input = JSON.stringify({ deadline: 10, jobs: [
+    { id: 'one', minutes: 1, resource: 'crew', after: ['two'] },
+    { id: 'two', minutes: 1, resource: 'crew', after: ['one'] },
+  ] });
+  assert.match(validatePromptCase('dependencies', input, {}, 'openrouter/free').message, /dependency cycle/);
+});
+
+test('canary grading preserves numeric signs, grid rows, and action codes', () => {
+  assert.equal(gradeCanary('{"answer":"Unknown"}', 'unknown | 16', 'abstention'), true);
+  assert.equal(gradeCanary('```json\n{"answer": 16}\n```', '16'), true);
+  assert.equal(gradeCanary('{"answer":"17"}', '16'), false);
+  assert.equal(gradeCanary('16', '16'), null, 'a bare reply is not a JSON answer');
+  assert.equal(gradeCanary('{"answer":-2551.55}', '2551.55', 'cents'), false);
+  assert.equal(gradeCanary('{"answer":"2551.550"}', '2551.55', 'cents'), null);
+  assert.equal(gradeCanary('{"answer":"000000 000000/000003/222023/222123"}', '000000/000000/000003/222023/222123', 'grid'), null);
+  assert.equal(gradeCanary('{"answer":"reply without action"}', 'reply_without_action', 'action'), null);
+  assert.equal(validatePromptCase('canary', 'q', { expected: ' | ' }, 'm').field, 'expected');
+  assert.equal(validatePromptCase('canary', 'q', { expected: '4' }, 'openrouter/free').field, 'model');
+});
+
+test('canary verdict accounts for disagreements, incomplete replies, and changing endpoints', async () => {
+  const answer = (answer, reportedModel = 'test/a', reportedProvider = 'one') =>
+    ({ content: JSON.stringify({ answer }), reportedModel, reportedProvider });
+  async function verdict(replies) {
+    const log = [];
+    await runPromptExperiment({ technique: 'canary', answerKind: 'number', prompt: 'p' }, {
+      input: 'q', values: { expected: '4' }, signal: new AbortController().signal,
+      record: (label, text) => log.push([label, text]), progress() {}, usageText: () => '',
+      request: async () => replies.shift(),
+    });
+    return log.find(([label]) => label === 'Canary verdict')[1];
+  }
+  assert.match(await verdict([answer(4), answer(4), answer(4)]), /^Tripped\. 3 of 3/);
+  assert.match(await verdict([answer(4), answer(5), answer(4)]), /^Not yet\. 2 of 3/);
+  assert.match(await verdict([answer(4), answer(4), answer(4, 'test/b')]), /^Inconclusive\. 3 of 3/);
+  assert.match(await verdict([answer(4), answer(4), answer(4, '')]), /omitted a responding model/);
+  assert.match(await verdict([answer(4), answer(4), { ...answer(4), truncated: true }]), /Fewer than three complete replies/);
+  assert.match(await verdict([answer(4), answer(4), answer(4, 'test/a', 'two')]), /different providers/);
 });
 
 test('a prompt comparison reports zero replies when every call fails', async () => {
@@ -93,7 +192,7 @@ test('each graph YAML displays the request limit the runtime enforces', () => {
 });
 
 test('the built catalog has valid prompt samples and model budgets', {
-  skip: !existsSync(new URL('public/index.html', root)),
+  skip: !stagingHtml,
 }, () => {
   const parsed = execFileSync('python3', ['-I', '-B', '-c', `
 from html.parser import HTMLParser
@@ -102,37 +201,98 @@ class Catalog(HTMLParser):
     def __init__(self):
         super().__init__()
         self.specs = []
+        self.experiments = {}
+        self.examples = {"beer": {}, "canary": {}}
+        self.kind = None
         self.current = None
         self.spec = None
+        self.beer_setup = None
+        self.beer_input = None
+        self.beer_result = None
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
         if "data-experiment" in attrs:
             self.current = attrs
+            self.experiments[attrs["id"]] = attrs
         if tag == "textarea" and attrs.get("data-part") == "spec":
             self.spec = []
+        if "data-example" in attrs:
+            self.kind = attrs["data-example"]
+        if tag == "textarea" and "data-example-setup" in attrs:
+            self.beer_setup = []
+        if tag == "pre" and "data-example-input" in attrs:
+            self.beer_input = []
+        if tag == "p" and "data-example-result" in attrs:
+            self.beer_result = []
     def handle_data(self, data):
         if self.spec is not None:
             self.spec.append(data)
+        if self.beer_setup is not None:
+            self.beer_setup.append(data)
+        if self.beer_input is not None:
+            self.beer_input.append(data)
+        if self.beer_result is not None:
+            self.beer_result.append(data)
     def handle_endtag(self, tag):
         if tag == "textarea" and self.spec is not None:
             self.specs.append([self.current, json.loads("".join(self.spec))])
             self.spec = None
+        if tag == "pre" and self.beer_input is not None:
+            self.examples[self.kind].setdefault(self.current["id"], {})["input"] = "".join(self.beer_input)
+            self.beer_input = None
+        if tag == "p" and self.beer_result is not None:
+            self.examples[self.kind].setdefault(self.current["id"], {})["result"] = "".join(self.beer_result)
+            self.beer_result = None
+        if tag == "textarea" and self.beer_setup is not None:
+            self.examples[self.kind].setdefault(self.current["id"], {}).update(json.loads("".join(self.beer_setup)))
+            self.beer_setup = None
 catalog = Catalog()
 catalog.feed(sys.stdin.read())
-print(json.dumps(catalog.specs))
-`], { input: read('public/index.html') });
-  const labs = JSON.parse(parsed).filter(([attrs]) => attrs['data-lab'] === 'prompt');
+print(json.dumps([catalog.specs, catalog.experiments, catalog.examples["beer"], catalog.examples["canary"]]))
+`], { input: readFileSync(stagingHtml, 'utf8') });
+  const [specs, experiments, beer, canary] = JSON.parse(parsed);
+  const labs = specs.filter(([attrs]) => attrs['data-lab'] === 'prompt');
   assert.ok(labs.length, 'the rendered catalog contains prompt experiments');
+  execFileSync('python3', ['-I', 'scripts/canary-keys.py', 'check', '--rendered'], { input: parsed });
+  for (const set of [beer, canary]) {
+    assert.deepEqual(Object.keys(set).sort(), Object.keys(experiments).sort());
+    for (const example of Object.values(set)) assert.ok(example.input.trim());
+    const fact = set['change-one-fact'];
+    assert.equal(prepareFactInputs(fact.input, fact.fields.baseline, fact.fields.changed).length, 2);
+    assert.ok(set['minutes-have-to-add-up'].minutes > 0);
+  }
+  for (const [attrs, spec] of specs.filter(([attrs]) => Object.hasOwn(attrs, 'data-graph'))) {
+    assert.equal(Number(attrs['data-base-calls']), requestLimits[spec.mode], attrs.id);
+  }
   for (const [attrs, spec] of labs) {
-    const expectedCalls = ['dependencies', 'ballot'].includes(spec.technique) ? 3 : 2;
+    const expectedCalls = ['dependencies', 'ballot', 'canary'].includes(spec.technique) ? 3 : 2;
     assert.equal(Number(attrs['data-base-calls']), expectedCalls, attrs.id);
     const defaults = Object.fromEntries((spec.fields ?? []).map(field => [field.key, field.sample ?? '']));
-    const model = spec.roles[0].defaultModel || 'openrouter/free';
-    for (const sample of spec.cases) {
-      const issue = validatePromptCase(spec.technique, sample.input, { ...defaults, ...sample.fields }, model);
+    const model = spec.roles[0].defaultModel || 'test/canary-model';
+    const examples = [...spec.cases, ...[['beer example', beer], ['canary', canary]]
+      .filter(([, set]) => set[attrs.id]).map(([title, set]) => ({ title, ...set[attrs.id] }))];
+    for (const sample of examples) {
+      const issue = validatePromptCase(spec.technique, sample.input, { ...defaults, ...sample.fields }, model, spec.answerKind);
       assert.equal(issue, null, `${attrs.id} / ${sample.title}`);
     }
   }
+});
+
+test('clean builds expose the right setup and distinct call-budget controls', {
+  skip: !localHtml,
+}, () => {
+  const staging = readFileSync(stagingHtml, 'utf8');
+  const local = readFileSync(localHtml, 'utf8');
+  assert.match(staging, /name="robots" content="noindex"/);
+  const basePath = new URL(process.env.ADIOSBOX_STAGING_URL || 'https://example.invalid/adiosbox/').pathname;
+  assert.ok(staging.includes('src="' + basePath + 'app.js"'));
+  assert.match(staging, /id="api-key"/);
+  assert.doesNotMatch(staging, /id="saved-cases"/);
+  assert.match(local, /data-local-openrouter/);
+  assert.match(local, /id="draft-quick-open"/);
+  assert.doesNotMatch(local, /id="api-key"/);
+  assert.match(local, /aria-describedby="constraint-switch-run-budget">Run both steps/);
+  assert.match(local, /aria-describedby="constraint-switch-pickup-budget" hidden>Pick up at step 2/);
 });
 
 test('the local launcher accepts the browser body and rejects a widened provider', () => {
@@ -382,6 +542,42 @@ test('an approved checkpoint can retry the failed follow-up without repeating pr
   assert.deepEqual(seen, ['prepare', 'finish', 'finish']);
 });
 
+test('both approved chain sizes obey their displayed graph maximums', async () => {
+  const specialistBrief = { role: 'Analyst', approach: 'Check facts', checks: ['Cite'] };
+  for (const [mode, keys, callsPerSpecialist] of [
+    ['orchestrated', ['plan', 'specialist', 'assemble'], 1],
+    ['orchestrated-subgraphs', ['plan', 'shape', 'work', 'assemble'], 2],
+  ]) {
+    for (const size of [2, 3]) {
+      const stages = ['Extract facts', 'Draft handoff', 'Check final constraints'].slice(0, size);
+      const proposal = { role: 'Lead', deliverable: 'Brief', approach: 'Split work', checks: ['Grounded'], stages, question: '' };
+      const nodes = Object.fromEntries(keys.map(key => [key, { title: key, prompt: key }]));
+      let calls = 0;
+      const graph = createExperimentGraph({ mode, nodes }, {
+        signal: new AbortController().signal,
+        record() {},
+        async complete({ prompt }) {
+          calls += 1;
+          const replies = {
+            plan: JSON.stringify(proposal),
+            specialist: JSON.stringify({ ...specialistBrief, handoff: 'Ready' }),
+            shape: JSON.stringify(specialistBrief),
+            work: 'Ready',
+            assemble: 'Finished',
+          };
+          return { content: replies[prompt] };
+        },
+      });
+      assert.equal((await graph.start('task')).paused, true);
+      assert.equal(calls, 1);
+      assert.equal((await graph.resume({ ...proposal, clarification: '' })).final, 'Finished');
+      assert.equal(calls, 2 + size * callsPerSpecialist);
+      assert.ok(calls <= requestLimits[mode]);
+      if (size === 3) assert.equal(calls, requestLimits[mode]);
+    }
+  }
+});
+
 test('nested specialists retain a validated role when the work call fails', async () => {
   const nodes = Object.fromEntries(['plan', 'shape', 'work', 'assemble'].map(key => [key, { title: key, prompt: key }]));
   const proposal = {
@@ -410,6 +606,30 @@ test('nested specialists retain a validated role when the work call fails', asyn
     'plan:plan', 'specialist-1:shape', 'specialist-1:work', 'specialist-1:work',
     'specialist-2:shape', 'specialist-2:work', 'assemble:assemble',
   ]);
+});
+
+test('graph pickup lists every failed parallel role and keeps the successful branch', async () => {
+  const keys = ['branchA', 'branchB', 'branchC', 'prune', 'childA', 'childB', 'finish'];
+  const nodes = Object.fromEntries(keys.map(key => [key, { title: key, prompt: key }]));
+  const calls = [];
+  let recovering = false;
+  const graph = createExperimentGraph({ mode: 'tree', nodes }, {
+    signal: new AbortController().signal,
+    record() {},
+    async complete({ node }) {
+      calls.push(node);
+      if (!recovering && ['branchA', 'branchC'].includes(node)) throw new Error('Unavailable');
+      return { content: node === 'prune' ? '{"route":"branchB","reason":"best"}' : node };
+    },
+  });
+  await assert.rejects(graph.start('brief'));
+  const point = await graph.pickupPoint();
+  assert.deepEqual(point.steps.map(step => step.role).sort(), ['branchA', 'branchC']);
+  recovering = true;
+  assert.equal((await graph.pickUp(new AbortController().signal)).result.final, 'finish');
+  assert.equal(calls.filter(node => node === 'branchB').length, 1);
+  assert.equal(calls.filter(node => node === 'branchA').length, 2);
+  assert.equal(calls.filter(node => node === 'branchC').length, 2);
 });
 
 test('claim validation retries the call that produced malformed data', async () => {

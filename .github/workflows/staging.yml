@@ -21,14 +21,13 @@ jobs:
       - name: Configure GitHub Pages
         id: pages
         uses: actions/configure-pages@v5
-      - name: Build staging site
+      - name: Build and verify the staging artifact
         env:
-          PAGES_URL: ${{ steps.pages.outputs.base_url }}
+          ADIOSBOX_STAGING_URL: ${{ steps.pages.outputs.base_url }}
+          ADIOSBOX_GITHUB_PAGES_OUTPUT: public
         run: |
-          hugo --panicOnWarning --environment staging --baseURL "${PAGES_URL%/}/"
-          rm -f public/_headers
-      - name: Run tests
-        run: node --test tests/*.test.mjs
+          test -n "$ADIOSBOX_STAGING_URL"
+          npm run check
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public
