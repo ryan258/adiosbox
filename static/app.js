@@ -1,12 +1,12 @@
 import { setupModelPicker } from './model-picker.js';
-import { readCaseSetup, setupCases } from './cases.js';
+import { mayReplaceSetup, readCaseSetup, setupCases } from './cases.js';
 import { checkFactPair, compareFactChecks, prepareFactInputs, sameFactScenario } from './fact-test.js';
 import { appendRunRecord, runRecordText, setupHandoff } from './handoff.js';
 import { setupLab } from './comparison-lab.js';
 import { redactTraceText, setupCallTrace, traceBody } from './call-trace.js';
 import { sourceText } from './markdown.js';
 import { formatWrittenResults, renderResult } from './layouts.js';
-import { receipts, withCallDeadline } from './run-state.js';
+import { beginRun, linkRunOutput, receipts, recordAttempt, setRunActivity, withCallDeadline } from './run-state.js';
 import {
   CompletionError, completionBody, describeModel, freeRetryLimit, isFreeModel, readCompletion, withFreeRetries,
 } from './completion-options.js';
@@ -25,9 +25,13 @@ const callTrace = setupCallTrace(copy);
 const initializedPanels = new WeakSet();
 
 function makeRunStatus(element, selections, base, recovery = '') {
-  const modelIds = [...new Set(selections)];
+  const picks = selections.map(pick => typeof pick === 'string' ? { id: pick } : pick);
+  const modelIds = picks.map(({ id }) => id);
   const retry = modelIds.some(isFreeModel) ? ` Up to ${freeRetryLimit} extra automatic retries for free models.` : '';
-  const labels = modelIds.map(id => isFreeModel(id) ? id : `${id || 'Choose a model'} (may use credits)`);
+  const labels = picks.map(({ id, label }) => {
+    const modelLabel = !id ? 'Choose a model' : isFreeModel(id) ? id : `${id} (may use credits)`;
+    return label ? `${label}: ${modelLabel}` : modelLabel;
+  });
   element.textContent = `${base} Models: ${labels.join(', ')}.${retry}${recovery ? ' ' + recovery : ''}`;
 }
 
@@ -67,16 +71,22 @@ async function completeOnce({
 }) {
   signal.throwIfAborted();
   if (!prompt.trim() || prompt.length > 4000 || !input.trim() || input.length > 8000) {
-    throw new CompletionError('Use a prompt of up to 4,000 characters and an input of up to 8,000 characters.');
+    throw new CompletionError('Use a prompt of up to 4,000 characters and an input of up to 8,000 characters.', false, 'edit-request');
   }
   const headers = { 'Content-Type': 'application/json' };
   if (!local) headers.Authorization = `Bearer ${apiKey}`;
   const body = JSON.stringify(completionBody({ modelId, prompt, input, includeUsage, provider, enforceTeachbackSchema }));
   if (new TextEncoder().encode(body).length > 64 * 1024) {
-    throw new CompletionError('The full request is too large. Shorten the input or prompt.');
+    throw new CompletionError('The full request is too large. Shorten the input or prompt.', false, 'edit-request');
   }
   const request = traceBody(body, apiKey);
-  const finishTrace = callTrace.start(experiment, step, local ? null : request, visibility);
+  const attempt = { step, modelId, request: local ? null : request, visibility };
+  const finishTrace = callTrace.start(experiment, step, attempt.request, visibility);
+  const finishAttempt = recordAttempt(signal, attempt);
+  const finish = update => {
+    finishTrace(update);
+    finishAttempt.update(update);
+  };
   let response;
   let responseText;
   try {
@@ -91,13 +101,23 @@ async function completeOnce({
     });
     responseText = await response.text();
   } catch (error) {
-    finishTrace({ state: signal.aborted ? 'aborted' : 'transport_error', http_status: response?.status ?? null });
+    finish({ state: signal.aborted ? 'aborted' : 'transport_error', outcome: signal.aborted ? 'aborted' : 'failed',
+      http_status: response?.status ?? null });
     if (!signal.aborted && error instanceof Error) error.retryable = true;
     throw error;
   }
   let tracedResponse;
   if (local && response.headers.get('X-Adiosbox-Trace') === '1') {
-    const receipt = JSON.parse(responseText);
+    let receipt;
+    try {
+      receipt = JSON.parse(responseText);
+      if (typeof receipt?.request !== 'string' || (receipt.response !== null && typeof receipt.response !== 'string')) {
+        throw new Error('Invalid relay receipt');
+      }
+    } catch {
+      finish({ state: 'relay_error', http_status: response.status, outcome: 'failed' });
+      throw new CompletionError('The local launcher sent an unreadable reply. Restart the launcher and try again.');
+    }
     responseText = receipt.response;
     tracedResponse = {
       request: traceBody(receipt.request),
@@ -107,17 +127,28 @@ async function completeOnce({
   } else {
     tracedResponse = { response: traceBody(responseText, apiKey), response_source: local ? 'local proxy' : 'OpenRouter' };
   }
-  finishTrace({
+  finish({
     state: signal.aborted ? 'aborted' : response.ok ? 'received' : 'http_error',
     http_status: response.status,
     ...tracedResponse,
   });
+  if (signal.aborted) {
+    finish({ outcome: 'aborted' });
+    signal.throwIfAborted();
+  }
   signal.throwIfAborted();
   // The trace's state is the HTTP result; outcome says how the completion itself ended.
   try {
     const result = readCompletion(response, redactTraceText(responseText, apiKey), { modelId, provider, includeUsage, local });
-    finishTrace({ outcome: result.truncated ? 'truncated' : 'completed' });
+    finish({
+      outcome: result.truncated ? 'truncated' : 'completed',
+      reportedModel: result.reportedModel || null,
+      reportedProvider: result.reportedProvider || null,
+      usage: result.usage ?? null,
+    });
     return { ...result, receipt: {
+      runId: finishAttempt.runId,
+      attemptNumber: finishAttempt.attemptNumber,
       request: tracedResponse.request ?? request,
       reportedModel: result.reportedModel || null,
       reportedProvider: result.reportedProvider || null,
@@ -125,7 +156,7 @@ async function completeOnce({
       usage: result.usage ?? null,
     } };
   } catch (error) {
-    if (!signal.aborted) finishTrace({ outcome: 'failed', error: error.message, retryable: error.retryable === true });
+    if (!signal.aborted) finish({ outcome: 'failed', error: error.message, retryable: error.retryable === true });
     throw error;
   }
 }
@@ -160,38 +191,63 @@ function setupExperiment(experiment) {
   let savedCase;
   // When step 2 fails, its input is kept so the run can pick up there with a different model or prompt.
   const pickupButton = part('pickup');
+  const dismissPickup = part('dismiss-pickup');
   let pickupState;
   const sourceInputs = () => JSON.stringify([notes.value, variants[0]?.instructions.value,
     ...[...factFields.values()].map(field => field.value)]);
   const runBudget = part('run-budget');
   function budget() {
-    const selected = pickupState ? [variants[1]] : variants;
-    const base = pickupState ? 'Pick-up sends one call.' : chain || factTest ? 'Two base calls.'
+    const modelFor = variant => chooseModel(variant.roleModel, model.value.trim()).id;
+    const base = chain || factTest ? 'Full run: two base calls.'
       : comparisonStatus ? 'One base call per arm.' : 'One base call.';
-    makeRunStatus(runBudget, selected.map(variant => chooseModel(variant.roleModel, model.value.trim()).id), base);
+    makeRunStatus(runBudget, variants.map((variant, index) => ({
+      id: modelFor(variant),
+      label: variant.label ? `Prompt ${variant.label}` : chain ? `Step ${index + 1}`
+        : factTest ? ['Baseline', 'Changed fact'][index] : '',
+    })), base);
+    const pickupBudget = part('pickup-budget');
+    if (pickupBudget) {
+      pickupBudget.hidden = !pickupState;
+      if (pickupState) makeRunStatus(pickupBudget, [modelFor(variants[1])], 'Pick-up: one base call.');
+    }
   }
   for (const name of ['input', 'change', 'click', 'case-restored']) experiment.addEventListener(name, budget);
   for (const name of ['input', 'change']) model.addEventListener(name, budget);
   budget();
   function clearPickup() {
+    if (pickupState && !activeRequest) setRunActivity(experiment);
     pickupState = undefined;
     if (pickupButton) pickupButton.hidden = true;
+    if (dismissPickup) dismissPickup.hidden = true;
     budget();
   }
+  dismissPickup?.addEventListener('click', () => {
+    clearPickup();
+    setStatus(runStatus, 'Left as it is. Run again to start over.');
+    variants[0].run.focus();
+  });
   form.addEventListener('input', event => {
     if (event.target === notes || event.target === variants[0]?.instructions || [...factFields.values()].includes(event.target)) clearPickup();
   });
-  experiment.addEventListener('input-handoff', clearPickup);
+  experiment.addEventListener('setup-changed', () => {
+    clearPickup();
+    for (const variant of variants) {
+      variant.snapshot = undefined;
+      if (receipts.has(variant.result)) {
+        variant.result.dataset.resultState = 'previous';
+        variant.meta.textContent = 'Previous result · run this setup to update it.';
+      }
+    }
+    if (comparisonStatus) setStatus(comparisonStatus, '');
+    setStatus(runStatus, '');
+  });
 
   part('load-sample').addEventListener('click', () => {
-    const edited = (notes.value.trim() && notes.value !== notes.defaultValue) ||
+    const edited = notes.value !== notes.defaultValue ||
       [...factFields.values()].some(field => field.value !== field.defaultValue);
-    if (edited) {
-      if (!window.confirm('Replace your input with the sample?')) return;
-    }
+    if (!mayReplaceSetup(experiment, runStatus, edited ? 'Replace your input with the sample?' : '')) return;
     notes.value = notes.defaultValue;
     for (const field of factFields.values()) field.value = field.defaultValue;
-    clearPickup();
     experiment.dispatchEvent(new Event('setup-changed'));
     notes.focus();
   });
@@ -215,6 +271,7 @@ function setupExperiment(experiment) {
     for (const variant of variants) {
       variant.snapshot = undefined;
       receipts.delete(variant.result);
+      linkRunOutput(variant.result);
       variant.result.dataset.resultState = 'sample';
       renderResult(variant.result, variant.sample);
       variant.title.textContent = variant.sampleTitle;
@@ -224,8 +281,11 @@ function setupExperiment(experiment) {
       setStatus(variant.copyStatus, '');
     }
     if (comparisonStatus) setStatus(comparisonStatus, '');
+    linkRunOutput(experiment);
     setStatus(runStatus, '');
   });
+
+  experiment.addEventListener('case-saved', event => { savedCase = event.detail; });
 
   function reportComparison() {
     if (!comparisonStatus) return;
@@ -242,6 +302,8 @@ function setupExperiment(experiment) {
       setStatus(comparisonStatus, 'These runs requested different models. Match the models to isolate a prompt change, or match the prompts to compare models.');
     } else if (first.reportedModel && second.reportedModel && first.reportedModel !== second.reportedModel) {
       setStatus(comparisonStatus, 'OpenRouter reported different models for these runs. Pick one specific model and run A and B again.', true);
+    } else if (first.reportedProvider && second.reportedProvider && first.reportedProvider !== second.reportedProvider) {
+      setStatus(comparisonStatus, 'OpenRouter reported different providers for the two calls.', true);
     } else if (!first.reportedModel || !second.reportedModel) {
       setStatus(comparisonStatus, 'Both runs used the same input and model selection. OpenRouter did not identify both responding models.');
     } else {
@@ -272,10 +334,12 @@ function setupExperiment(experiment) {
     const input = notes.value.trim();
     const startingSource = sourceInputs();
     const apiKey = key?.value.trim();
+    const pendingStages = resuming ? stages.slice(1) : stages;
     const missing = [
       [notes, input, 'Enter some input or load the sample.'],
-      ...stages.map(({ variant, prompt }) => [variant.instructions, prompt, 'Enter instructions for the model.']),
-      ...stages.map(({ selection }) => [selection.field, modelIdPattern.test(selection.id), 'Choose a model or enter its full OpenRouter ID.']),
+      [notes, input.length <= notes.maxLength, `Shorten the input to ${notes.maxLength} characters.`],
+      ...pendingStages.map(({ variant, prompt }) => [variant.instructions, prompt, 'Enter instructions for the model.']),
+      ...pendingStages.map(({ selection }) => [selection.field, modelIdPattern.test(selection.id), 'Choose a model or enter its full OpenRouter ID.']),
       ...[...factFields.values()].map(field => [field, field.value.trim(), 'Enter both facts and all three expectations.']),
       [key, local || apiKey, 'Enter your OpenRouter key to run the example.'],
     ].find(([, value]) => !value);
@@ -310,6 +374,8 @@ function setupExperiment(experiment) {
     let step = 0;
     let handoff = input;
     if (resuming) ({ handoff, factInputs, expectations } = pickupState);
+    const runRecord = beginRun(experiment, request.signal, experiment, resuming ? pickupState.runRecord : undefined);
+    setRunActivity(experiment, 'running');
     clearPickup();
     if (comparisonStatus) setStatus(comparisonStatus, '');
     for (const { variant } of resuming ? stages.slice(1) : stages) {
@@ -333,7 +399,7 @@ function setupExperiment(experiment) {
           : chain ? `Running step ${step} of ${stages.length}…` : label ? `Running prompt ${label}…` : 'Waiting for OpenRouter…';
         setStatus(runStatus, progress);
         setStatus(copyStatus, '');
-        const { content, reportedModel, truncated, receipt } = await withCallDeadline(request, () => complete({
+        const { content, reportedModel, reportedProvider, truncated, receipt } = await withCallDeadline(request, () => complete({
           input: factInputs?.[step - 1] ?? handoff, prompt, modelId, apiKey, signal: request.signal,
           experiment: experiment.id, step: label || step,
           includeUsage: true,
@@ -341,19 +407,21 @@ function setupExperiment(experiment) {
 
         result.dataset.resultState = truncated ? 'partial' : 'live';
         receipts.set(result, receipt);
+        linkRunOutput(result, runRecord);
         renderResult(result, content);
         if (!chain && !factTest) title.textContent = label ? `Result ${label}` : 'Your result';
         meta.textContent = describeModel(modelId, reportedModel);
         copyButton.disabled = false;
         variant.handoff.disabled = false;
         if (comparisonStatus) {
-          variant.snapshot = { input, requestedModel: modelId, reportedModel, truncated, content };
+          variant.snapshot = { input, requestedModel: modelId, reportedModel, reportedProvider, truncated, content };
           if (!factTest) reportComparison();
         }
 
         if ((chain || factTest) && step === 1) {
           const next = stages[1].variant;
           receipts.delete(next.result);
+          linkRunOutput(next.result);
           next.result.dataset.resultState = 'empty';
           renderResult(next.result, '');
           next.copy.disabled = true;
@@ -387,7 +455,9 @@ function setupExperiment(experiment) {
             ? '\nThe two cases requested different models. Run both with the same model to isolate the fact change.'
             : routedDifferently
               ? '\nOpenRouter reported different models. Rerun with a specific model to isolate the fact change.'
-              : !baseline.reportedModel || !changed.reportedModel
+              : baseline.reportedProvider && changed.reportedProvider && baseline.reportedProvider !== changed.reportedProvider
+                ? '\nOpenRouter reported different providers for the two cases.'
+                : !baseline.reportedModel || !changed.reportedModel
                 ? '\nOpenRouter did not identify both responding models.' : '';
           let change = '';
           if (setup) {
@@ -419,11 +489,14 @@ function setupExperiment(experiment) {
           stages[1].variant.meta.textContent = factTest ? 'The changed case did not finish.' : 'Step 2 did not finish.';
           const remaining = factTest ? 'The baseline is kept. Pick a different model if you like, then pick up at the changed case.'
             : 'Step 1 is kept. Pick a different model for step 2 if you like, then pick up at step 2.';
-          const recoverable = request.signal.reason !== 'key-cleared' && startingSource === sourceInputs();
-          setStatus(runStatus, recoverable ? `${message} ${remaining}` : message, isError);
+          const recoverable = request.signal.reason !== 'key-cleared' && error?.reason !== 'edit-request' &&
+            startingSource === sourceInputs();
+          const next = error?.reason === 'connection' ? ' Check your OpenRouter key or account before picking up.' : '';
+          setStatus(runStatus, recoverable ? `${message}${next} ${remaining}` : message, isError);
           if (recoverable) {
-            pickupState = { handoff, factInputs, expectations, source: startingSource };
+            pickupState = { handoff, factInputs, expectations, source: startingSource, runRecord };
             pickupButton.hidden = false;
+            dismissPickup.hidden = false;
             budget();
           }
         } else {
@@ -442,6 +515,7 @@ function setupExperiment(experiment) {
       showFailure(error instanceof CompletionError ? error.message : 'Could not read a response from OpenRouter. Check your connection and try again.');
     } finally {
       activeRequest = undefined;
+      setRunActivity(experiment, pickupState ? 'ready to pick up' : undefined);
       buttons.forEach(button => { button.disabled = false; });
       if (document.activeElement === cancel) run.focus();
       cancel.hidden = true;
@@ -480,18 +554,19 @@ function setupGraph(experiment) {
   const sampleTitle = traceTitle.textContent;
   const sampleMeta = traceMeta.textContent;
   let active;
+  const recordOutput = trace.closest('[data-handoff-record]');
   const sourceInputs = () => JSON.stringify([notes.value, minutes?.value]);
   const runBudget = part('run-budget');
   const modelRoles = spec.roleModels ? spec.roleModels.map(({ key }) => key) : Object.keys(spec.nodes);
+  const roleLabel = role => spec.roleModels?.find(model => model.key === role)?.title ?? spec.nodes[role]?.title ?? role;
   function budget() {
-    const picks = modelRoles.map(role => chooseModel(modelFields.get(role), model.value.trim()).id);
+    const picks = modelRoles.map(role => ({ label: roleLabel(role), id: chooseModel(modelFields.get(role), model.value.trim()).id }));
     makeRunStatus(runBudget, picks, `Up to ${experiment.dataset.baseCalls} base calls.`);
     if (active?.failed) {
-      const selected = pickupModel.value.trim();
-      const failedModel = active.roleModels.get(active.failed.role)?.id;
-      const remaining = [...active.roleModels.values()].map(({ id }) => selected && id === failedModel ? selected : id);
-      makeRunStatus(part('pickup-budget'), remaining, `Up to ${active.graph.remainingCalls()} remaining base calls.`,
-        'The failed call can be sent again.');
+      const roles = pickupSelections(pickupModel.value.trim());
+      const stopped = (active.failed.steps ?? [active.failed]).map(({ title, role }) => `${title} uses ${roles.get(role).id}`);
+      makeRunStatus(part('pickup-budget'), [...roles].map(([role, { id }]) => ({ label: roleLabel(role), id })),
+        `Up to ${active.graph.remainingCalls()} remaining base calls.`, `Calls to retry: ${stopped.join('; ')}.`);
     }
   }
   for (const name of ['input', 'change', 'click', 'case-restored']) experiment.addEventListener(name, budget);
@@ -500,6 +575,7 @@ function setupGraph(experiment) {
 
   experiment.addEventListener('case-restored', () => {
     if (active?.failed) finishRun();
+    linkRunOutput(recordOutput);
     trace.replaceChildren(...sample.map(entry => entry.cloneNode(true)));
     formatWrittenResults(trace);
     traceTitle.textContent = sampleTitle;
@@ -507,12 +583,21 @@ function setupGraph(experiment) {
     setStatus(runStatus, '');
     setStatus(copyStatus, '');
   });
+  function pickupSelections(replacement) {
+    const failedRoles = new Set((active.failed.steps ?? [active.failed]).map(step => step.role));
+    return new Map([...active.roleModels].map(([role, selection]) =>
+      [role, replacement && failedRoles.has(role) ? { ...selection, id: replacement } : selection]));
+  }
+
   function invalidatePickup() {
     if (!active?.failed) return;
     finishRun();
     setStatus(runStatus, 'Input changed. Start a new run when ready.');
   }
-  experiment.addEventListener('input-handoff', invalidatePickup);
+  experiment.addEventListener('setup-changed', () => {
+    invalidatePickup();
+    if (traceTitle.textContent === 'Run record') traceMeta.textContent = 'Previous run · run this setup to update it.';
+  });
   experiment.addEventListener('input', event => {
     if (event.target === notes || event.target === minutes) invalidatePickup();
   });
@@ -523,6 +608,7 @@ function setupGraph(experiment) {
   }
 
   function finishRun() {
+    setRunActivity(experiment);
     choices.hidden = true;
     pickup.hidden = true;
     run.disabled = false;
@@ -546,14 +632,18 @@ function setupGraph(experiment) {
   }
 
   async function advance(invoke) {
+    setRunActivity(experiment, 'running');
     try {
       const { result, paused } = await invoke();
       active.controller.signal.throwIfAborted();
       if (paused) {
         record('Paused for your choice', choices.querySelector('legend').textContent.trim());
         active.paused = true;
+        setRunActivity(experiment, 'waiting for your choice');
         choices.hidden = false;
-        makeRunStatus(part('approval-budget'), [...active.roleModels.values()].map(({ id }) => id),
+        const preparation = orchestrated ? 'plan' : editableBrief ? 'profile' : 'prepare';
+        makeRunStatus(part('approval-budget'), [...active.roleModels].filter(([role]) => role !== preparation)
+          .map(([role, { id }]) => ({ label: roleLabel(role), id })),
           `Up to ${active.graph.remainingCalls()} remaining base calls.`);
         if (editableBrief) {
           const proposal = result.roleProposal;
@@ -587,11 +677,14 @@ function setupGraph(experiment) {
       record('Graph stopped', message);
       setStatus(runStatus, message, !canceled || message === 'OpenRouter took too long.');
       // Finished steps are checkpointed, so offer to rerun only the step that failed.
-      const point = message !== 'Run canceled because the key was cleared.' && await active.graph?.pickupPoint().catch(() => null);
+      const point = message !== 'Run canceled because the key was cleared.' && error?.reason !== 'edit-request' &&
+        await active.graph?.pickupPoint().catch(() => null);
       if (point && !active.discardRecovery && active.source === sourceInputs()) {
         active.failed = point;
+        setRunActivity(experiment, 'ready to pick up');
+        const titles = (point.steps ?? [point]).map(({ title }) => `“${title}”`).join(', ');
         pickup.querySelector('[data-part="pickup-reason"]').textContent =
-          `It stopped at “${point.title}”. Finished steps are kept, so picking up sends only the unfinished ones.`;
+          `Calls to retry: ${titles}. Finished steps are kept.`;
         pickupModel.value = '';
         pickup.hidden = false;
         run.disabled = false;
@@ -605,8 +698,8 @@ function setupGraph(experiment) {
   }
 
   part('load-sample').addEventListener('click', () => {
-    if (notes.value.trim() && notes.value !== notes.defaultValue &&
-        !window.confirm('Replace your input with the sample?')) return;
+    const edited = notes.value !== notes.defaultValue || (minutes && minutes.value !== minutes.defaultValue);
+    if (!mayReplaceSetup(experiment, runStatus, edited ? 'Replace your input with the sample?' : '')) return;
     notes.value = notes.defaultValue;
     if (minutes) minutes.value = minutes.defaultValue;
     invalidatePickup();
@@ -627,7 +720,6 @@ function setupGraph(experiment) {
   part('experiment-form').addEventListener('submit', async event => {
     event.preventDefault();
     if (active && !active.failed) return;
-    if (active) finishRun();
     const input = notes.value.trim();
     const defaultModel = model.value.trim();
     const roleModels = new Map(modelRoles.map(role => [role, chooseModel(modelFields.get(role), defaultModel)]));
@@ -636,6 +728,7 @@ function setupGraph(experiment) {
     const budget = minutes?.valueAsNumber;
     const missing = [
       [notes, input, 'Enter some input or load the sample.'],
+      [notes, input.length <= notes.maxLength, `Shorten the input to ${notes.maxLength} characters.`],
       [minutes, !minutes || (Number.isInteger(budget) && budget >= 1 && budget <= 720), 'Enter a whole number from 1 to 720.'],
       [invalidModel?.field, !invalidModel, 'Choose a model or enter its full OpenRouter ID.'],
       [key, local || apiKey, 'Enter your OpenRouter key to run the graph.'],
@@ -647,9 +740,11 @@ function setupGraph(experiment) {
       return;
     }
 
+    if (active) finishRun();
     const controller = new AbortController();
     const current = { controller, paused: false, apiKey, roleModels, source: sourceInputs() };
     active = current;
+    current.runRecord = beginRun(experiment, controller.signal, recordOutput);
     trace.replaceChildren();
     traceTitle.textContent = 'Run record';
     const modelCount = new Set([...roleModels.values()].map(selection => selection.id)).size;
@@ -754,21 +849,18 @@ function setupGraph(experiment) {
       setStatus(runStatus, 'Enter your OpenRouter key to pick up the run.', true);
       return;
     }
-    const { failed, roleModels } = active;
-    if (chosen) {
-      const previous = roleModels.get(failed.role)?.id;
-      for (const [role, selection] of roleModels) {
-        if (!failed.role || role === failed.role || selection.id === previous) roleModels.set(role, { ...selection, id: chosen });
-      }
-    }
+    const { failed } = active;
+    active.roleModels = pickupSelections(chosen);
     active.apiKey = apiKey;
     active.controller = new AbortController();
+    beginRun(experiment, active.controller.signal, recordOutput, active.runRecord);
     active.failed = undefined;
     pickup.hidden = true;
     run.disabled = true;
     cancel.hidden = false;
     cancel.focus();
-    record('Picked up', chosen ? `Continuing from “${failed.title}” with ${chosen}.` : `Trying “${failed.title}” again with the same model.`);
+    const titles = (failed.steps ?? [failed]).map(({ title }) => `“${title}”`).join(', ');
+    record('Picked up', chosen ? `Retrying ${titles} with ${chosen}.` : `Retrying ${titles} with the same model picks.`);
     setStatus(runStatus, 'Picking up where it stopped…');
     await advance(() => active.graph.pickUp(active.controller.signal));
   });
@@ -838,6 +930,34 @@ function openExperiment(experiment, notes) {
 
 setupHandoff(experiments, openExperiment);
 if (local) setupCases(experiments, model, openExperiment);
+
+for (const experiment of experiments) for (const example of experiment.querySelectorAll('[data-example]')) {
+  const name = example.dataset.example === 'canary' ? 'canary' : 'beer example';
+  const button = example.querySelector('[data-load-example]');
+  button.hidden = false;
+  button.addEventListener('click', () => {
+    const status = example.querySelector('[data-example-status]');
+    const notes = experiment.querySelector('[data-part="notes"]');
+    const minutes = experiment.querySelector('[data-part="minutes"]');
+    const fields = [...experiment.querySelectorAll('[data-case-field]')];
+    const editableFields = fields.filter(field => field.dataset.caseField !== 'provider');
+    const edited = [notes, minutes, ...editableFields].some(field => field && field.value !== field.defaultValue);
+    const confirmation = edited ? `Replace the current input and answer fields with the ${name}?` : '';
+    if (!mayReplaceSetup(experiment, status, confirmation)) return;
+
+    const { fields: values, minutes: budget } = JSON.parse(example.querySelector('[data-example-setup]').value);
+    notes.value = example.querySelector('[data-example-input]').textContent;
+    if (minutes && budget) minutes.value = budget;
+    for (const field of editableFields) {
+      const key = field.dataset.caseField;
+      field.value = values[key] ?? field.defaultValue;
+    }
+    experiment.dispatchEvent(new Event('setup-changed'));
+    experiment.dispatchEvent(new Event('example-loaded'));
+    setStatus(status, `${name[0].toUpperCase()}${name.slice(1)} loaded. Review the input and model picks before running.`);
+    notes.focus();
+  });
+}
 
 function linkedExperiment() {
   return experiments.find(panel => `#${panel.id}` === window.location.hash);

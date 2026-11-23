@@ -367,16 +367,24 @@ export function markDifferences(results) {
     result.querySelectorAll('.is-different').forEach(node => node.classList.remove('is-different'));
     result.querySelectorAll('.diff-note').forEach(node => node.remove());
   }
+  const summary = results[0]?.closest('[data-versus]')?.querySelector('[data-part="difference-summary"]');
+  if (summary) summary.textContent = '';
   if (results.length !== 2 || !results.every(result => result.dataset.source)) return;
   const pair = results.map(leaves);
   const texts = pair.map(nodes => nodes.map(node => comparable(node.textContent)));
-  results.forEach((result, index) => {
-    for (const [position, node] of pair[index].entries()) {
+  if (summary) {
+    const count = Array.from({ length: Math.max(texts[0].length, texts[1].length) },
+      (_, position) => texts[0][position] !== texts[1][position]).filter(Boolean).length;
+    summary.textContent = count ? `${count} highlighted ${count === 1 ? 'position differs' : 'positions differ'} across the two results.`
+      : 'The compared text matches.';
+  }
+  for (const [index, nodes] of pair.entries()) {
+    for (const [position, node] of nodes.entries()) {
       if (texts[1 - index][position] === texts[index][position]) continue;
       node.classList.add('is-different');
       (node.tagName === 'TR' ? node.lastElementChild : node).append(el('span', 'visually-hidden diff-note', ' (differs from the other result)'));
     }
-  });
+  }
 }
 
 // Graph and lab run records: tag each step so the record reads as a flow, with branches side by side.

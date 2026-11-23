@@ -1,5 +1,5 @@
 import { sourceText } from './markdown.js';
-import { receipts } from './run-state.js';
+import { publicRunRecord, receipts, runForOutput } from './run-state.js';
 
 const outputSelector = '[data-handoff-output]';
 const htmlEntities = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
@@ -16,26 +16,30 @@ function readOutput(output) {
     text: sourceText(result),
     state: result?.dataset.resultState || 'sample',
     receipt: receipts.get(result),
+    run: runForOutput(result),
   };
 }
 
-function readExport(experiment, controls) {
+export function readExport(experiment, controls) {
   const scope = controls.dataset.exportScope;
   const output = controls.closest(outputSelector);
   if (scope === 'output') {
     const entry = readOutput(output);
-    return { title: entry.title, note: '', entries: [entry] };
+    return { title: entry.title, note: '', entries: [entry], runs: [] };
   }
 
   const source = scope === 'record' ? output : experiment;
-  const entries = [...source.querySelectorAll(outputSelector)].map(readOutput);
-  const title = scope === 'record' ? readText(output, '[data-handoff-title]').trim() : 'Run results';
+  const run = runForOutput(source);
+  let entries = [...source.querySelectorAll(outputSelector)].map(readOutput);
+  if (scope === 'run') entries = entries.filter(entry => run && entry.run === run);
+  const title = scope === 'record' ? readText(output, '[data-handoff-title]').trim()
+    : scope === 'run' ? 'Latest run record' : 'Paired results';
   const note = scope === 'record' ? readText(output, '[data-part="trace-meta"]').trim() : '';
   const comparison = readText(experiment, '[data-part="comparison-status"]');
   if (scope === 'pair' && comparison.trim()) {
     entries.push({ title: 'Comparison notes', text: comparison, state: 'record' });
   }
-  return { title, note, entries };
+  return { title, note, entries, runs: scope === 'pair' ? [] : [run] };
 }
 
 const states = {
@@ -109,15 +113,22 @@ function renderMarkdown(title, note, entries, timestamp) {
   return blocks.join('\n\n') + '\n';
 }
 
-document.addEventListener('click', event => {
+globalThis.document?.addEventListener('click', event => {
   const button = event.target.closest('[data-export-format]');
   if (!button) return;
 
   const controls = button.closest('[data-export-scope]');
   const status = controls.querySelector('[data-export-status]');
   const experiment = controls.closest('[data-experiment]');
-  const { title, note, entries } = readExport(experiment, controls);
+  const { title, note, entries, runs } = readExport(experiment, controls);
   const available = entries.filter(entry => entry.text.trim());
+  for (const run of new Set(runs.filter(Boolean))) {
+    const record = publicRunRecord(run);
+    if (record.attempts.length) available.push({
+      title: `Run attempts · ${record.id}`,
+      text: JSON.stringify(record, null, 2),
+    });
+  }
   status.textContent = '';
   if (!available.length) {
     status.textContent = 'There is no output to export yet.';

@@ -1,3 +1,4 @@
+import { mayReplaceSetup } from './cases.js';
 import { sourceText } from './markdown.js';
 import { layoutTrace, renderResult } from './layouts.js';
 import { receipts } from './run-state.js';
@@ -67,13 +68,9 @@ export function setupHandoff(experiments, openExperiment) {
       text.focus();
       return;
     }
-    if (target.experiment.querySelector('[data-part="run"]')?.disabled) {
-      status.textContent = 'Finish or cancel the destination’s run before replacing its input.';
-      status.setAttribute('data-error', '');
-      return;
-    }
+    if (!mayReplaceSetup(target.experiment, status)) return;
     target.notes.value = combined;
-    target.experiment.dispatchEvent(new Event('input-handoff'));
+    target.experiment.dispatchEvent(new Event('setup-changed'));
     source.returnFocus = undefined;
     dialog.close();
     openExperiment(target.experiment, target.notes);

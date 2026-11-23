@@ -80,6 +80,11 @@ h1, h2, h3, h4, h5, label, legend, summary, button, .wordmark, .header-link, .ch
   .title-block { min-width: 0; }
 }
 
+.example-panel { padding: .75rem 1.5rem; border-bottom: 1px solid var(--line); }
+.example-panel summary { cursor: pointer; }
+.example-panel pre { font: inherit; }
+.example-panel button { margin-top: .75rem; }
+
 .experiment { border: 1.5px solid var(--ink); border-radius: .2rem; background: var(--paper); overflow: hidden; scroll-margin-top: 1rem; }
 .experiment-header { padding: 1.35rem 1.5rem; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: .65rem 1rem; align-items: center; justify-content: space-between; }
 .experiment-header h2 { font-size: clamp(1.6rem, 3vw, 2.15rem); line-height: 1.1; }

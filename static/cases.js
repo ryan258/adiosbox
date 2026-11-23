@@ -1,3 +1,5 @@
+import { isRunBusy } from './run-state.js';
+
 const prefix = 'adiosbox.case.1.';
 const draftKey = 'adiosbox.draft.1';
 const draftSetting = 'adiosbox.keep-draft.1';
@@ -37,13 +39,37 @@ export function cleanCase(value) {
   return { id, experiment, name, expected, model, revision, graphRevision, savedAt, fields: Object.fromEntries(fields), receipt };
 }
 
+export function confirmSetupReplacement(experiment, message = '') {
+  const detail = { message, asked: false };
+  return experiment.dispatchEvent(new CustomEvent('before-replace-setup', { cancelable: true, detail })) &&
+    (detail.asked || !message || window.confirm(message));
+}
+
+export function mayReplaceSetup(experiment, status, message = '', { keepDraft = false } = {}) {
+  if (isRunBusy(experiment)) {
+    status.textContent = 'Finish or cancel the run before replacing this setup.';
+    status.setAttribute('data-error', '');
+    return false;
+  }
+  if (keepDraft) return !message || window.confirm(message);
+  return confirmSetupReplacement(experiment, message);
+}
+
+export function matchingCaseReceipt(setup, revision, recent, saved) {
+  const matches = candidate => candidate?.model === setup.model &&
+    Object.keys(candidate.fields).length === Object.keys(setup.fields).length &&
+    Object.entries(setup.fields).every(([name, value]) => candidate.fields[name] === value);
+  if (recent?.checks && matches(recent.setup)) return recent.checks;
+  return saved?.revision === revision && matches(saved) ? saved.receipt ?? null : null;
+}
+
 function workbenchFields(experiment) {
   const fields = new Map();
   for (const name of ['notes', 'instructions', 'instructions-b', 'minutes']) {
     const field = experiment.querySelector(`[data-part="${name}"]`);
     if (field) fields.set(name, field);
   }
-  for (const field of experiment.querySelectorAll('[data-role-model]')) {
+  for (const field of experiment.querySelectorAll('[data-role-model]:not([data-role-model="pickup"])')) {
     fields.set('role:' + field.dataset.roleModel, field);
   }
   for (const field of experiment.querySelectorAll('[data-case-field]')) {
@@ -79,6 +105,7 @@ export function setupCases(experiments, model, openExperiment) {
   const keepDraft = get('keep-draft');
   const draftOpen = get('draft-open');
   const draftStatus = get('draft-status');
+  const quickDraft = get('draft-quick-open');
   let records = [];
   let saving;
 
@@ -187,7 +214,8 @@ export function setupCases(experiments, model, openExperiment) {
     try {
       const setup = readCaseSetup(saving, model.value);
       const lastRun = recentChecks.get(saving);
-      const receipt = lastRun && JSON.stringify(lastRun.setup) === JSON.stringify(setup) ? lastRun.checks : null;
+      const revision = revisionFor(saving);
+      const receipt = matchingCaseReceipt(setup, revision, lastRun, openedCases.get(saving));
       record = cleanCase({
         ...setup,
         receipt,
@@ -195,7 +223,7 @@ export function setupCases(experiments, model, openExperiment) {
         experiment: saving.id,
         name: caseName.value.trim(),
         expected: expected.value.trim(),
-        revision: revisionFor(saving),
+        revision,
         graphRevision: graphRevisionFor(saving),
         savedAt: Date.now(),
       });
@@ -218,6 +246,7 @@ export function setupCases(experiments, model, openExperiment) {
     }
     openedCases.set(saving, record);
     saving.dataset.caseExpected = record.expected;
+    saving.dispatchEvent(new CustomEvent('case-saved', { detail: record }));
     saving = undefined;
     dialog.close();
     refresh(record.id);
@@ -232,17 +261,14 @@ export function setupCases(experiments, model, openExperiment) {
   function restore(record, status, draft = false) {
     const experiment = byId.get(record?.experiment);
     if (!experiment) return;
-    if (experiment.querySelector('[data-part="run"]')?.disabled) {
-      show(status, 'Finish or cancel the running experiment before restoring this setup.', true);
-      return;
-    }
     const fields = workbenchFields(experiment);
     const edited = [...fields].some(([name, field]) =>
       field.value !== field.defaultValue && field.value !== record.fields[name]);
-    if (edited && !window.confirm('Replace the current workbench input with this saved setup?')) return;
+    if (!mayReplaceSetup(experiment, status, edited ? 'Replace the current workbench input with this saved setup?' : '',
+      { keepDraft: true })) return;
     for (const [name, field] of fields) field.value = record.fields[name] ?? field.defaultValue;
     model.value = record.model;
-    model.dispatchEvent(new Event('change'));
+    model.dispatchEvent(new CustomEvent('change', { detail: { restored: true } }));
     if (draft) openedCases.delete(experiment);
     else openedCases.set(experiment, record);
     experiment.dataset.caseExpected = record.expected;
@@ -277,9 +303,11 @@ export function setupCases(experiments, model, openExperiment) {
       keepDraft.checked = localStorage.getItem(draftSetting) === 'yes';
       const draft = keepDraft.checked && readDraft();
       draftOpen.disabled = !draft || !byId.has(draft.experiment);
+      quickDraft.hidden = draftOpen.disabled;
       show(draftStatus, draft ? `Latest draft · ${draft.name}` : '');
     } catch {
       draftOpen.disabled = true;
+      quickDraft.hidden = true;
       show(draftStatus, 'The browser could not read the last draft.', true);
     }
   }
@@ -296,6 +324,7 @@ export function setupCases(experiments, model, openExperiment) {
       });
       localStorage.setItem(draftKey, JSON.stringify(record));
       draftOpen.disabled = false;
+      quickDraft.hidden = false;
       const message = `Latest draft · ${record.name}`;
       if (draftStatus.textContent !== message) show(draftStatus, message);
     } catch (error) {
@@ -316,19 +345,53 @@ export function setupCases(experiments, model, openExperiment) {
       show(draftStatus, 'The browser could not change draft recovery.', true);
     }
   });
-  draftOpen.addEventListener('click', () => {
+  function restoreDraft() {
+    library.open = true;
     try {
       restore(readDraft(), draftStatus, true);
     } catch {
       show(draftStatus, 'The browser could not restore the draft.', true);
     }
+  }
+  draftOpen.addEventListener('click', restoreDraft);
+  quickDraft.addEventListener('click', restoreDraft);
+  model.addEventListener('change', event => {
+    if (!keepDraft.checked || event.detail?.restored) return;
+    try {
+      const draft = readDraft();
+      if (draft) {
+        localStorage.setItem(draftKey, JSON.stringify(cleanCase({ ...draft, model: model.value, savedAt: Date.now() })));
+        refreshDraft();
+      } else {
+        const current = experiments.find(experiment => !experiment.hidden);
+        if (current) keepSetup(current);
+      }
+    } catch (error) {
+      show(draftStatus, `Draft could not be kept. ${error.message}`, true);
+    }
   });
   for (const experiment of experiments) {
+    experiment.addEventListener('before-replace-setup', event => {
+      if (!keepDraft.checked) return;
+      try {
+        const draft = readDraft();
+        if (!draft) return;
+        const detail = event.detail;
+        detail.asked = true;
+        const draftMessage = `This action will replace the recoverable setup for “${draft.name}”.`;
+        if (!window.confirm([draftMessage, detail.message].filter(Boolean).join(' ') + (detail.message ? '' : ' Continue?'))) {
+          event.preventDefault();
+        }
+      } catch (error) {
+        show(draftStatus, `The browser could not read the last draft. ${error.message}`, true);
+        event.preventDefault();
+      }
+    });
     const fields = new Set(workbenchFields(experiment).values());
     for (const name of ['input', 'change']) experiment.addEventListener(name, event => {
       if (fields.has(event.target)) keepSetup(experiment);
     });
-    for (const name of ['input-handoff', 'setup-changed']) experiment.addEventListener(name, () => keepSetup(experiment));
+    experiment.addEventListener('setup-changed', () => keepSetup(experiment));
   }
 
   get('case-delete').addEventListener('click', () => {

@@ -170,7 +170,8 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
   let calls = 0;
   // A pick-up after a failure gets a fresh signal, since the failed attempt's controller is already aborted.
   let currentSignal = signal;
-  let failure;
+  const failures = [];
+  let recoveryBlocked = false;
   let approved = false;
   let completedCalls = 0;
   const specialistProgress = new Map();
@@ -180,7 +181,10 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
     if (calls >= requestLimits[spec.mode]) throw new Error('The model request limit was reached.');
     const node = spec.nodes[name];
     const input = typeof data === 'string' ? data : JSON.stringify(data);
-    if (input.length > 8000) throw new Error('A handoff exceeded the input limit. Try with shorter source material.');
+    if (input.length > 8000) {
+      recoveryBlocked = true;
+      throw new Error('A handoff exceeded the input limit. Try with shorter source material.');
+    }
     calls += 1;
     try {
       const response = await complete({ prompt: node.prompt, input, node: modelRole });
@@ -197,7 +201,8 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
       record(label || node.title, response.content, response.reportedModel, response.requestedModel, kind, response.receipt);
       return response.content;
     } catch (error) {
-      failure ??= { title: label || node.title, role: modelRole };
+      if (error?.reason === 'edit-request') recoveryBlocked = true;
+      else failures.push({ title: label || node.title, role: modelRole });
       throw error;
     }
   }
@@ -505,14 +510,15 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
     // The step that failed, if the run stopped with unfinished work to pick up.
     async pickupPoint() {
       const { next } = await compiled.getState(config());
-      return next.length && failure && (approved || !resumeNode || !next.includes(resumeNode)) ? failure : null;
+      if (!next.length || !failures.length || recoveryBlocked || (!approved && resumeNode && next.includes(resumeNode))) return null;
+      return failures.length === 1 ? failures[0] : { ...failures[0], steps: [...failures] };
     },
     // Rerun only the unfinished steps. Each pick-up gets the full request budget again; finished steps never rerun.
     async pickUp(nextSignal) {
       currentSignal = nextSignal;
       if (!(await this.pickupPoint())) throw new Error('There is nothing to pick up.');
       calls = 0;
-      failure = undefined;
+      failures.length = 0;
       return settle(await compiled.invoke(null, config()));
     },
     async resume(choice) {

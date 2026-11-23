@@ -1,7 +1,8 @@
+import { mayReplaceSetup } from './cases.js';
 import { prepareFactInputs } from './fact-test.js';
 import { appendRunRecord, runRecordText } from './handoff.js';
-import { runPromptExperiment, validatePromptCase } from './prompt-experiments.js';
-import { withCallDeadline } from './run-state.js';
+import { canaryGraderRevision, runPromptExperiment, validatePromptCase } from './prompt-experiments.js';
+import { beginRun, linkRunOutput, setRunActivity, withCallDeadline } from './run-state.js';
 import { formatWrittenResults } from './layouts.js';
 
 const normalize = value => value.normalize('NFKC').toLowerCase()
@@ -37,6 +38,31 @@ export function formatReportedUsage(entries) {
   return details.join(' · ');
 }
 
+function reportedModelCaveat(entries) {
+  const models = new Map();
+  const providers = new Map();
+  let missing = 0;
+  for (const { requestedModel, reportedModel, reportedProvider } of entries) {
+    if (reportedProvider) {
+      if (!providers.has(requestedModel)) providers.set(requestedModel, new Set());
+      providers.get(requestedModel).add(reportedProvider);
+    }
+    if (!reportedModel) {
+      missing += 1;
+      continue;
+    }
+    if (!models.has(requestedModel)) models.set(requestedModel, new Set());
+    models.get(requestedModel).add(reportedModel);
+  }
+  const drift = [...models].filter(([, reported]) => reported.size > 1)
+    .map(([requested, reported]) => `${requested} returned ${[...reported].join(', ')}.`);
+  for (const [requested, reported] of providers) {
+    if (reported.size > 1) drift.push(`${requested} used multiple reported providers: ${[...reported].join(', ')}.`);
+  }
+  if (missing) drift.push(`OpenRouter omitted the responding model on ${missing} of ${entries.length} replies.`);
+  return drift.join(' ');
+}
+
 export function checkRecall(answers, expected) {
   return ['next', 'source', 'decision'].map(key => ({
     key, pass: containsPhrase(answers[key], expected[key]),
@@ -68,12 +94,16 @@ export function setupLab(experiment, ui) {
   const coldForm = part('cold-form');
   const loadSample = part('load-prompt-sample');
   let active;
+  let runRecord;
+  const recordOutput = trace.closest('[data-handoff-record]');
   let repair;
   let blind;
   let cold;
 
   function budget() {
-    const picks = [...modelFields.values()].map(field => chooseModel(field, model.value.trim()).id);
+    const picks = (spec.roles ?? []).map(({ key, label }) => ({
+      label, id: chooseModel(modelFields.get(key), model.value.trim()).id,
+    }));
     const maximum = experiment.dataset.baseCalls;
     const output = part('run-budget');
     if (maximum === '0') output.textContent = 'No model calls.';
@@ -97,6 +127,8 @@ export function setupLab(experiment, ui) {
 
   function reset() {
     repair = blind = cold = undefined;
+    runRecord = undefined;
+    linkRunOutput(recordOutput);
     if (repairForm) repairForm.hidden = true;
     if (blindForm) blindForm.hidden = true;
     if (coldForm) coldForm.hidden = true;
@@ -113,15 +145,18 @@ export function setupLab(experiment, ui) {
   const sampleState = () => JSON.stringify([notes.value, ...[...fields].filter(([key]) => key !== 'provider').map(([, field]) => field.value)]);
   let loadedState = sampleState();
   loadSample?.addEventListener('click', () => {
-    if (active) return;
-    if (sampleState() !== loadedState && !window.confirm('Replace your input with the sample case?')) return;
-    const selected = spec.cases[Number(part('prompt-sample').value)];
+    const selected = spec.cases[part('prompt-sample').value];
+    if (!selected) {
+      setStatus(status, 'Choose a sample case from the list.', true);
+      return;
+    }
+    const edited = sampleState() !== loadedState;
+    if (!mayReplaceSetup(experiment, status, edited ? 'Replace your input with the sample case?' : '')) return;
     notes.value = selected.input;
-    for (const [key, field] of fields) {
-      if (key !== 'provider') field.value = selected.fields?.[key] || '';
+    for (const { key, sample } of spec.fields ?? []) {
+      if (key !== 'provider') fields.get(key).value = selected.fields?.[key] || sample || '';
     }
     loadedState = sampleState();
-    reset();
     experiment.dispatchEvent(new Event('setup-changed'));
     setStatus(status, `Loaded ${selected.title}.`);
   });
@@ -139,6 +174,8 @@ export function setupLab(experiment, ui) {
     if (active) return;
     const controller = new AbortController();
     active = controller;
+    runRecord = beginRun(experiment, controller.signal, recordOutput, runRecord);
+    setRunActivity(experiment, 'running');
     run.disabled = true;
     const repairRun = part('repair-run');
     if (repairRun) repairRun.disabled = true;
@@ -153,6 +190,7 @@ export function setupLab(experiment, ui) {
       setStatus(status, reason || 'The experiment stopped.', true);
     } finally {
       active = undefined;
+      setRunActivity(experiment);
       run.disabled = false;
       if (repairRun) repairRun.disabled = false;
       if (document.activeElement === cancel) button.focus();
@@ -170,7 +208,7 @@ export function setupLab(experiment, ui) {
     return JSON.parse(source.querySelector('[data-part="spec"]').value);
   }
 
-  async function invokeGraph({ input, controller, apiKey, selectedModels, tag = '', retained, usage }) {
+  async function invokeGraph({ input, controller, apiKey, selectedModels, tag = '', retained, replies }) {
     const { createExperimentGraph } = await import(document.body.dataset.graphModule);
     controller.signal.throwIfAborted();
     const graph = createExperimentGraph(graphDefinition(), {
@@ -183,7 +221,7 @@ export function setupLab(experiment, ui) {
         const outcome = await request(controller, {
           input, prompt, modelId: requestedModel, apiKey, step: tag ? `${tag}${node}` : node,
         });
-        if (usage) usage.push(outcome.usage);
+        replies?.push({ ...outcome, requestedModel });
         return { ...outcome, requestedModel };
       },
     });
@@ -214,18 +252,21 @@ export function setupLab(experiment, ui) {
 
   async function compareStop(input, values, selectedModels, controller, apiKey) {
     const [hasFact, lacksFact] = prepareFactInputs(input, values.present, values.absent);
+    const replies = [];
     setStatus(status, 'Running the brief with the fact…');
-    const first = await invokeGraph({ input: hasFact, controller, apiKey, selectedModels, tag: 'Fact present · ' });
+    const first = await invokeGraph({ input: hasFact, controller, apiKey, selectedModels, tag: 'Fact present · ', replies });
     setStatus(status, 'Running the brief without the fact…');
-    const second = await invokeGraph({ input: lacksFact, controller, apiKey, selectedModels, tag: 'Fact missing · ' });
+    const second = await invokeGraph({ input: lacksFact, controller, apiKey, selectedModels, tag: 'Fact missing · ', replies });
     const checks = checkStopCases(first, second, values.cue);
-    record('Decision checks', makeChecks(checks));
+    const caveat = reportedModelCaveat(replies);
+    record('Decision checks', [makeChecks(checks), caveat].filter(Boolean).join('\n'));
+    record('Stop comparison usage', formatReportedUsage(replies.map(reply => reply.usage)));
     setStatus(status, `${checks.filter(check => check.pass).length} of ${checks.length} checks passed.`);
   }
 
   async function compareReviewers(input, selectedModels, controller, apiKey) {
     const graph = graphDefinition();
-    const sharedUsage = [];
+    const comparisonReplies = [];
     const draftStart = performance.now();
     setStatus(status, 'Generating one shared first draft…');
     const draft = await request(controller, {
@@ -239,19 +280,22 @@ export function setupLab(experiment, ui) {
     record('Shared first draft', draft.content, draft.reportedModel, selectedModels.writer,
       draft.truncated ? 'partial' : 'step', draft.receipt);
     if (draft.truncated) throw new Error('The shared first draft was incomplete. Neither reviewer ran.');
-    sharedUsage.push(draft.usage);
-    record('Shared draft usage', `${Math.round(performance.now() - draftStart)} ms · ${formatReportedUsage(sharedUsage)}`);
+    comparisonReplies.push({ ...draft, requestedModel: selectedModels.writer });
+    record('Shared draft usage', `${Math.round(performance.now() - draftStart)} ms · ${formatReportedUsage([draft.usage])}`);
     for (const [role, label] of [['baseline', 'Baseline'], ['challenger', 'Challenger']]) {
-      const usage = [];
+      const replies = [];
       const started = performance.now();
       setStatus(status, `Running ${label.toLowerCase()} reviewer…`);
       const result = await invokeGraph({
-        input, controller, apiKey, tag: `${label} · `, retained: { draft: draft.content }, usage,
+        input, controller, apiKey, tag: `${label} · `, retained: { draft: draft.content }, replies,
         selectedModels: { draft: selectedModels.writer, review: selectedModels[role] },
       });
+      comparisonReplies.push(...replies);
       const outcome = result.final ? 'Accepted by the reviewer' : 'Stopped without acceptance';
-      record(`${label} outcome and usage`, `${outcome} · ${result.passes - 1} writer revisions\n${Math.round(performance.now() - started)} ms · ${formatReportedUsage(usage)}`);
+      record(`${label} outcome and usage`, `${outcome} · ${result.passes - 1} writer revisions\n${Math.round(performance.now() - started)} ms · ${formatReportedUsage(replies.map(reply => reply.usage))}`);
     }
+    const caveat = reportedModelCaveat(comparisonReplies);
+    if (caveat) record('Model comparison caveat', caveat);
     setStatus(status, 'Both reviewer runs are ready. Compare what each reviewer caught and the reported usage.');
   }
 
@@ -334,6 +378,7 @@ export function setupLab(experiment, ui) {
     }
     const input = notes.value.trim();
     if (!input) return validated(notes, 'Enter an input to run the experiment.');
+    if (input.length > notes.maxLength) return validated(notes, `Shorten the input to ${notes.maxLength} characters.`);
     const values = Object.fromEntries([...fields].map(([key, field]) => [key, field.value.trim()]));
     for (const { key, optional } of spec.fields || []) {
       if (!values[key] && !optional) return validated(fields.get(key), 'Fill in this field before running.');
@@ -353,8 +398,9 @@ export function setupLab(experiment, ui) {
       selectedModels[role] = selection.id;
     }
     if (spec.mode === 'prompt') {
-      const issue = validatePromptCase(spec.technique, input, values, selectedModels.comparison);
-      if (issue) return validated(fields.get(issue.field) || (issue.field === 'model' ? modelFields.get('comparison') : notes), issue.message);
+      const issue = validatePromptCase(spec.technique, input, values, selectedModels.comparison, spec.answerKind);
+      if (issue) return validated(fields.get(issue.field) || (issue.field === 'model' ?
+        chooseModel(modelFields.get('comparison'), model.value.trim()).field : notes), issue.message);
     }
     const twins = spec.mode === 'blind' ? ['first', 'second'] : spec.mode === 'cost' ? ['baseline', 'challenger'] : null;
     if (twins && selectedModels[twins[0]] === selectedModels[twins[1]]) {
@@ -371,6 +417,18 @@ export function setupLab(experiment, ui) {
       if (spec.mode === 'cost') await compareReviewers(input, selectedModels, controller, apiKey);
       if (spec.mode === 'blind') await startBlind(input, values, selectedModels, controller, apiKey);
       if (spec.mode === 'prompt') {
+        if (spec.technique === 'canary') {
+          runRecord.canary = {
+            caseId: [...(spec.cases ?? []), ...[...experiment.querySelectorAll('[data-example]')].map(example => ({
+              id: example.dataset.example,
+              input: example.querySelector('[data-example-input]').textContent,
+              fields: JSON.parse(example.querySelector('[data-example-setup]').value).fields,
+            }))].find(sample => sample.input.trim() === input && sample.fields?.expected === values.expected)?.id ?? 'custom',
+            answerKey: values.expected,
+            answerKind: spec.answerKind,
+            graderRevision: canaryGraderRevision,
+          };
+        }
         const prompt = spec.technique === 'schema' ? graphDefinition().nodes.review.prompt : spec.prompt;
         const { received, scorable } = await runPromptExperiment({ ...spec, prompt }, {
           input, values, record, signal: controller.signal, usageText: formatReportedUsage,
@@ -469,8 +527,15 @@ export function setupLab(experiment, ui) {
       setStatus(status, `${checks.filter(check => check.pass).length} of 3 phrases found. Check paraphrases against the expected meaning.`);
     });
     part('cold-back').addEventListener('click', () => { reset(); notes.focus(); });
-    experiment.addEventListener('input-handoff', () => { if (cold) reset(); });
   }
+
+  experiment.addEventListener('setup-changed', reset);
+  experiment.addEventListener('example-loaded', () => {
+    if (loadSample) {
+      part('prompt-sample').selectedIndex = -1;
+      loadedState = sampleState();
+    }
+  });
 
   experiment.addEventListener('case-restored', event => {
     reset();

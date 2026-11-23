@@ -109,9 +109,10 @@ function openRouterMessage(text) {
 }
 
 export class CompletionError extends Error {
-  constructor(message, retryable = false) {
+  constructor(message, retryable = false, reason = '') {
     super(message);
     this.retryable = retryable;
+    this.reason = reason;
   }
 }
 
@@ -124,7 +125,7 @@ export function readCompletion(response, responseText, { modelId, provider, incl
       throw new CompletionError(`OpenRouter found no matching endpoint for ${modelId} at ${provider}. Check the provider and its supported parameters.`);
     }
     throw new CompletionError([providerError(response.status, local), openRouterMessage(responseText)].filter(Boolean).join(' '),
-      transientStatus.has(response.status));
+      transientStatus.has(response.status), [401, 402, 403].includes(response.status) ? 'connection' : '');
   }
 
   let payload;

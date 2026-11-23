@@ -3,6 +3,23 @@ import { providerSlug, teachbackRoutes } from './completion-options.js';
 const placementMarker = '{{fact}}';
 const comparable = text => text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 const containsCue = (text, cue) => ` ${comparable(text)} `.includes(` ${comparable(cue)} `);
+export const canaryGraderRevision = 2;
+
+function canaryValue(answer, kind) {
+  if (typeof answer !== 'string' && typeof answer !== 'number') return null;
+  if (typeof answer === 'number' && (kind === 'cents' ? Math.abs(answer) >= 2 ** 45 : !Number.isSafeInteger(answer))) return null;
+  const value = String(answer).trim();
+  if (kind === 'grid') return /^(?:\d{6}\/){4}\d{6}$/.test(value) ? value : null;
+  if (kind === 'action') return /^[a-z]+(?:_[a-z]+)*$/.test(value) ? value : null;
+  if (kind === 'abstention' && /^unknown$/i.test(value)) return 'unknown';
+  if (kind === 'cents') {
+    const match = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(value);
+    if (!match) return null;
+    const [, sign, whole, fraction = ''] = match;
+    return BigInt(sign + whole + fraction.padEnd(2, '0'));
+  }
+  return /^-?\d+$/.test(value) ? BigInt(value) : null;
+}
 
 function readJSON(text) {
   try {
@@ -30,10 +47,16 @@ function readScheduleInput(input) {
     !Array.isArray(job.after) || job.after.some(id => id === job.id || !ids.has(id)))) {
     throw new Error('Give every job a unique ID, positive whole minutes, one resource, and an after list of other job IDs.');
   }
+  const remaining = new Map(jobs.map(job => [job.id, job.after]));
+  while (remaining.size) {
+    const ready = [...remaining].filter(([, prerequisites]) => prerequisites.every(id => !remaining.has(id)));
+    if (!ready.length) throw new Error(`A dependency cycle blocks these jobs: ${[...remaining.keys()].join(', ')}. Break the cycle before running.`);
+    for (const [id] of ready) remaining.delete(id);
+  }
   return spec;
 }
 
-export function validatePromptCase(technique, input, values, modelId) {
+export function validatePromptCase(technique, input, values, modelId, answerKind) {
   if (technique === 'boundary' && (!['draft', 'ask'].includes(values.expected) ||
       (values.expected === 'ask' && !comparable(values.cue || '')))) {
     return { field: 'expected', message: 'Use draft or ask as the expected decision. For ask, enter the deciding phrase.' };
@@ -41,6 +64,14 @@ export function validatePromptCase(technique, input, values, modelId) {
   if (technique === 'placement' && (input.split(placementMarker).length !== 2 ||
       input.split(placementMarker).some(section => !section.trim()))) {
     return { field: 'notes', message: 'Put {{fact}} on a line between two parts of the source packet.' };
+  }
+  if (technique === 'canary') {
+    if (!(values.expected || '').split('|').every(answer => canaryValue(answer, answerKind) !== null)) {
+      return { field: 'expected', message: 'Enter a valid answer key in the format shown in the prompt. Separate accepted alternatives with |.' };
+    }
+    if (!modelId || modelId.startsWith('openrouter/')) {
+      return { field: 'model', message: 'Choose a specific model for all three canary attempts.' };
+    }
   }
   if (technique === 'ballot' && !/^[A-D]$/.test(values.expected)) {
     return { field: 'expected', message: 'Use one uppercase option letter from A to D as the answer key.' };
@@ -110,6 +141,12 @@ export function checkSchedule(text, { deadline, jobs }) {
     scheduled.push({ ...job, start, end });
   }
   return issues;
+}
+
+export function gradeCanary(text, expected, kind) {
+  const answer = readJSON(text || '')?.answer;
+  const actual = canaryValue(answer, kind);
+  return actual === null ? null : expected.split('|').some(key => canaryValue(key, kind) === actual);
 }
 
 function gradeBoundary(result, values) {
@@ -218,6 +255,28 @@ export async function runPromptExperiment(spec, { input, values, request, record
       `Ballot usage: ${usageText(results.map(result => result.usage))}`,
     ].join('\n'));
   }
+  if (spec.technique === 'canary') {
+    const checks = [];
+    for (let number = 1; number <= 3; number += 1) {
+      const result = await run(`Attempt ${number}`, input);
+      const pass = result ? gradeCanary(result.content, values.expected, spec.answerKind) : null;
+      checks.push(pass);
+      record(`Attempt ${number} · Check`, !result ? 'No complete reply.' : pass === null ? 'Miss. Answer format is invalid.' : pass ? 'Pass' : 'Miss');
+    }
+    const passed = checks.filter(Boolean).length;
+    const missing = results.some(reply => !reply.reportedModel);
+    const mixed = new Set(results.map(reply => reply.reportedModel).filter(Boolean)).size > 1;
+    const providers = new Set(results.map(reply => reply.reportedProvider).filter(Boolean));
+    const reason = results.length !== 3 || results.some(reply => reply.truncated) ? 'Fewer than three complete replies.'
+      : missing ? 'OpenRouter omitted a responding model.'
+        : mixed ? 'OpenRouter reported different responding models.'
+          : providers.size > 1 ? 'OpenRouter reported different providers.' : '';
+    record('Canary verdict', [
+      `${reason ? 'Inconclusive' : passed === 3 ? 'Tripped' : 'Not yet'}. ${passed} of 3 attempts matched the answer key.`,
+      reason,
+      `Answer key: ${values.expected}`,
+    ].filter(Boolean).join('\n'));
+  }
   if (spec.technique === 'schema') {
     const provider = values.provider;
     record('Review setup', `Both arms use the same supplied draft, reviewer prompt, and requested endpoint (${provider}).`);
@@ -228,10 +287,13 @@ export async function runPromptExperiment(spec, { input, values, request, record
   }
 
   const reported = results.map(result => result.reportedModel);
-  if (new Set(reported.filter(Boolean)).size > 1) {
+  if (spec.technique !== 'canary' && new Set(reported.filter(Boolean)).size > 1) {
     record('Model comparison caveat', 'OpenRouter reported different responding models. Choose one specific model and rerun for a controlled comparison.');
-  } else if (reported.some(id => !id)) {
+  } else if (spec.technique !== 'canary' && reported.some(id => !id)) {
     record('Model comparison caveat', 'OpenRouter omitted the responding model on at least one reply.');
+  }
+  if (spec.technique !== 'canary' && new Set(results.map(reply => reply.reportedProvider).filter(Boolean)).size > 1) {
+    record('Provider comparison caveat', 'OpenRouter reported different providers. Endpoint differences can affect this comparison.');
   }
   return { received: results.length, scorable: results.filter(result => !result.truncated).length };
 }
