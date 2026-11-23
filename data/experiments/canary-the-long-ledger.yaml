@@ -1,0 +1,363 @@
+slug: canary-the-long-ledger
+order: 421
+shelf: canaries
+title: "Canary: the long ledger"
+description: "Track a long register of sales, refunds, voids, and corrections with no calculator. One slip anywhere changes the total."
+inputLabel: A register log, one entry per line
+placeholder: "T01 sale 12.50, T02 refund T01, T03 void T02, T04 correct T01 to 9.00…"
+lab:
+  mode: prompt
+  technique: canary
+  answerKind: cents
+  runLabel: Run the canary
+  help: "Three fresh calls with the same model and prompt. The canary trips only when all three totals match the key to the cent. Long exact state tracking is what agent bookkeeping assumes."
+  roles:
+    - key: comparison
+      label: Model used for all three attempts
+  fields:
+    - key: expected
+      label: Correct total (two decimals)
+  prompt: >-
+    The user message is a register log, one entry per line. A sale entry
+    opens a sale with its amount. "refund Txx" closes that sale. "void Txx"
+    cancels that refund and reopens its sale. "correct Txx to A" changes that
+    open sale's amount to A. Replay every entry in order and add up the
+    amounts of the sales that are open at the end. Work it out carefully
+    without skipping entries. Respond with JSON only, in the form
+    {"answer": "1234.56"}, using two decimals and no currency sign.
+  cases:
+    - id: ledger-150
+      title: 150 entries
+      input: |-
+        T01 sale 17.35
+        T02 sale 8.95
+        T03 refund T01
+        T04 sale 9.75
+        T05 sale 22.58
+        T06 refund T04
+        T07 sale 24.71
+        T08 refund T05
+        T09 refund T02
+        T10 sale 56.66
+        T11 sale 10.06
+        T12 sale 37.49
+        T13 refund T10
+        T14 refund T07
+        T15 correct T11 to 49.29
+        T16 refund T12
+        T17 sale 19.80
+        T18 refund T11
+        T19 sale 49.87
+        T20 sale 51.23
+        T21 refund T17
+        T22 sale 48.55
+        T23 sale 30.73
+        T24 sale 42.12
+        T25 sale 25.35
+        T26 sale 24.99
+        T27 refund T22
+        T28 sale 33.13
+        T29 sale 28.58
+        T30 sale 10.99
+        T31 refund T28
+        T32 refund T26
+        T33 refund T24
+        T34 sale 59.74
+        T35 refund T29
+        T36 sale 30.70
+        T37 correct T23 to 53.69
+        T38 sale 42.37
+        T39 refund T20
+        T40 sale 43.83
+        T41 sale 10.32
+        T42 refund T34
+        T43 sale 41.50
+        T44 correct T40 to 59.77
+        T45 correct T41 to 34.11
+        T46 refund T23
+        T47 sale 22.87
+        T48 sale 15.59
+        T49 sale 37.59
+        T50 sale 45.67
+        T51 refund T43
+        T52 sale 27.76
+        T53 sale 40.26
+        T54 sale 27.80
+        T55 sale 34.39
+        T56 sale 36.16
+        T57 sale 17.36
+        T58 refund T38
+        T59 void T18
+        T60 refund T40
+        T61 correct T11 to 16.93
+        T62 sale 35.24
+        T63 sale 31.10
+        T64 sale 47.22
+        T65 sale 58.65
+        T66 sale 9.42
+        T67 sale 50.81
+        T68 sale 37.68
+        T69 sale 44.44
+        T70 sale 10.09
+        T71 void T16
+        T72 sale 14.00
+        T73 correct T12 to 13.38
+        T74 refund T30
+        T75 sale 34.78
+        T76 sale 10.76
+        T77 sale 55.30
+        T78 sale 56.97
+        T79 void T35
+        T80 sale 43.84
+        T81 refund T80
+        T82 sale 43.17
+        T83 sale 30.54
+        T84 refund T41
+        T85 sale 26.68
+        T86 sale 18.22
+        T87 sale 21.81
+        T88 sale 48.27
+        T89 sale 49.49
+        T90 sale 48.26
+        T91 correct T36 to 26.39
+        T92 sale 18.68
+        T93 correct T56 to 48.62
+        T94 sale 46.18
+        T95 correct T56 to 55.23
+        T96 sale 20.98
+        T97 sale 37.82
+        T98 sale 23.57
+        T99 void T58
+        T100 correct T12 to 7.28
+        T101 sale 43.68
+        T102 void T39
+        T103 sale 33.63
+        T104 sale 34.87
+        T105 refund T36
+        T106 void T21
+        T107 correct T77 to 56.12
+        T108 sale 54.99
+        T109 sale 44.27
+        T110 sale 33.18
+        T111 sale 11.94
+        T112 sale 14.82
+        T113 sale 21.32
+        T114 sale 19.62
+        T115 sale 57.08
+        T116 correct T111 to 37.42
+        T117 sale 11.95
+        T118 sale 18.92
+        T119 sale 7.25
+        T120 refund T118
+        T121 sale 58.72
+        T122 refund T112
+        T123 sale 43.85
+        T124 sale 33.70
+        T125 refund T86
+        T126 refund T11
+        T127 sale 58.22
+        T128 refund T109
+        T129 sale 40.53
+        T130 sale 20.95
+        T131 sale 22.28
+        T132 refund T54
+        T133 correct T57 to 53.04
+        T134 correct T88 to 39.32
+        T135 sale 9.98
+        T136 sale 33.98
+        T137 sale 59.26
+        T138 sale 47.33
+        T139 sale 46.09
+        T140 refund T65
+        T141 sale 6.53
+        T142 sale 20.00
+        T143 sale 17.27
+        T144 refund T136
+        T145 sale 14.85
+        T146 sale 31.70
+        T147 sale 48.47
+        T148 sale 13.69
+        T149 sale 9.65
+        T150 void T32
+      fields:
+        expected: "2385.06"
+    - id: ledger-170
+      title: 170 entries, more voids
+      input: |-
+        T01 sale 50.85
+        T02 sale 43.14
+        T03 sale 53.11
+        T04 correct T03 to 43.97
+        T05 sale 20.25
+        T06 refund T03
+        T07 refund T05
+        T08 sale 56.97
+        T09 refund T02
+        T10 sale 58.56
+        T11 sale 58.25
+        T12 refund T01
+        T13 sale 10.17
+        T14 refund T10
+        T15 sale 54.12
+        T16 refund T15
+        T17 correct T13 to 21.00
+        T18 sale 57.45
+        T19 correct T08 to 59.26
+        T20 refund T13
+        T21 sale 50.15
+        T22 sale 11.81
+        T23 sale 30.82
+        T24 sale 47.01
+        T25 correct T08 to 51.13
+        T26 sale 37.80
+        T27 refund T22
+        T28 sale 6.38
+        T29 sale 5.04
+        T30 void T06
+        T31 sale 37.55
+        T32 sale 51.38
+        T33 sale 27.10
+        T34 correct T21 to 32.24
+        T35 refund T24
+        T36 sale 14.66
+        T37 refund T33
+        T38 refund T03
+        T39 sale 44.88
+        T40 refund T31
+        T41 void T37
+        T42 void T12
+        T43 sale 36.43
+        T44 refund T26
+        T45 sale 5.03
+        T46 correct T43 to 53.55
+        T47 correct T01 to 22.26
+        T48 void T44
+        T49 sale 13.21
+        T50 refund T21
+        T51 void T20
+        T52 refund T33
+        T53 sale 36.63
+        T54 refund T11
+        T55 void T54
+        T56 void T52
+        T57 sale 55.96
+        T58 sale 53.10
+        T59 sale 52.06
+        T60 refund T39
+        T61 void T14
+        T62 correct T26 to 55.00
+        T63 void T27
+        T64 refund T59
+        T65 sale 21.10
+        T66 sale 36.80
+        T67 sale 54.44
+        T68 refund T08
+        T69 refund T10
+        T70 sale 25.90
+        T71 void T50
+        T72 void T69
+        T73 sale 47.60
+        T74 refund T70
+        T75 sale 15.35
+        T76 void T68
+        T77 sale 55.45
+        T78 sale 27.95
+        T79 void T35
+        T80 sale 10.66
+        T81 correct T33 to 25.40
+        T82 refund T18
+        T83 correct T45 to 51.87
+        T84 sale 12.55
+        T85 sale 41.89
+        T86 sale 58.81
+        T87 sale 47.75
+        T88 sale 16.49
+        T89 sale 6.46
+        T90 sale 34.28
+        T91 sale 7.74
+        T92 refund T13
+        T93 sale 30.48
+        T94 correct T21 to 11.16
+        T95 sale 35.12
+        T96 sale 15.61
+        T97 sale 32.98
+        T98 correct T86 to 11.36
+        T99 sale 39.17
+        T100 sale 7.47
+        T101 sale 51.92
+        T102 refund T101
+        T103 sale 52.73
+        T104 refund T21
+        T105 refund T100
+        T106 refund T53
+        T107 sale 32.04
+        T108 sale 52.59
+        T109 sale 42.89
+        T110 sale 11.86
+        T111 sale 47.15
+        T112 refund T99
+        T113 refund T08
+        T114 void T38
+        T115 sale 55.34
+        T116 sale 44.83
+        T117 void T07
+        T118 sale 16.73
+        T119 sale 21.59
+        T120 sale 33.05
+        T121 sale 41.20
+        T122 sale 24.78
+        T123 correct T109 to 25.52
+        T124 void T82
+        T125 sale 21.40
+        T126 sale 36.49
+        T127 void T74
+        T128 void T40
+        T129 sale 8.32
+        T130 sale 27.67
+        T131 sale 14.24
+        T132 sale 27.54
+        T133 sale 38.91
+        T134 sale 47.59
+        T135 sale 30.83
+        T136 sale 56.18
+        T137 sale 11.11
+        T138 sale 27.78
+        T139 sale 8.39
+        T140 sale 28.02
+        T141 sale 30.31
+        T142 sale 51.20
+        T143 refund T45
+        T144 sale 20.55
+        T145 refund T89
+        T146 void T60
+        T147 sale 56.54
+        T148 refund T32
+        T149 sale 58.66
+        T150 sale 35.20
+        T151 sale 21.22
+        T152 void T106
+        T153 void T148
+        T154 refund T132
+        T155 sale 7.96
+        T156 refund T87
+        T157 sale 49.21
+        T158 sale 47.63
+        T159 sale 18.04
+        T160 sale 23.34
+        T161 refund T118
+        T162 refund T133
+        T163 void T162
+        T164 sale 35.86
+        T165 sale 58.46
+        T166 sale 33.10
+        T167 sale 58.35
+        T168 sale 13.10
+        T169 sale 57.56
+        T170 sale 15.11
+      fields:
+        expected: "2827.88"
+  samples:
+    - title: What a trip looks like
+      text: Attempts 1, 2, and 3 each answer 2385.06. Canary verdict · Tripped. 3 of 3 attempts matched the answer key.
+    - title: What a miss looks like
+      text: One attempt treats a void as a second refund and answers a total that is off by one sale. Canary verdict · Not yet. 2 of 3 attempts matched the answer key.

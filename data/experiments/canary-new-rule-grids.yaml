@@ -1,0 +1,48 @@
+slug: canary-new-rule-grids
+order: 424
+shelf: canaries
+title: "Canary: new-rule grids"
+description: "Three examples of a made-up grid rule, then one new grid. Inferring an unseen rule from a few examples is what general intelligence claims rest on."
+inputLabel: Worked grid examples and one test grid
+placeholder: Give three input and output grids as rows of digits separated by /, then one test input…
+lab:
+  mode: prompt
+  technique: canary
+  answerKind: grid
+  runLabel: Run the canary
+  help: "Three fresh calls with the same model and prompt. The answer is the full output grid. The rule’s own code produced each key."
+  roles:
+    - key: comparison
+      label: Model used for all three attempts
+  fields:
+    - key: expected
+      label: Correct output grid (rows separated by /)
+  prompt: >-
+    Each example maps an input grid to an output grid with the same hidden
+    rule. Grids are rows of digits separated by /, and 0 is empty. Infer
+    the rule from the examples and apply it to the test input. Respond with
+    JSON only, in the form {"answer": "<rows separated by />"}.
+  cases:
+    - id: falling-and-counting
+      title: Falling and counting
+      input: |-
+        Example 1: 000000/701070/022071/710202/200200 → 000000/000000/300000/322222/322222
+        Example 2: 400400/440000/010000/000000/020000 → 000000/000000/030000/230000/230100
+        Example 3: 004014/000000/100000/740001/002007 → 000000/000000/000003/202003/212013
+        Test: 077007/000707/007074/400000/740010
+      fields:
+        expected: 000000/000000/000003/222023/222123
+    - id: rays-and-turn
+      title: Rays and a turn
+      input: |-
+        Example 1: 005500/000050/035005/005300/500050 → 500050/005333/035005/000050/005500
+        Example 2: 050300/553003/000300/550500/500500 → 500500/550500/000333/553333/050333
+        Example 3: 550000/050300/500500/000500/000000 → 000000/000500/500500/050333/550000
+        Test: 000000/530303/000500/000050/000050
+      fields:
+        expected: 000050/000050/000500/533333/000000
+  samples:
+    - title: What a trip looks like
+      text: All three attempts return 000000/000000/000003/222023/222123. Cells fall to the bottom, and each becomes the count of cells in its column. Canary verdict · Tripped.
+    - title: What a miss looks like
+      text: An attempt drops the cells but keeps their original digits. That’s half the rule. Canary verdict · Not yet.

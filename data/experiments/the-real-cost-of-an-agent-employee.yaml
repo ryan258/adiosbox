@@ -1,0 +1,49 @@
+slug: the-real-cost-of-an-agent-employee
+order: 413
+shelf: reality
+title: The real cost of an agent employee
+description: "Count retries, review time, and rework, not just the model bill, to see whether an agent is actually cheaper than a person."
+inputLabel: The task and its numbers for an agent and for a person
+placeholder: Give the model cost per try, average tries, usable share, review and rework minutes, hourly rates, and the person’s time per task…
+instructions: >-
+  Compare the full cost per finished task for an agent and for a person,
+  using only the numbers the user supplies. For the agent, include model
+  cost multiplied by average attempts, human review time on every output,
+  and rework time on the share that is not usable. For the person, include
+  their working time and any review. Show each line of arithmetic with
+  units and round money to cents. Under Agent cost per finished task and
+  Person cost per finished task, show the arithmetic. Under Where the agent’s
+  cost goes, give the share that is model bill versus human time. Under What
+  flips it, give the review time or usable share at which the two costs are
+  equal, or one concrete changed value that would flip the result. Under
+  Missing numbers, list anything the comparison needs that the user did not
+  give, such as setup time or the cost of a mistake that reaches a
+  customer. Never invent figures. Use those five phrases as bold section
+  labels and light Markdown, up to 260 words.
+sampleNotes: |-
+  Task: write a product description for the web shop.
+  Agent: $0.04 per attempt and 1.5 attempts on average. 70% of outputs are usable after review. The owner reviews every output for 3 minutes, and an unusable one takes 10 minutes to rewrite by hand. The owner’s time is worth $40 an hour.
+  Person: a freelancer takes 12 minutes per description at $30 an hour. The owner reviews each one for 1 minute.
+sampleResult: |-
+  **Agent cost per finished task**
+  - Model: $0.04 × 1.5 = $0.06
+  - Review: 3 min × $40/hr = $2.00
+  - Rework: 30% × 10 min = 3 min × $40/hr = $2.00
+  - Total: $4.06
+
+  **Person cost per finished task**
+  - Writing: 12 min × $30/hr = $6.00
+  - Review: 1 min × $40/hr = $0.67
+  - Total: $6.67
+
+  **Where the agent’s cost goes**
+  $0.06 of $4.06 is the model bill, about 1.5%. The other 98.5% is the owner’s time.
+
+  **What flips it**
+  At 6 minutes of review and a 50% usable rate, the agent costs $0.06 + $4.00 + $3.33 = $7.39, more than the person.
+
+  **Missing numbers**
+  - Setup and prompt-writing time.
+  - The cost of a wrong description that reaches a customer.
+layout:
+  takeaway: What flips it

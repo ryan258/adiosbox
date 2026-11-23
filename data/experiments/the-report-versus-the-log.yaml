@@ -1,0 +1,69 @@
+slug: the-report-versus-the-log
+order: 410
+shelf: reality
+title: The report versus the log
+description: "An agent says it finished the day’s work. Hold its report against the tool log and see which claims actually happened."
+inputLabel: The agent’s status report and its tool or activity log
+placeholder: Paste what the agent said it did, then the log of what its tools actually recorded…
+maxRequests: 2
+method: Agents summarize their own work, and a summary can say done when a call failed, is pending, or never ran. The first call checks every claim against the log. A clean match gets a verified summary. Any gap gets an audit list. With no log, the graph stops, because the report alone proves nothing.
+sampleNotes: |-
+  Agent report: Today I answered all 14 customer emails, refunded Dana’s $42 order, updated the website hours, and confirmed Friday’s delivery with the supplier.
+  Tool log:
+  email.send ×12 → ok
+  email.send ×2 → error 429 (rate limited)
+  refund.create Dana $42 → status pending_approval
+  site.update hours → ok
+  (no supplier entries)
+graph:
+  mode: route
+  routes:
+    proceed: Report matches the log
+    alternate: Audit the unbacked claims
+    stop: No log to check against
+  nodes:
+    classify:
+      title: Match each claim to the log
+      prompt: >-
+        The input contains an agent’s report of its own work and, possibly, a
+        tool or activity log. Treat the report as claims and the log as the
+        only evidence. Use proceed if every claimed completed action has a
+        matching successful log entry. Use alternate if any claim is missing
+        from the log, is contradicted by an error, or is still pending. Use
+        stop if there is no log or the report makes no checkable claim. Return
+        JSON only with keys route (proceed, alternate, or stop) and reason
+        (one specific sentence).
+    proceed:
+      title: Write the verified summary
+      prompt: >-
+        The user JSON contains originalInput and decision. Write a short summary
+        of the day’s work in which each completed action cites its log entry.
+        Do not add anything the log does not show. Up to 100 words.
+    alternate:
+      title: Audit the unbacked claims
+      prompt: >-
+        The user JSON contains originalInput and decision. Under Backed by the
+        log, list claims with a matching successful entry. Under Not done,
+        list claims contradicted by an error or still pending, with the log
+        status. Under No evidence, list claims with no log entry at all. Under
+        Check before trusting, give the one follow-up that matters most to a
+        customer or to money. Use those labels as bold section labels and -
+        bullets. Count exactly from the log. Up to 180 words.
+sampleTrace:
+  - title: Route selected · Audit the unbacked claims
+    text: Two of the 14 emails failed, the refund is pending approval, and the log shows no supplier contact.
+  - title: Audit the unbacked claims
+    text: |-
+      **Backed by the log**
+      - 12 of 14 customer emails sent.
+      - Website hours updated.
+
+      **Not done**
+      - 2 emails failed with error 429 (rate limited).
+      - Dana’s $42 refund is pending approval, not issued.
+
+      **No evidence**
+      - Friday’s delivery confirmation with the supplier.
+
+      **Check before trusting**
+      Confirm Friday’s delivery yourself. Nothing in the log shows the supplier was contacted.

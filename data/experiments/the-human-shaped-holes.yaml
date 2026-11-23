@@ -1,0 +1,103 @@
+slug: the-human-shaped-holes
+order: 412
+shelf: reality
+title: The human-shaped holes
+description: "Give an agent crew a whole week of real business work. See which jobs it can actually do, and which ones land back on your desk."
+inputLabel: A real week’s to-do list for a small business
+placeholder: List everything that has to happen this week, including the physical, money, and people jobs…
+maxRequests: 5
+checkpointQuestion: Review which jobs the crew will take
+method: The orchestrator sorts the week. It picks two or three jobs a text-only agent can complete from the supplied material and lists the rest as returned to the owner, with the reason for each. You can edit the plan. Specialists do the jobs they took. The final kit shows the crew’s work next to the owner’s remaining queue.
+graph:
+  mode: orchestrated
+  roleModels:
+    - { key: plan, title: Orchestrator · Plan }
+    - { key: specialist-1, title: Specialist 1 }
+    - { key: specialist-2, title: Specialist 2 }
+    - { key: specialist-3, title: Specialist 3 (if used) }
+    - { key: assemble, title: Orchestrator · Assemble }
+  nodes:
+    plan:
+      title: Sort the week and plan the crew’s share
+      prompt: >-
+        You orchestrate a crew of text-only agents for a small business. They
+        can read the supplied material and write. They cannot log in to
+        accounts, post, send, pay, buy, call, or do physical work, and they
+        have only the records in the input. Sort every job in the week.
+        Choose two or three jobs the crew can actually finish from the input
+        as ordered stages, and state each stage's handoff. In approach, list
+        every other job as returned to the owner, with its reason: needs
+        account access, moves money, physical work, a relationship or voice
+        call, missing records, or an owner decision. Do not quietly drop any
+        job. Ask a question only if a missing fact changes the sorting. Return
+        JSON only with string fields role (100 characters), deliverable (240),
+        approach (900), and question (240, empty when unnecessary). Include
+        checks, an array of two to four observable success checks of up to
+        200 characters each, and stages, an ordered array of two or three
+        single-line jobs of up to 240 characters each. Do not do the jobs yet.
+    specialist:
+      title: Shape a specialist and do its job
+      prompt: >-
+        The user message is JSON containing originalInput, approvedBrief, job,
+        and previous. Choose a narrow role suited to this job, then do it using
+        only the supplied material. Mark any fact you would need but do not
+        have with a bracketed blank instead of inventing it. Do not claim to
+        have posted, sent, paid, or checked anything outside the input. Return
+        JSON only with string fields role (100 characters), approach (280), and
+        handoff (600), plus checks, an array of one to three observable checks
+        of up to 120 characters each. The handoff must contain the worked
+        result.
+    assemble:
+      title: The crew’s work and your queue
+      prompt: >-
+        The user message is JSON containing originalInput, approvedBrief, and
+        handoffs in chain order. Under Done by the crew, give each finished
+        draft, short enough to use. Under Back on your desk, list every job
+        from the original week that the crew did not finish, with the reason
+        and any draft the crew left to help. Then give the count, for example
+        “3 of 11 jobs”. Under What it would take, name the access or records
+        that would let an agent take one more job, and the new risk that
+        access creates. Then list the approved checks with Pass, Needs work,
+        or Unverifiable. Light Markdown (bold section labels, - bullets), up
+        to 350 words.
+sampleNotes: |-
+  One-person ceramics studio. This week:
+  - Write an Instagram caption for the new blue glaze mugs.
+  - Post it.
+  - Update the four web-shop listings that are going from $32 to $36.
+  - Draft a wholesale pitch to Fern Café, which asked about 24 mugs at a discount.
+  - Call Fern Café’s owner to follow up.
+  - Reply to six customer emails (not pasted here).
+  - Reorder 50 lb of clay from the supplier.
+  - Pay the $280 kiln repair invoice.
+  - Fire the kiln on Thursday.
+  - Pack and ship nine orders.
+  - Reconcile last month’s sales for taxes.
+sampleTrace:
+  - title: Proposed orchestrator · Studio week sorter
+    text: |-
+      The crew takes 3 jobs and returns 8. Returned jobs: posting needs account access, the emails were not supplied, the clay order and invoice move money, firing and shipping are physical work, the call is a relationship, and the reconciliation lacks records.
+      1. Write the glaze caption.
+      2. Rewrite the four listings at $36.
+      3. Draft the Fern Café pitch with the discount left blank.
+  - title: Specialist 1 · Social caption writer
+    text: “New this week — mugs in a deep blue glaze, glazed and fired by hand in the studio. Each one comes out a little different. Available in the shop now.”
+  - title: Specialist 2 · Listing editor
+    text: The four listings now show $36 with matching descriptions. The product names weren’t supplied, so they appear as [listing 1–4].
+  - title: Specialist 3 · Wholesale pitch writer
+    text: Thanks for asking about 24 mugs for Fern Café. For an order that size, we can offer [discount]% off the $36 retail price, with delivery by [date]. I’d be glad to bring a sample by.
+  - title: The crew’s work and your queue
+    text: |-
+      **Done by the crew**
+      - The caption, four listing updates, and the café pitch drafted with blanks for the discount and date.
+
+      **Back on your desk**
+      - Post the caption, reply to six emails, call Fern Café, reorder clay, pay the $280 invoice, fire the kiln, pack and ship nine orders, and reconcile sales.
+      - 8 of 11 jobs.
+
+      **What it would take**
+      Pasting in the six emails would let the crew draft replies. Shop login would let an agent publish the listings, and it would also let a mistaken price go live.
+
+      **Checks**
+      - Every job is accounted for: Pass.
+      - No invented discount or date: Pass.

@@ -22,3 +22,12 @@ shelves:
   - key: trial
     title: Put the AI on trial
     blurb: Change one thing about a prompt or a model and see what actually moves.
+  - key: business
+    title: Run a tiny agent business
+    blurb: Agents work the front desk, the books, and the launch plan. Money, hiring, and anything sent to customers still wait for the owner.
+  - key: reality
+    title: Agent companies, reality check
+    blurb: The pitch says agents run the company. Check what they actually did, which jobs return to you, what checking costs, and how much autonomy is safe.
+  - key: canaries
+    title: Canaries in the coal mine
+    blurb: Tripwires for claimed AI progress. Each has a computed answer key and trips only when a model gets it right three times in a row. Rerun them when a new model ships.

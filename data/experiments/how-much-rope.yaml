@@ -1,0 +1,65 @@
+slug: how-much-rope
+order: 414
+shelf: reality
+title: How much rope?
+description: "List what you want an agent to do on its own. See each action’s blast radius, choose how much autonomy to grant, and get the operating rules."
+inputLabel: The actions you’d hand an agent, with volumes and limits
+placeholder: List each action, how often it happens, how much money or visibility it carries, and whether it can be undone…
+maxRequests: 2
+checkpointQuestion: How much should the agent do on its own?
+method: The graph rates each action by whether it can be undone, what a mistake costs, and how soon you would notice. Then it pauses. Your choice sets the autonomy line, and the second call writes rules covering what the agent does alone, what it drafts, what it never touches, and the tripwire that takes autonomy back.
+sampleNotes: |-
+  Small online bookshop. We want the agent to:
+  - Answer “where is my order?” emails, about 60 a week. Tracking is on file.
+  - Issue refunds under $20, about 5 a week.
+  - Change prices on 400 listings for a sale.
+  - Reply publicly to customer reviews.
+  - Reorder bestsellers from the distributor, about $600 a week.
+graph:
+  mode: checkpoint
+  options:
+    - id: reversible
+      label: Act on the reversible ones
+      instruction: Let the agent act alone only where a mistake can be undone or is capped at a small, stated amount. Everything else is drafted for approval.
+    - id: draft
+      label: Draft everything
+      instruction: The agent drafts every action and the owner approves each batch. Estimate the owner’s weekly review time from the stated volumes and say which drafts could be approved in bulk.
+  nodes:
+    prepare:
+      title: Rate each action’s blast radius
+      prompt: >-
+        For each action in the input, state whether a mistake can be undone,
+        what one mistake costs at the stated volumes, who would see it, and
+        how soon the owner would notice. Mark actions that move money or are
+        public. Name one unknown, such as the agent’s error rate on this kind
+        of work. Do not choose an autonomy level. Up to 170 words.
+    finish:
+      title: Write the operating rules
+      prompt: >-
+        The user JSON contains originalInput, assessment, and choice. Write
+        operating rules that follow the choice. Under Alone, Drafts for
+        approval, and Never, place every action from the input with any cap
+        or log it needs. Under Tripwire, give one observable event that sends
+        the agent back to drafting, and for how long. Use those labels as bold
+        section labels and - bullets. Do not raise any cap the input sets.
+        Up to 200 words.
+sampleTrace:
+  - title: Rate each action’s blast radius
+    text: Order-status replies are private, low cost, and quickly noticed. Refunds under $20 can’t be clawed back but total about $100 a week. A bad bulk price change sells stock at a loss until someone notices. Review replies are public and permanent. Reorders commit about $600 a week. The agent’s error rate on refunds is unknown.
+  - title: Paused for your choice
+    text: Act on the reversible ones, draft everything, or stop here.
+  - title: Sample path · Act on the reversible ones
+    text: |-
+      **Alone**
+      - Order-status replies.
+      - Refunds under $20, capped at $100 a week and logged.
+
+      **Drafts for approval**
+      - The 400 price changes, approved as one batch.
+      - Public review replies.
+
+      **Never**
+      - Distributor reorders. The owner places them.
+
+      **Tripwire**
+      Any refund outside policy, or a customer complaint about an agent reply, sends the agent back to drafting for one week.

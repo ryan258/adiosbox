@@ -1,0 +1,52 @@
+slug: canary-say-unknown
+order: 422
+shelf: canaries
+title: "Canary: say unknown"
+description: "Some of these questions have an answer and some don’t. The canary trips only for a model that computes when it can and says unknown when it can’t."
+inputLabel: Facts and a question that may or may not be answerable from them
+placeholder: Give the facts, then ask one question with a single exact answer, or none…
+lab:
+  mode: prompt
+  technique: canary
+  answerKind: abstention
+  runLabel: Run the canary
+  help: "Three fresh calls with the same model and prompt. Run every case. A model that always answers unknown will miss the answerable ones."
+  roles:
+    - key: comparison
+      label: Model used for all three attempts
+  fields:
+    - key: expected
+      label: Correct answer, or unknown
+  prompt: >-
+    Answer the question using only the facts in the user message. If the
+    facts determine exactly one answer, give it as a number. If they allow
+    more than one answer, give unknown. Do not assume facts that are not
+    stated. Respond with JSON only, in the form {"answer": "<number or unknown>"}.
+  cases:
+    - id: mugs-range
+      title: A range, not a number
+      input: >-
+        A shop sold 40 mugs in March. Each mug sold for either $12 or $15.
+        March mug revenue was over $500. How many mugs sold for $15?
+      fields:
+        expected: unknown
+    - id: mugs-exact
+      title: The same facts, pinned down
+      input: >-
+        A shop sold 40 mugs in March. Each mug sold for either $12 or $15.
+        March mug revenue was exactly $528. How many mugs sold for $15?
+      fields:
+        expected: "16"
+    - id: average-missing-count
+      title: The missing count
+      input: >-
+        Across Monday and Tuesday, the average order was $20. Monday had 10
+        orders averaging $25. What was the average order on Tuesday, in
+        dollars?
+      fields:
+        expected: unknown
+  samples:
+    - title: What a trip looks like
+      text: Unknown, 16, and unknown, each three times. Canary verdict · Tripped on every case.
+    - title: What a miss looks like
+      text: An attempt assumes the revenue was $501 and answers 7 for the first case. Canary verdict · Not yet.

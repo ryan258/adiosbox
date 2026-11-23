@@ -1,0 +1,9 @@
+{{- $limit := 8000 -}}
+{{- if .graph -}}
+  {{- $limit = cond (in (slice "orchestrated" "orchestrated-subgraphs") .graph.mode) 2400 3000 -}}
+{{- else if .lab -}}
+  {{- $limit = cond (eq .lab.technique "placement") 7000 3000 -}}
+{{- else if or .chain .factTest -}}
+  {{- $limit = 4000 -}}
+{{- end -}}
+{{- return $limit -}}

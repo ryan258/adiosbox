@@ -1,0 +1,50 @@
+slug: approve-the-purchase-order
+order: 403
+shelf: business
+title: Approve the purchase order
+description: "An inventory agent maps stock, cash, and lead times, then waits for you to choose what to protect before it drafts the order."
+inputLabel: Stock on hand, sales pace, supplier terms, and cash available
+placeholder: List what’s running low, how fast it sells, what the supplier needs, and what you can spend…
+maxRequests: 2
+checkpointQuestion: What should this order protect?
+method: LangGraph saves a checkpoint after the inventory agent lays out the trade-off. Your choice becomes the instruction for the order draft. The agent drafts the order for you to place, and never places it itself. You can also stop after the assessment.
+sampleNotes: >-
+  Small plant shop. Pothos sells 12 a week and we have 14 left. Snake
+  plants sell 5 a week and we have 30. The supplier delivers in 10 days,
+  has a $400 minimum order, and charges $6 per pothos and $11 per snake
+  plant. We have $650 in the account and rent of $500 is due in two weeks.
+graph:
+  mode: checkpoint
+  options:
+    - id: cash
+      label: Protect cash
+      instruction: Reserve cash for the stated bill. If the remaining cash cannot meet the supplier minimum, hold the order and propose a smaller minimum, later payment, or another supplier. Estimate the stockout risk while waiting.
+    - id: stock
+      label: Protect stock
+      instruction: Prioritize the fast-selling item and draft an order for the next delivery. If stock will run out before the lead time, flag the gap and propose an earlier delivery or a temporary substitute. Show the cash gap against known bills.
+  nodes:
+    prepare:
+      title: Map stock, cash, and lead time
+      prompt: >-
+        Act as the inventory agent. For each item, compute weeks of cover from
+        stock and sales pace and compare it with the supplier lead time.
+        Compute the cash left after the smallest order that meets the supplier
+        minimum. Describe what protecting cash costs and what protecting stock
+        costs. Do not choose for the owner. Up to 160 words.
+    finish:
+      title: Draft the order for the owner to place
+      prompt: >-
+        The user JSON contains originalInput, assessment, and choice. Draft a
+        purchase order that follows the owner’s choice, with quantities, line
+        totals, and the order total, and check it against the supplier minimum.
+        If no order fits the choice, state what must change before ordering.
+        Then state the cash remaining against known bills and the stock risk
+        that remains. Mark it as a draft for the owner to place. Do not claim
+        it was sent. Up to 200 words.
+sampleTrace:
+  - title: Map stock, cash, and lead time
+    text: Pothos have about 1.2 weeks of cover against a 10-day lead time, so they run out around day 8. Snake plants have 6 weeks of cover. Reserving $500 for rent leaves $150, below the $400 supplier minimum. The smallest pothos-only order is 67 units for $402.
+  - title: Paused for your choice
+    text: Protect cash, protect stock, or stop here.
+  - title: Sample path · Protect stock
+    text: "Draft order: 67 pothos at $6, for a $402 total that meets the minimum. Add no snake plants. Cash left: $248, $252 short of rent unless sales in the next two weeks cover the gap. Pothos may still run out for about two days before delivery. Draft for the owner to place."

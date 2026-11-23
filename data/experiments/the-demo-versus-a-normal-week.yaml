@@ -1,0 +1,74 @@
+slug: the-demo-versus-a-normal-week
+order: 411
+shelf: reality
+title: The demo versus a normal week
+description: "Put a vendor’s automation claim next to a real week of work and count what an agent could close alone, with review, or not at all."
+inputLabel: The claim, then a list of real tasks or tickets from one week
+placeholder: Paste the pitch’s number, then one line per real ticket or task…
+maxRequests: 3
+method: Demos show the happy path. One call reads the week as the demo would and finds the routine items. A parallel call reads it as the person on call would and finds the exceptions. The merge counts every item into one of three buckets and rewrites the pitch to match this week.
+sampleNotes: |-
+  Claim: “Our support agent resolves 80% of tickets autonomously.”
+  This week’s tickets:
+  1. Where’s my order? Tracking number is on file.
+  2. Please change my shipping address. The order hasn’t shipped yet.
+  3. Mug arrived broken. Photo attached. The policy replaces breakage with a photo.
+  4. Wants a refund for a kettle used for three months, outside the 30-day policy.
+  5. Can’t log in and needs a password reset.
+  6. Is the granola safe for a nut allergy? The label says “may contain.”
+  7. I was charged twice.
+  8. What are your store hours?
+  9. All caps, three separate problems, threatens a chargeback.
+  10. A café wants a wholesale price for 500 units.
+graph:
+  mode: fork
+  nodes:
+    left:
+      title: Read it like the demo
+      prompt: >-
+        Read the list as the vendor’s demo would. Identify the items an agent
+        could close alone using only information and policy stated in the
+        input, and say which stated fact makes each one routine. Count them
+        by item number. Do not assume access, records, or policy the input
+        does not mention. Up to 120 plain-text words.
+    right:
+      title: Read it like the person on call
+      prompt: >-
+        Read the list as the person who handles what the agent cannot. For
+        each item, name the exception if there is one: outside policy, money
+        movement, safety, an upset customer, missing records, or a business
+        decision. Mark items where an agent could draft but a person must
+        approve. Count by item number. Up to 140 plain-text words.
+    merge:
+      title: Count the honest automation rate
+      prompt: >-
+        The user JSON contains originalInput and two independent readings, left
+        and right. Put every item into exactly one bucket. Under Agent alone,
+        Agent drafts and a person approves, and Still a person, list the item
+        numbers with a short reason, and give each bucket’s count out of the
+        total. Under The gap, compare the counts with the claim and say what
+        drives the difference. Note that rates depend on the mix of tickets
+        and that this is one week. Under Honest pitch, rewrite the claim in
+        one sentence that this week supports. Use those labels as bold
+        section labels. Count exactly. Up to 220 words.
+sampleTrace:
+  - title: Read it like the demo
+    text: Items 1, 5, and 8 are routine. The tracking number, a standard reset, and store hours need no judgment. Item 3 also matches a written policy.
+  - title: Read it like the person on call
+    text: Item 4 is outside policy, item 6 is a safety question, item 7 moves money, item 9 is an upset customer with several issues, and item 10 is a pricing decision. Items 2 and 3 can be drafted but need a check that the order hasn’t shipped and that the photo shows the damage.
+  - title: Count the honest automation rate
+    text: |-
+      **Agent alone**
+      Items 1, 5, and 8. That’s 3 of 10.
+
+      **Agent drafts and a person approves**
+      Items 2 and 3. That’s 2 of 10.
+
+      **Still a person**
+      Items 4, 6, 7, 9, and 10. That’s 5 of 10.
+
+      **The gap**
+      The claim says 8 of 10. This week, the agent closes 3 alone and 5 with help. The difference comes from exceptions: policy, safety, money, and judgment. A week heavy in order-status tickets would score higher.
+
+      **Honest pitch**
+      “Our agent closes routine tickets on its own and drafts a second group for quick approval. Exceptions still go to a person.”

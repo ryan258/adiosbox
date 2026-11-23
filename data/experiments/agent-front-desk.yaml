@@ -1,0 +1,64 @@
+slug: agent-front-desk
+order: 400
+shelf: business
+title: The agent front desk
+description: "An agent reads a customer message against your shop policy. It replies, asks you one question, or hands the case to you."
+inputLabel: Customer message and the policy the agent may act on
+placeholder: Paste the customer’s message, then the rules the front desk is allowed to apply…
+maxRequests: 2
+method: The first call checks whether the written policy covers the request. If it does, the agent drafts the reply. If one owner decision is missing, it drafts a holding reply and asks you that question. Money, legal, and safety cases outside the policy stop for you.
+sampleNotes: |-
+  Customer (Thursday): My order of two mugs arrived with one cracked. Can you send a replacement before Saturday? It’s a birthday gift.
+  Policy: Replace broken items free once the customer sends a photo. Refunds over $50 need the owner. We ship Monday to Thursday by 2-day ground. Express costs us $18 and the policy doesn’t say who pays.
+graph:
+  mode: route
+  routes:
+    proceed: Reply within policy
+    alternate: Ask the owner one question
+    stop: Hand it to the owner
+  nodes:
+    classify:
+      title: Check the request against policy
+      prompt: >-
+        You are the front-desk agent for a small business. Decide whether the
+        written policy lets you resolve this customer message without the owner.
+        Use proceed if the policy covers every promise the reply must make. Use
+        alternate if a single owner decision, such as who pays a cost, would
+        change what you can promise. Use stop if the message involves a refund
+        or payment the policy reserves for the owner, a legal threat, a safety
+        issue, or no identifiable request. Return JSON only with keys route
+        (proceed, alternate, or stop) and reason (one specific sentence).
+    proceed:
+      title: Draft the customer reply
+      prompt: >-
+        The user JSON contains originalInput and decision. Write the reply the
+        front desk would send. Promise only what the policy allows, state what
+        the customer must do next, and give honest timing based on the stated
+        shipping rules. Do not invent order numbers, discounts, or tracking.
+        Up to 120 words.
+    alternate:
+      title: Hold the customer and ask the owner
+      prompt: >-
+        The user JSON contains originalInput and decision. Under Holding reply,
+        write a short message to the customer that acknowledges the problem,
+        asks for anything the policy already requires, and promises nothing
+        the owner has not approved. Under Owner question, ask exactly one
+        question with its cost or consequence. Under If yes and If no, give
+        one line each on what the agent will then tell the customer. Use those
+        labels as bold section labels. Up to 160 words.
+sampleTrace:
+  - title: Route selected · Ask the owner one question
+    text: The photo-for-replacement rule covers the mug, but arriving by Saturday needs $18 express shipping and the policy does not say who pays.
+  - title: Hold the customer and ask the owner
+    text: |-
+      **Holding reply**
+      I’m sorry the mug arrived cracked. Please reply with a photo of it and we’ll send a free replacement. I’m checking now whether we can get it to you by Saturday.
+
+      **Owner question**
+      Should we pay $18 for express so the replacement arrives by Saturday?
+
+      **If yes**
+      The replacement ships express today once the photo arrives.
+
+      **If no**
+      It ships by ground on Monday and should arrive Wednesday.

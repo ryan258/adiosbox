@@ -1,0 +1,47 @@
+slug: the-pricing-desk
+order: 401
+shelf: business
+title: The pricing desk
+description: "A pricing agent proposes a promotion. A bookkeeper agent checks it against your margin and capacity and can send it back once."
+inputLabel: What you sell, what it costs, and the limits a promotion must respect
+placeholder: List price, unit cost, margin floor, capacity, and what you want the promotion to do…
+maxRequests: 4
+method: The pricing agent drafts one promotion. The bookkeeper agent recomputes its margin and capacity from your numbers and checks that the wording is honest. A specific failure gets one revision. If the second review still fails, the graph stops and both drafts stay visible.
+sampleNotes: >-
+  Neighborhood bakery. A sourdough loaf sells for $8 and costs $3.10 to make.
+  Every sale must keep at least a 45% margin. The oven fits 60 loaves a day.
+  Tuesdays we sell about 40, and the other days sell out. We want more
+  Tuesday customers without training people to wait for discounts.
+graph:
+  mode: revise
+  nodes:
+    draft:
+      title: Propose a promotion
+      prompt: >-
+        The user JSON includes originalInput and may include priorDraft and
+        priorReview. Act as the pricing agent for this business. Propose one
+        promotion with its exact price, when it applies, and the customer-facing
+        wording in one sentence. Show the margin arithmetic per transaction and
+        the expected extra units against capacity. If the review requests a
+        change, repair that specific failure and keep what passed. Do not invent
+        demand figures. Up to 150 words.
+    review:
+      title: Bookkeeper check
+      prompt: >-
+        The user JSON includes originalInput and draft. Act as the bookkeeper
+        agent. Recompute the margin of the worst-case transaction from the
+        stated price and cost. Check that it meets the margin floor, that
+        expected volume fits capacity, and that the wording promises nothing
+        the business has not stated. Return JSON only with route proceed if all
+        three checks pass, revise if a specific repair is possible, or stop if
+        the numbers needed are missing. Put the recomputed margin and one repair
+        if needed into reason, at most 90 words.
+sampleTrace:
+  - title: Propose a promotion
+    text: “Buy one, get one free on Tuesdays.” Two loaves for $8 cost $6.20. Selling 20 more pairs fills the oven at 60.
+  - title: Review decision · Revise
+    text: The worst-case transaction is two loaves for $8 against $6.20 in cost, a 22.5% margin. That is below the 45% floor. Discount the second loaf instead of giving it away.
+  - title: Propose a promotion · Revised
+    text: “Tuesdays only, your second sourdough is $6.” Two loaves for $14 cost $6.20, a 55.7% margin. Up to 20 extra loaves fit the 60-loaf oven.
+  - title: Review decision · Accept
+    text: The worst case is $14 for two loaves, a 55.7% margin, so it clears 45%. Twenty extra loaves fit capacity. The wording limits the offer to Tuesdays and the second loaf.

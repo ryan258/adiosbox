@@ -1,0 +1,61 @@
+slug: two-agent-board-meeting
+order: 402
+shelf: business
+title: Two-agent board meeting
+description: "A growth agent and a risk agent read the same weekly numbers separately. A chair agent turns both into one bounded decision for next week."
+inputLabel: This week’s numbers and the decision on the table
+placeholder: Paste the week’s figures, what changed, and the choice you’re weighing…
+maxRequests: 3
+method: Two calls read the same numbers in parallel and do not see each other’s case. The chair gets both readings and writes a decision memo with one experiment, the number that ends it, and what the owner still has to approve.
+sampleNotes: >-
+  Dog-walking business, one owner and two part-time walkers. This week:
+  46 walks booked, up from 38. 9 requests turned away because no walker
+  was free between 11 a.m. and 1 p.m. Walkers are paid $18 per walk and
+  clients pay $30. One walker asked for more hours. Proposal on the table:
+  hire a third part-time walker at 10 guaranteed walks a week.
+graph:
+  mode: fork
+  nodes:
+    left:
+      title: Growth agent’s case
+      prompt: >-
+        Act as the growth agent. Using only the supplied numbers, make the
+        strongest case for the proposal. Name the demand signal it relies on,
+        the upside per week with your arithmetic, and the one assumption that
+        must hold. Do not invent figures. Up to 120 plain-text words.
+    right:
+      title: Risk agent’s case
+      prompt: >-
+        Act as the risk agent. Using only the supplied numbers, name the
+        downside if the demand signal does not repeat. Show the weekly cost of
+        any commitment with your arithmetic, and propose one cheaper way to
+        test the same demand. Do not invent figures. Up to 120 plain-text words.
+    merge:
+      title: Chair’s decision memo
+      prompt: >-
+        The user JSON contains originalInput and two independent readings, left
+        and right. Act as the chair agent. Under Where they agree, state the
+        shared facts. Under Decision for next week, recommend one bounded step
+        that tests the disputed assumption. Under Stop or scale, give the
+        observed number that would end or expand the step. Under Owner signs
+        off on, list any spending or hiring commitment the owner must approve.
+        Use those labels as bold section labels. No invented figures. Up to
+        200 words.
+sampleTrace:
+  - title: Growth agent’s case
+    text: Nine walks were turned away, all at midday. At $30 each, filling them adds $270 a week in revenue and $108 after walker pay. The assumption is that midday demand repeats.
+  - title: Risk agent’s case
+    text: Ten guaranteed walks cost $180 a week whether booked or not. If only the nine turned-away requests come back, revenue covers that cost by $90. Test first by giving the walker who asked for hours the 11–1 slot for two weeks.
+  - title: Chair’s decision memo
+    text: |-
+      **Where they agree**
+      Demand is concentrated between 11 a.m. and 1 p.m., and nine requests went unserved.
+
+      **Decision for next week**
+      Give the existing walker the midday slot for two weeks without a guarantee.
+
+      **Stop or scale**
+      If midday bookings exceed that walker’s capacity in both weeks, reopen the hire. If fewer than six of those walks book, keep the current team.
+
+      **Owner signs off on**
+      Any guaranteed hours or a new hire.

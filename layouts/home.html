@@ -14,10 +14,16 @@
   <link rel="icon" href="{{ "mark.svg" | relURL }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ "styles.css" | relURL }}">
   {{ $graphModule := resources.Get "graph-runtime.js" | js.Build (dict "targetPath" "graph-runtime.js" "format" "esm" "target" "es2022" "minify" true) | fingerprint "sha256" }}
+  {{ $appFiles := slice -}}
+  {{ range readDir "static" -}}
+    {{ if hasSuffix .Name ".js" -}}
+      {{ $appFiles = $appFiles | append (sha256 (readFile (path.Join "static" .Name))) -}}
+    {{ end -}}
+  {{ end -}}
   <script type="module" src="{{ "app.js" | relURL }}"></script>
   <script type="module" src="{{ "run-export.js" | relURL }}"></script>
 </head>
-<body data-graph-module="{{ $graphModule.RelPermalink }}"{{ if $local }} data-local-openrouter data-graph-revision="{{ $graphModule.Data.Integrity }}"{{ end }}>
+<body data-graph-module="{{ $graphModule.RelPermalink }}" data-graph-revision="{{ $graphModule.Data.Integrity }}" data-app-revision="{{ sha256 (delimit $appFiles ":") }}"{{ if $local }} data-local-openrouter{{ end }}>
   <a class="skip-link" href="#experiments">Skip to experiments</a>
   <header class="site-header">
     <div class="shell header-inner">
@@ -30,11 +36,12 @@
     </div>
   </header>
   <main class="shell">
+    <p id="active-workbenches" class="status" aria-live="polite" hidden></p>
     <section class="intro" aria-labelledby="page-title">
       <div>
         <h1 id="page-title">Ryan’s AI playground<span>.</span></h1>
         <p>Small AI experiments you can poke at. Each one comes with a worked example, so you can see the trick before spending a single call.</p>
-        <p><a href="https://github.com/ryan258/adiosbox/blob/main/docs/the-missing-manual.md">Read the guide</a>{{ if $local }} · <a href="#saved-cases">Saved cases</a>{{ end }}</p>
+        <p><a href="https://github.com/ryan258/adiosbox/blob/main/docs/the-missing-manual.md">Read the guide</a>{{ if $local }} · <a href="#saved-cases">Saved cases</a> <button type="button" class="text-button" id="draft-quick-open" hidden>Restore latest draft</button>{{ end }}</p>
       </div>
       <dl class="title-block">
         <div><dt>Experiments</dt><dd class="title-count">{{ len $experiments }}</dd></div>

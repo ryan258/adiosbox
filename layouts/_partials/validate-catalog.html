@@ -2,9 +2,14 @@
 {{- $experiments := .experiments -}}
 {{- $bySlug := dict -}}
 {{- $orders := slice -}}
+{{- $beer := hugo.Data.beer_examples -}}
+{{- $canary := hugo.Data.canary_examples -}}
+{{- if ne (len $beer) (len $experiments) -}}{{- errorf "Adiosbox catalog: expected one beer example for every experiment" -}}{{- end -}}
+{{- if ne (len $canary) (len $experiments) -}}{{- errorf "Adiosbox catalog: expected one canary for every experiment" -}}{{- end -}}
 {{- $contract := partial "graph-contract.html" . -}}
 {{- $labModes := slice "blind" "evidence" "repair" "stop" "cost" "cold" "prompt" -}}
 {{- $labRoles := dict "blind" (slice "first" "second") "evidence" (slice "extract" "rewrite") "repair" (slice "left" "right" "merge") "stop" (slice "classify" "proceed" "alternate") "cost" (slice "writer" "baseline" "challenger") "prompt" (slice "comparison") -}}
+{{- $graderFields := dict "boundary" (slice "expected" "cue") "placement" (slice "fact" "expected" "source") "ballot" (slice "expected") "canary" (slice "expected") "schema" (slice "provider" "expected" "cue") -}}
 {{- $labGraphs := dict "evidence" "evidence" "repair" "fork" "stop" "route" "cost" "revise" -}}
 {{- range $experiments -}}
   {{- if or (not .slug) (not (findRE `^[a-z0-9]+(-[a-z0-9]+)*$` .slug)) (isset $bySlug .slug) -}}
@@ -22,9 +27,53 @@
 {{- end -}}
 {{- range $experiments -}}
   {{- $entry := . -}}
+  {{- $graphMode := index (.graph | default dict) "mode" | default "" -}}
+  {{- $maxInput := partial "input-limit.html" . -}}
+  {{- range $kind, $set := dict "beer" $beer "canary" $canary -}}
+    {{- $example := index $set $entry.slug -}}
+    {{- $complete := cond (eq $kind "canary") (and $example $example.title $example.input $example.check $example.why) (and $example $example.title $example.input $example.result) -}}
+    {{- if not $complete -}}{{- errorf "Adiosbox catalog: %s needs a complete %s example" $entry.slug $kind -}}{{- end -}}
+    {{- if gt (len (findRE `(?s).` ($example.input | default ""))) $maxInput -}}
+      {{- errorf "Adiosbox catalog: %s %s example exceeds %d characters" $entry.slug $kind $maxInput -}}
+    {{- end -}}
+    {{- with $entry.lab -}}
+      {{- range .fields -}}
+        {{- $value := or (index ($example.fields | default dict) .key) .sample -}}
+        {{- if and (not .optional) (not $value) -}}
+          {{- errorf "Adiosbox catalog: %s %s example needs %s" $entry.slug $kind .key -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if $entry.factTest -}}
+      {{- range slice "baseline" "changed" "baseline-decision" "changed-decision" "invariant" -}}
+        {{- if not (index ($example.fields | default dict) .) -}}
+          {{- errorf "Adiosbox catalog: %s %s example needs %s" $entry.slug $kind . -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if and (eq $graphMode "ledger") (not $example.minutes) -}}
+      {{- errorf "Adiosbox catalog: %s %s example needs minutes" $entry.slug $kind -}}
+    {{- end -}}
+  {{- end -}}
   {{- $graph := .graph -}}
   {{- with .lab -}}{{- if .graphSpec -}}{{- $graph = .graphSpec -}}{{- end -}}{{- end -}}
   {{- with $graph -}}
+    {{- if eq .mode "route" -}}
+      {{- if not (and .routes.proceed .routes.alternate .routes.stop) -}}{{- errorf "Adiosbox catalog: %s needs three route labels" $entry.slug -}}{{- end -}}
+    {{- end -}}
+    {{- if in (slice "checkpoint" "adaptive" "orchestrated" "orchestrated-subgraphs") .mode -}}
+      {{- if not $entry.checkpointQuestion -}}{{- errorf "Adiosbox catalog: %s needs an approval question" $entry.slug -}}{{- end -}}
+    {{- end -}}
+    {{- if eq .mode "checkpoint" -}}
+      {{- $ids := slice -}}
+      {{- if lt (len (.options | default slice)) 2 -}}{{- errorf "Adiosbox catalog: %s needs two or more checkpoint choices" $entry.slug -}}{{- end -}}
+      {{- range .options -}}
+        {{- if or (not (and .id .label .instruction)) (eq .id "stop") (in $ids .id) -}}
+          {{- errorf "Adiosbox catalog: %s has an invalid checkpoint choice" $entry.slug -}}
+        {{- end -}}
+        {{- $ids = $ids | append .id -}}
+      {{- end -}}
+    {{- end -}}
     {{- with index $contract .mode -}}
       {{- if and $entry.graph (ne (int $entry.maxRequests) (index . 0)) -}}
         {{- errorf "Adiosbox catalog: incorrect graph budget for %s" $entry.slug -}}
@@ -32,6 +81,7 @@
       {{- range after 1 . -}}
         {{- $node := index $graph.nodes . -}}
         {{- if not (and $node $node.title $node.prompt) -}}{{- errorf "Adiosbox catalog: %s needs graph node %s" $entry.slug . -}}{{- end -}}
+        {{- if gt (len (findRE `(?s).` ($node.prompt | default ""))) 4000 -}}{{- errorf "Adiosbox catalog: %s graph node %s exceeds the prompt limit" $entry.slug . -}}{{- end -}}
       {{- end -}}
     {{- else -}}
       {{- errorf "Adiosbox catalog: unknown graph mode for %s" $entry.slug -}}
@@ -59,19 +109,64 @@
       {{- errorf "Adiosbox catalog: %s needs a %s graph" $entry.slug $expectedMode -}}
     {{- end -}}
     {{- if eq .mode "prompt" -}}
-      {{- if or (not .cases) (not (in (slice "boundary" "placement" "dependencies" "ballot" "schema") .technique)) -}}
+      {{- if or (lt (len (.cases | default slice)) 2) (not (in (slice "boundary" "placement" "dependencies" "ballot" "canary" "schema") .technique)) -}}
         {{- errorf "Adiosbox catalog: %s needs a known technique and sample cases" $entry.slug -}}
       {{- end -}}
+      {{- if and (eq .technique "canary") (not (in (slice "number" "cents" "grid" "action" "abstention") .answerKind)) -}}
+        {{- errorf "Adiosbox catalog: %s needs a known canary answer type" $entry.slug -}}
+      {{- end -}}
+      {{- range index $graderFields .technique -}}
+        {{- if ne (len (where $lab.fields "key" .)) 1 -}}{{- errorf "Adiosbox catalog: %s needs grader field %s" $entry.slug . -}}{{- end -}}
+      {{- end -}}
       {{- range .cases -}}
-        {{- if not (and .title .input) -}}{{- errorf "Adiosbox catalog: %s has an incomplete sample case" $entry.slug -}}{{- end -}}
+        {{- $case := . -}}
+        {{- if and (eq $lab.technique "canary") (not (findRE `^[a-z0-9]+(-[a-z0-9]+)*$` (.id | default ""))) -}}
+          {{- errorf "Adiosbox catalog: %s needs a stable ID for canary case %s" $entry.slug .title -}}
+        {{- end -}}
+        {{- if or (not (and .title .input)) (gt (len (findRE `(?s).` (.input | default ""))) $maxInput) -}}
+          {{- errorf "Adiosbox catalog: %s has an incomplete or oversized sample case" $entry.slug -}}
+        {{- end -}}
+        {{- range $lab.fields -}}
+          {{- $value := or (index ($case.fields | default dict) .key) .sample -}}
+          {{- if or (and (not .optional) (not $value)) (gt (len (findRE `(?s).` ($value | default ""))) 800) -}}
+            {{- errorf "Adiosbox catalog: %s sample %s needs a valid value for %s" $entry.slug $case.title .key -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+    {{- else -}}
+      {{- if or (not $entry.sampleNotes) (gt (len (findRE `(?s).` ($entry.sampleNotes | default ""))) 3000) -}}
+        {{- errorf "Adiosbox catalog: %s needs a sample input within 3,000 characters" $entry.slug -}}
       {{- end -}}
     {{- end -}}
     {{- if not .samples -}}{{- errorf "Adiosbox catalog: %s has no written sample" $entry.slug -}}{{- end -}}
+    {{- range .samples -}}
+      {{- if not (and .title .text) -}}{{- errorf "Adiosbox catalog: %s has an incomplete lab sample" $entry.slug -}}{{- end -}}
+    {{- end -}}
   {{- else -}}
     {{- if .graph -}}
-      {{- if not (and .sampleNotes .sampleTrace) -}}{{- errorf "Adiosbox catalog: %s has no written graph sample" .slug -}}{{- end -}}
+      {{- if or (not (and .sampleNotes .sampleTrace)) (gt (len (findRE `(?s).` (.sampleNotes | default ""))) $maxInput) -}}
+        {{- errorf "Adiosbox catalog: %s needs a worked graph and an input within %d characters" .slug $maxInput -}}
+      {{- end -}}
+      {{- range .sampleTrace -}}
+        {{- if not (and .title .text) -}}{{- errorf "Adiosbox catalog: %s has an incomplete graph step sample" $entry.slug -}}{{- end -}}
+      {{- end -}}
     {{- else -}}
-      {{- if not (and .sampleNotes .sampleResult .instructions) -}}{{- errorf "Adiosbox catalog: %s has no written sample or prompt" .slug -}}{{- end -}}
+      {{- if or (not (and .sampleNotes .sampleResult .instructions)) (gt (len (findRE `(?s).` (.sampleNotes | default ""))) $maxInput) (gt (len (findRE `(?s).` (.instructions | default ""))) 4000) -}}
+        {{- errorf "Adiosbox catalog: %s needs a complete sample and prompt within the workbench limits" .slug -}}
+      {{- end -}}
+      {{- with (or .chain .comparison) -}}
+        {{- if or (not (and .instructions .sampleResult)) (gt (len (findRE `(?s).` (.instructions | default ""))) 4000) -}}
+          {{- errorf "Adiosbox catalog: %s needs a second prompt and worked result" $entry.slug -}}
+        {{- end -}}
+      {{- end -}}
+      {{- with .chain -}}
+        {{- if not .title -}}{{- errorf "Adiosbox catalog: %s needs a title for step 2" $entry.slug -}}{{- end -}}
+      {{- end -}}
+      {{- with .factTest -}}
+        {{- if or (not (and .baseline .changed .baselineDecision .changedDecision .invariant .sampleResult)) (ne (len (findRE `\{\{fact\}\}` $entry.sampleNotes)) 1) -}}
+          {{- errorf "Adiosbox catalog: %s needs both fact variants, checks, worked results, and one fact marker" $entry.slug -}}
+        {{- end -}}
+      {{- end -}}
     {{- end -}}
   {{- end -}}
 {{- end -}}

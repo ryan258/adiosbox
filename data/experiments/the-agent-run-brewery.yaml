@@ -1,0 +1,110 @@
+slug: the-agent-run-brewery
+order: 405
+shelf: business
+title: The agent-run brewery
+description: "A fictional brewery where AI agents plan the week: tanks, hops, the taproom, marketing, and the books. You approve the plan, and the owner still tastes the beer."
+inputLabel: This week at the brewery, with tanks, stock, cash, and requests
+placeholder: List the fermenters and what’s in them, stock and sales pace, ingredients, cash and bills, and anything customers or partners asked for…
+maxRequests: 5
+checkpointQuestion: Review the general manager’s plan
+method: A general-manager agent picks the two or three agents that matter this week from a fixed roster (brewmaster, purchasing, taproom, marketing and brand, bookkeeper) and plans their jobs. You can edit the plan before it runs. Each agent does one job and hands it forward. The general manager assembles the week plan, lists what the owner must approve, and lists the work no agent can do.
+graph:
+  mode: orchestrated
+  roleModels:
+    - { key: plan, title: General manager · Plan }
+    - { key: specialist-1, title: Agent 1 }
+    - { key: specialist-2, title: Agent 2 }
+    - { key: specialist-3, title: Agent 3 (if used) }
+    - { key: assemble, title: General manager · Week plan }
+  nodes:
+    plan:
+      title: Plan the brewery’s week
+      prompt: >-
+        You are the general-manager agent of a small, fictional brewery run
+        with AI agents. The agents can read the supplied material and write.
+        They cannot brew, keg, taste, move stock, pay, order, post, or send
+        anything. The owner approves every purchase, payment, price, public
+        post, and message to a customer or partner. Your roster is a
+        brewmaster agent for tank and brew schedules, a purchasing agent for
+        ingredient orders, a taproom agent for customer and partner messages,
+        a marketing and brand agent for beer names, social posts, labels, and
+        tap-list copy, and a bookkeeper agent for cash and filings. Pick the two or three agents
+        this week needs and give each one job, in the order they should run,
+        with the handoff the next agent needs. Prefer jobs that settle a
+        constraint before jobs that depend on it. Ask a question only if a
+        missing fact changes the week. Return JSON only with string fields
+        role (100 characters), deliverable (240), approach (900), and
+        question (240, empty when unnecessary). Include checks, an array of
+        two to four observable success checks of up to 200 characters each,
+        and stages, an ordered array of two or three single-line jobs of up
+        to 240 characters each, each starting with the agent’s name. Do not
+        do the jobs yet.
+    specialist:
+      title: An agent does its job
+      prompt: >-
+        The user message is JSON containing originalInput, approvedBrief, job,
+        and previous. Take the role of the agent named in the job, then do the
+        job using only the supplied material. Recheck any number from the
+        handoff against the original input, and show the arithmetic for
+        tanks, dates, quantities, and cash. If a request can’t be met under
+        the stated constraints, say so plainly and offer what can be done.
+        Draft orders and messages for the owner to send, and never claim they
+        were sent, paid, tasted, or checked. Marketing and brand work follows
+        any brand guide in the input, makes no health claims, never
+        encourages drinking a lot or fast, and promotes only beer the
+        schedule can deliver. Return JSON only with string
+        fields role (100 characters), approach (280), and handoff (600), plus
+        checks, an array of one to three observable checks of up to 120
+        characters each. The handoff must contain the worked result.
+    assemble:
+      title: Assemble the week plan
+      prompt: >-
+        The user message is JSON containing originalInput, approvedBrief, and
+        handoffs in chain order. Work as the general manager. Under Week plan,
+        give the schedule by day. Under Owner approves, list each purchase,
+        payment, public post, and message that needs the owner, with amounts. Under Only a
+        person can do this, list the physical and sensory work, such as
+        brewing, kegging, and tasting, and anything that needs records not
+        supplied. Resolve conflicts between handoffs using the original
+        material. Then list the approved checks with Pass, Needs work, or
+        Unverifiable and a short reason. Light Markdown (bold section labels,
+        - bullets), up to 380 words.
+sampleNotes: |-
+  Fictional Automaltic Brewing Co., tagline “Brewed by hand. Run by agents.” One owner, Rosa, who brews and approves all spending, plus one bartender. It’s Monday.
+  Tanks: two 7-barrel fermenters. FV1 holds pale ale, ready to keg Wednesday. FV2 holds stout until next Monday. A 7-barrel batch fills about 13 kegs. An IPA needs a free fermenter for 2 weeks.
+  Taproom: 3 kegs of pale ale left, selling about 4 kegs a week.
+  Request: a festival this Saturday wants 2 kegs of IPA. No IPA is brewed yet.
+  Hops: the IPA needs 12 lb of Citra and we have 8 lb. The supplier delivers in 3 days, has a 10 lb minimum, and charges $14 per lb.
+  Cash: $3,200 in the account. Payroll of $1,900 is due Friday.
+  Review: a regular posted that last week’s stout “tasted sour.”
+  Need: this week’s plan for Rosa to approve.
+sampleTrace:
+  - title: Proposed general manager · Week planner
+    text: |-
+      Settle the tanks and hops first, then the messages, then the cash.
+      1. Brewmaster: schedule FV1 after Wednesday’s kegging and say when an IPA could be ready.
+      2. Purchasing: size the Citra order against the 10 lb minimum and the 3-day delivery.
+      3. Taproom: draft replies to the festival and the stout review from the schedule.
+  - title: Agent 1 · Brewmaster
+    text: Keg the pale ale Wednesday, which adds about 13 kegs to the 3 on hand. FV1 is then free. An IPA needs 2 weeks in the tank, so none can be ready by Saturday. FV2 stays with the stout until next Monday.
+  - title: Agent 2 · Purchasing
+    text: The IPA is short 4 lb of Citra (12 needed, 8 on hand), but the minimum is 10 lb, so the order is 10 lb × $14 = $140. Ordered Monday, it arrives Thursday, so brew the IPA Thursday in FV1. Cash after the order is $3,060, and $1,160 after Friday’s $1,900 payroll.
+  - title: Agent 3 · Taproom
+    text: |-
+      Festival draft: we can’t have IPA ready by Saturday. We can bring 2 kegs of our pale ale instead. Would that work?
+      Review draft: thanks for telling us. Rosa is tasting the stout this week, and we’ll follow up. The reply makes no claim about the cause.
+  - title: Week plan, approvals, and checks
+    text: |-
+      **Week plan**
+      - Wednesday: keg the pale ale. Thursday: brew the IPA in FV1 once the Citra arrives. Saturday: 2 kegs of pale ale to the festival if they accept.
+
+      **Owner approves**
+      - The $140 Citra order, the festival offer, and the reply to the review.
+
+      **Only a person can do this**
+      - Kegging, brewing, and tasting the stout before serving more of it.
+
+      **Checks**
+      - No promise of IPA by Saturday: Pass.
+      - Cash stays positive after payroll ($1,160): Pass.
+      - Cause of the sour stout: Unverifiable. It needs Rosa’s tasting.

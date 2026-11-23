@@ -1,4 +1,5 @@
 <div class="more-group" data-export-scope="{{ .scope }}" role="group" aria-label="Download {{ .label }}">
+  {{ if in (slice "record" "run") .scope }}<p class="help">Includes all recorded attempts for this run, with prompts and inputs.</p>{{ end }}
   <button class="text-button" type="button" data-export-format="html">Download {{ .label }} as a web page</button>
   <button class="text-button" type="button" data-export-format="md">Download {{ .label }} as Markdown</button>
   <span class="status" data-export-status role="status"></span>

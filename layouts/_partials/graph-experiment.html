@@ -1,5 +1,6 @@
 {{- $experiment := . -}}
 {{- $graph := .graph -}}
+{{- $inputLimit := partial "input-limit.html" . -}}
 {{- $orchestrated := or (eq $graph.mode "orchestrated") (eq $graph.mode "orchestrated-subgraphs") -}}
 {{- $editableBrief := or (eq $graph.mode "adaptive") $orchestrated -}}
 {{- /* Hugo sorts map keys, so list nodes in the order the runtime visits them. Unlisted keys follow alphabetically. */ -}}
@@ -19,6 +20,8 @@
     </div>
     <p data-part="share-status" class="status share-status" role="status"></p>
   </header>
+    {{ partial "beer-example.html" (dict "slug" .slug "kind" "beer") }}
+    {{ partial "beer-example.html" (dict "slug" .slug "kind" "canary") }}
   {{ if and (eq hugo.Environment "local") (hasPrefix site.BaseURL "http://127.0.0.1:") }}<p data-case-context class="case-context help" hidden></p>{{ end }}
   <div class="workbench graph-workbench">
     <form data-part="experiment-form" class="inputs" autocomplete="off" novalidate>
@@ -27,7 +30,7 @@
         <label for="{{ .slug }}-notes">{{ .inputLabel }}</label>
         <button class="text-button" type="button" data-part="load-sample">Use the sample</button>
       </div>
-      <textarea id="{{ .slug }}-notes" data-part="notes" rows="6" maxlength="{{ if $orchestrated }}2400{{ else }}3000{{ end }}" required placeholder="{{ .placeholder }}">{{ .sampleNotes }}</textarea>
+      <textarea id="{{ .slug }}-notes" data-part="notes" rows="6" maxlength="{{ $inputLimit }}" required placeholder="{{ .placeholder }}">{{ .sampleNotes }}</textarea>
       {{ if eq $graph.mode "ledger" }}
       <label class="graph-budget" for="{{ .slug }}-minutes">Available minutes</label>
       <input id="{{ .slug }}-minutes" data-part="minutes" type="number" min="1" max="720" step="1" value="{{ .sampleMinutes }}">
@@ -59,9 +62,9 @@
         </div>
       </details>
       {{ if $editableBrief }}<p class="help">The first call drafts the {{ if $orchestrated }}plan{{ else }}role{{ end }} for you to approve.</p>{{ end }}
-      <p class="help" data-part="run-budget"></p>
+      <p class="help" data-part="run-budget" id="{{ .slug }}-run-budget"></p>
       <div class="actions">
-        <button class="primary" data-part="run" type="submit">{{ if $orchestrated }}Propose a chain{{ else if $editableBrief }}Propose an agent{{ else }}Run the graph{{ end }}</button>
+        <button class="primary" data-part="run" type="submit" aria-describedby="{{ .slug }}-run-budget">{{ if $orchestrated }}Propose a chain{{ else if $editableBrief }}Propose an agent{{ else }}Run the graph{{ end }}</button>
         <button class="secondary" data-part="cancel" type="button" hidden>Cancel</button>
       </div>
       <fieldset class="graph-choices" data-part="choices" hidden>
@@ -71,13 +74,13 @@
         {{ else }}
         <p class="help">Your call. Read what it found, then pick a direction. Either choice uses one more call.</p>
         {{ end }}
-        <p class="help" data-part="approval-budget"></p>
+        <p class="help" data-part="approval-budget" id="{{ .slug }}-approval-budget"></p>
         <div class="actions">
           {{ if $editableBrief }}
-          <button class="primary" type="button" data-choice="use-assignment">{{ if $orchestrated }}Run this chain{{ else }}Use this assignment{{ end }}</button>
+          <button class="primary" type="button" data-choice="use-assignment" aria-describedby="{{ .slug }}-approval-budget">{{ if $orchestrated }}Run this chain{{ else }}Use this assignment{{ end }}</button>
           {{ end }}
           {{ range $graph.options }}
-          <button class="primary" type="button" data-choice="{{ .id }}">{{ .label }}</button>
+          <button class="primary" type="button" data-choice="{{ .id }}" aria-describedby="{{ $experiment.slug }}-approval-budget">{{ .label }}</button>
           {{ end }}
           <button class="secondary" type="button" data-choice="stop">Stop here</button>
         </div>
@@ -85,8 +88,8 @@
       <fieldset class="graph-choices pickup" data-part="pickup" hidden>
         <legend>Pick up where it stopped</legend>
         <p class="help" data-part="pickup-reason"></p>
-        {{ partial "model-picker.html" (dict "id" (printf "%s-pickup-model" .slug) "label" "Model for the rest of this run" "role" "pickup" "helpID" (printf "%s-pickup-help" .slug)) }}
-        <p id="{{ .slug }}-pickup-help" class="help">Leave it blank to try the same model again. Every unfinished step that used that model switches too. Finished steps stay as they are.</p>
+        {{ partial "model-picker.html" (dict "id" (printf "%s-pickup-model" .slug) "label" "Replacement model for the failed roles" "role" "pickup" "helpID" (printf "%s-pickup-help" .slug)) }}
+        <p id="{{ .slug }}-pickup-help" class="help">Leave it blank to retry with the original model picks. A replacement applies to the roles listed above.</p>
         <p class="help" data-part="pickup-budget"></p>
         <div class="actions">
           <button class="primary" type="button" data-pickup="go">Pick up from here</button>

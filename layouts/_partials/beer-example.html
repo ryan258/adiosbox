@@ -1,0 +1,21 @@
+{{- /* Context: dict "slug" and "kind" (beer or canary). Both kinds load the same way. */ -}}
+{{- $canary := eq .kind "canary" -}}
+{{- $example := index (cond $canary hugo.Data.canary_examples hugo.Data.beer_examples) .slug -}}
+{{- $name := cond $canary "canary" "beer example" -}}
+<details class="example-panel" data-example="{{ .kind }}">
+  <summary>{{ cond $canary "Canary" "Beer example" }} · {{ $example.title }}</summary>
+  <h3>{{ cond $canary "Canary input" "Sample input" }}</h3>
+  <pre class="result" data-example-input>{{ $example.input }}</pre>
+  {{- if $canary }}
+  <h3>Pass check</h3>
+  <p class="result">{{ $example.check }}</p>
+  <h3>Why it’s hard today</h3>
+  <p>{{ $example.why }}</p>
+  {{- else }}
+  <h3>Written result</h3>
+  <p class="result" data-example-result>{{ $example.result }}</p>
+  {{- end }}
+  <textarea data-example-setup hidden>{{ dict "fields" ($example.fields | default dict) "minutes" ($example.minutes | default 0) | jsonify }}</textarea>
+  <button type="button" class="secondary" data-load-example hidden>Load {{ $name }}<span class="visually-hidden"> · {{ $example.title }}</span></button>
+  <p class="status" data-example-status role="status"></p>
+</details>

@@ -1,4 +1,9 @@
 {{- $lab := .lab -}}
+{{- $inputLimit := partial "input-limit.html" . -}}
+{{- $runtime := dict -}}
+{{- range $key, $value := $lab -}}
+  {{- if ne $key "samples" -}}{{- $runtime = merge $runtime (dict $key $value) -}}{{- end -}}
+{{- end -}}
 {{- $slug := .slug -}}
 {{- $sampleInput := .sampleNotes -}}
 {{- $sampleFields := dict -}}
@@ -20,10 +25,12 @@
     </div>
     <p class="status share-status" data-part="share-status" role="status"></p>
   </header>
+    {{ partial "beer-example.html" (dict "slug" .slug "kind" "beer") }}
+    {{ partial "beer-example.html" (dict "slug" .slug "kind" "canary") }}
   {{ if $local }}<p data-case-context class="case-context help" hidden></p>{{ end }}
   <div class="workbench lab-workbench">
     <div class="inputs">
-      <textarea data-part="spec" hidden>{{ $lab | jsonify }}</textarea>
+      <textarea data-part="spec" hidden>{{ $runtime | jsonify }}</textarea>
       <form data-part="experiment-form" autocomplete="off" novalidate>
         {{ with $lab.cases }}
         <label for="{{ $slug }}-sample">Sample case</label>
@@ -33,7 +40,7 @@
         <button class="text-button" type="button" data-part="load-prompt-sample">Use this case</button>
         {{ end }}
         <label for="{{ $slug }}-notes">{{ .inputLabel }}</label>
-        <textarea id="{{ $slug }}-notes" data-part="notes" rows="6" maxlength="{{ if eq $lab.technique "placement" }}7000{{ else }}3000{{ end }}" placeholder="{{ .placeholder }}">{{ $sampleInput }}</textarea>
+        <textarea id="{{ $slug }}-notes" data-part="notes" rows="6" maxlength="{{ $inputLimit }}" placeholder="{{ .placeholder }}">{{ $sampleInput }}</textarea>
         {{ range $lab.fields }}
         <label for="{{ $slug }}-{{ .key }}">{{ .label }}</label>
         <textarea id="{{ $slug }}-{{ .key }}" data-case-field="{{ .key }}" rows="2" maxlength="800">{{ index $sampleFields .key | default .sample }}</textarea>
@@ -62,9 +69,9 @@
         </details>
         {{ end }}
         <p class="help lab-help">{{ $lab.help }}</p>
-        <p class="help" data-part="run-budget"></p>
+        <p class="help" data-part="run-budget" id="{{ $slug }}-run-budget"></p>
         <div class="actions">
-          <button type="submit" class="primary" data-part="run">{{ $lab.runLabel }}</button>
+          <button type="submit" class="primary" data-part="run" aria-describedby="{{ $slug }}-run-budget">{{ $lab.runLabel }}</button>
           {{ if ne $lab.mode "cold" }}<button type="button" class="secondary" data-part="cancel" hidden>Cancel</button>{{ end }}
         </div>
       </form>

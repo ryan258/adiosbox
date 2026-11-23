@@ -1,0 +1,95 @@
+slug: launch-with-an-agent-crew
+order: 404
+shelf: business
+title: Launch with an agent crew
+description: "An orchestrator agent plans a product launch, specialist agents each do one job, and you approve the plan before any of them start."
+inputLabel: The product, what you know about it, and what the launch needs
+placeholder: Describe the product, price and cost, audience, channels, and anything still undecided…
+maxRequests: 5
+checkpointQuestion: Review the launch plan
+method: The orchestrator proposes its role and two or three ordered jobs, such as checking the numbers, writing the listing, and preparing customer answers. You can edit the plan before it runs. Each specialist chooses a role and hands its result forward. The orchestrator assembles the launch kit and marks which checks pass.
+graph:
+  mode: orchestrated
+  roleModels:
+    - { key: plan, title: Orchestrator · Plan }
+    - { key: specialist-1, title: Specialist 1 }
+    - { key: specialist-2, title: Specialist 2 }
+    - { key: specialist-3, title: Specialist 3 (if used) }
+    - { key: assemble, title: Orchestrator · Assemble }
+  nodes:
+    plan:
+      title: Shape the orchestrator and plan the launch
+      prompt: >-
+        You are the orchestrator for a small business run with AI agents. The
+        owner approves all spending, prices, and anything sent to customers.
+        Design a role for yourself specific to this launch. Decompose the launch
+        into two or three distinct jobs in the order they should be done, such
+        as checking the economics, writing customer-facing copy, or preparing
+        support answers. For each job, state the handoff the next specialist
+        needs. Leave the specialist's role open so it can adapt to the material
+        it receives. Ask a question only if a missing fact materially changes
+        the launch. Use the provided material and choose jobs a text assistant
+        can perform. Return JSON only with string fields role (100 characters),
+        deliverable (240), approach (900), and question (240, empty when
+        unnecessary). Include checks, an array of two to four observable
+        success checks of up to 200 characters each, and stages, an ordered
+        array of two or three single-line jobs of up to 240 characters each.
+        Do not complete the jobs yet.
+    specialist:
+      title: Shape a specialist and do its job
+      prompt: >-
+        The user message is JSON containing originalInput, approvedBrief, job,
+        and previous. Choose a narrow role suited to this job and any previous
+        handoff, then do the job. Use the original input to check facts and
+        arithmetic in the handoff. Keep hard constraints and identify missing
+        facts. Stay within this job and deliver a concise artifact the next
+        agent can use. Return JSON only with string fields role (100
+        characters), approach (280), and handoff (600), plus checks, an array
+        of one to three observable checks of up to 120 characters each. The
+        handoff must contain the worked result. Work from the supplied material
+        and avoid claims of external access, publishing, payments, or
+        verification.
+    assemble:
+      title: Assemble the launch kit
+      prompt: >-
+        The user message is JSON containing originalInput, approvedBrief, and
+        handoffs in chain order. Work in the orchestrator role from the approved
+        brief. Deliver the launch kit using the specialist findings. Resolve
+        conflicts using the original material. Keep uncertainties visible where
+        they affect the launch. Under Owner approves, list each price, spend,
+        or customer-facing message that needs the owner before it goes out.
+        Then list the approved checks with Pass, Needs work, or Unverifiable
+        and a short reason. Distinguish source checks from model judgment.
+        Light Markdown (bold section labels, - bullets), up to 350 words.
+sampleNotes: |-
+  A two-person candle studio is launching a refill kit: wax, wick, and fragrance to refill a candle jar the customer already owns.
+  Price $16, materials and packing $5.40, shipping $4.50 paid by the customer. Our current candles sell for $28.
+  We sell through our own web shop and a monthly email to 1,100 subscribers. Launch is in two weeks.
+  Undecided: whether the kit works in jars from other brands. We have only tested our own jars.
+  Need: a shop listing, the launch email, and answers to the questions customers will ask.
+sampleTrace:
+  - title: Proposed orchestrator · Small-batch launch editor
+    text: |-
+      Deliver a listing, a launch email, and a customer FAQ that make no claim about other brands’ jars.
+      1. Check the kit’s margin and pull out the claims the copy can safely make.
+      2. Write the listing and email from those claims.
+      3. Draft the FAQ, including the untested-jar question.
+  - title: Specialist 1 · Unit economics checker
+    text: The kit keeps $10.60 per sale, a 66% margin, and the customer pays shipping. Safe claim — refills our own jars. Unsafe claim — fits any jar.
+  - title: Specialist 2 · Product copywriter
+    text: Listing headline “Refill your Studio candle for $16.” The email leads with reusing the jar and links to the listing. Both say the kit is made for our jars.
+  - title: Specialist 3 · Customer support writer
+    text: Will it work in another brand’s jar? We’ve only tested it in ours, so we can’t promise a fit yet. Other answers cover burn time, the wick, and shipping cost.
+  - title: Assembled launch kit and checks
+    text: |-
+      **Launch kit**
+      - Listing and email position the kit as a refill for Studio jars at $16.
+      - FAQ answers the other-brand question honestly: untested.
+
+      **Owner approves**
+      - The $16 price, the email send to 1,100 subscribers, and the listing going live.
+
+      **Checks**
+      - Margin is correct from the source figures: Pass.
+      - No claim about other brands’ jars: Pass.
+      - Burn time in the FAQ: Unverifiable from the material provided.
