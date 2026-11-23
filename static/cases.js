@@ -1,4 +1,4 @@
-import { isRunBusy } from './run-state.js';
+import { graphLabModes, isRunBusy } from './run-state.js';
 
 const prefix = 'adiosbox.case.1.';
 const draftKey = 'adiosbox.draft.1';
@@ -145,7 +145,7 @@ export function setupCases(experiments, model, openExperiment) {
 
   function graphRevisionFor(experiment) {
     return experiment.hasAttribute('data-graph') ||
-      ['repair', 'evidence', 'stop', 'cost'].includes(experiment.dataset.lab) ? graphRevision : '';
+      graphLabModes.includes(experiment.dataset.lab) ? graphRevision : '';
   }
 
   function selectedCase() {

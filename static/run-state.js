@@ -1,6 +1,9 @@
 export const receipts = new WeakMap();
+// Abort reasons double as status messages; pick-up and recovery logic compare against these.
+export const timeoutReason = 'OpenRouter took too long.';
+export const keyClearedReason = 'Run canceled because the key was cleared.';
 
-export async function withCallDeadline(controller, task, reason = 'OpenRouter took too long.') {
+export async function withCallDeadline(controller, task, reason = timeoutReason) {
   controller.signal.throwIfAborted();
   const timer = setTimeout(() => controller.abort(reason), 60_000);
   try {
@@ -10,6 +13,9 @@ export async function withCallDeadline(controller, task, reason = 'OpenRouter to
   }
 }
 
+// Lab modes that run a source graph, so their records and saved cases carry the graph revision.
+export const graphLabModes = ['repair', 'evidence', 'stop', 'cost'];
+
 const runsBySignal = new WeakMap();
 const runsByOutput = new WeakMap();
 const activity = new Map();
@@ -18,7 +24,7 @@ export function beginRun(experiment, signal, output, previous) {
   const sourceId = experiment.dataset.labGraph;
   const source = sourceId && document.getElementById(sourceId);
   const usesGraph = experiment.hasAttribute('data-graph') || source ||
-    ['repair', 'evidence', 'stop', 'cost'].includes(experiment.dataset.lab);
+    graphLabModes.includes(experiment.dataset.lab);
   const run = previous ?? {
     id: crypto.randomUUID(),
     startedAt: new Date().toISOString(),

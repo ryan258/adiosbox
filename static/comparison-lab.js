@@ -2,7 +2,7 @@ import { mayReplaceSetup } from './cases.js';
 import { prepareFactInputs } from './fact-test.js';
 import { appendRunRecord, runRecordText } from './handoff.js';
 import { canaryGraderRevision, runPromptExperiment, validatePromptCase } from './prompt-experiments.js';
-import { beginRun, linkRunOutput, setRunActivity, withCallDeadline } from './run-state.js';
+import { beginRun, keyClearedReason, linkRunOutput, setRunActivity, withCallDeadline } from './run-state.js';
 import { formatWrittenResults } from './layouts.js';
 
 const normalize = value => value.normalize('NFKC').toLowerCase()
@@ -108,7 +108,9 @@ export function setupLab(experiment, ui) {
     const output = part('run-budget');
     if (maximum === '0') output.textContent = 'No model calls.';
     else makeRunStatus(output, picks, `Up to ${maximum} base calls.`,
-      spec.mode === 'repair' ? 'Each edited merge adds one base call.' : '');
+      spec.mode === 'repair' ? 'Each edited merge adds one base call.'
+        : ['canary', 'schema'].includes(spec.technique) && picks.some(({ id }) => id.startsWith('openrouter/'))
+          ? 'This workbench needs a specific model, not a router. Choose one before running.' : '');
     if (repair) makeRunStatus(part('repair-budget'), [repair.selectedModels.merge], 'One base call for the revised merge.');
   }
   for (const name of ['input', 'change', 'click', 'case-restored']) experiment.addEventListener(name, budget);
@@ -551,5 +553,5 @@ export function setupLab(experiment, ui) {
     copy(runRecordText(trace), copyStatus, 'Run record copied.', 'Select the run record text and copy it.');
   });
   cancel?.addEventListener('click', () => cancelRun('Run canceled.'));
-  return () => cancelRun('Run canceled because the key was cleared.');
+  return () => cancelRun(keyClearedReason);
 }

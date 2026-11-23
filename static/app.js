@@ -6,7 +6,9 @@ import { setupLab } from './comparison-lab.js';
 import { redactTraceText, setupCallTrace, traceBody } from './call-trace.js';
 import { sourceText } from './markdown.js';
 import { formatWrittenResults, renderResult } from './layouts.js';
-import { beginRun, linkRunOutput, receipts, recordAttempt, setRunActivity, withCallDeadline } from './run-state.js';
+import {
+  beginRun, keyClearedReason, linkRunOutput, receipts, recordAttempt, setRunActivity, timeoutReason, withCallDeadline,
+} from './run-state.js';
 import {
   CompletionError, completionBody, describeModel, freeRetryLimit, isFreeModel, readCompletion, withFreeRetries,
 } from './completion-options.js';
@@ -136,7 +138,6 @@ async function completeOnce({
     finish({ outcome: 'aborted' });
     signal.throwIfAborted();
   }
-  signal.throwIfAborted();
   // The trace's state is the HTTP result; outcome says how the completion itself ended.
   try {
     const result = readCompletion(response, redactTraceText(responseText, apiKey), { modelId, provider, includeUsage, local });
@@ -354,7 +355,7 @@ function setupExperiment(experiment) {
     let expectations;
     const setup = factTest && local ? readCaseSetup(experiment, model.value) : null;
     if (factTest) {
-      const value = key => factFields.get(key).value.trim();
+      const value = name => factFields.get(name).value.trim();
       try {
         factInputs = prepareFactInputs(input, value('baseline'), value('changed'));
         expectations = {
@@ -403,7 +404,7 @@ function setupExperiment(experiment) {
           input: factInputs?.[step - 1] ?? handoff, prompt, modelId, apiKey, signal: request.signal,
           experiment: experiment.id, step: label || step,
           includeUsage: true,
-        }), 'timeout');
+        }));
 
         result.dataset.resultState = truncated ? 'partial' : 'live';
         receipts.set(result, receipt);
@@ -489,7 +490,7 @@ function setupExperiment(experiment) {
           stages[1].variant.meta.textContent = factTest ? 'The changed case did not finish.' : 'Step 2 did not finish.';
           const remaining = factTest ? 'The baseline is kept. Pick a different model if you like, then pick up at the changed case.'
             : 'Step 1 is kept. Pick a different model for step 2 if you like, then pick up at step 2.';
-          const recoverable = request.signal.reason !== 'key-cleared' && error?.reason !== 'edit-request' &&
+          const recoverable = request.signal.reason !== keyClearedReason && error?.reason !== 'edit-request' &&
             startingSource === sourceInputs();
           const next = error?.reason === 'connection' ? ' Check your OpenRouter key or account before picking up.' : '';
           setStatus(runStatus, recoverable ? `${message}${next} ${remaining}` : message, isError);
@@ -504,12 +505,12 @@ function setupExperiment(experiment) {
         }
       };
       if (request.signal.aborted) {
-        if (request.signal.reason === 'key-cleared') {
-          showFailure('Run canceled because the key was cleared.', false);
+        if (request.signal.reason === keyClearedReason) {
+          showFailure(keyClearedReason, false);
           return;
         }
-        const timedOut = request.signal.reason === 'timeout';
-        showFailure(timedOut ? 'OpenRouter took too long. Try again.' : 'Run canceled.', timedOut);
+        const timedOut = request.signal.reason === timeoutReason;
+        showFailure(timedOut ? `${timeoutReason} Try again.` : 'Run canceled.', timedOut);
         return;
       }
       showFailure(error instanceof CompletionError ? error.message : 'Could not read a response from OpenRouter. Check your connection and try again.');
@@ -523,7 +524,7 @@ function setupExperiment(experiment) {
   });
   return () => {
     clearPickup();
-    activeRequest?.abort('key-cleared');
+    activeRequest?.abort(keyClearedReason);
   };
 }
 
@@ -675,9 +676,9 @@ function setupGraph(experiment) {
       const message = canceled ? signal.reason : error.message || 'An error stopped the graph.';
       if (!canceled) active.controller.abort(message);
       record('Graph stopped', message);
-      setStatus(runStatus, message, !canceled || message === 'OpenRouter took too long.');
+      setStatus(runStatus, message, !canceled || message === timeoutReason);
       // Finished steps are checkpointed, so offer to rerun only the step that failed.
-      const point = message !== 'Run canceled because the key was cleared.' && error?.reason !== 'edit-request' &&
+      const point = message !== keyClearedReason && error?.reason !== 'edit-request' &&
         await active.graph?.pickupPoint().catch(() => null);
       if (point && !active.discardRecovery && active.source === sourceInputs()) {
         active.failed = point;
@@ -725,11 +726,11 @@ function setupGraph(experiment) {
     const roleModels = new Map(modelRoles.map(role => [role, chooseModel(modelFields.get(role), defaultModel)]));
     const invalidModel = [...roleModels.values()].find(selection => !modelIdPattern.test(selection.id));
     const apiKey = key?.value.trim();
-    const budget = minutes?.valueAsNumber;
+    const minuteBudget = minutes?.valueAsNumber;
     const missing = [
       [notes, input, 'Enter some input or load the sample.'],
       [notes, input.length <= notes.maxLength, `Shorten the input to ${notes.maxLength} characters.`],
-      [minutes, !minutes || (Number.isInteger(budget) && budget >= 1 && budget <= 720), 'Enter a whole number from 1 to 720.'],
+      [minutes, !minutes || (Number.isInteger(minuteBudget) && minuteBudget >= 1 && minuteBudget <= 720), 'Enter a whole number from 1 to 720.'],
       [invalidModel?.field, !invalidModel, 'Choose a model or enter its full OpenRouter ID.'],
       [key, local || apiKey, 'Enter your OpenRouter key to run the graph.'],
     ].find(([, valid]) => !valid);
@@ -772,7 +773,7 @@ function setupGraph(experiment) {
           return { ...result, requestedModel: modelId };
         },
       });
-      return active.graph.start(input, budget);
+      return active.graph.start(input, minuteBudget);
     });
   });
 
@@ -868,7 +869,7 @@ function setupGraph(experiment) {
   cancel.addEventListener('click', () => stopRun('Run canceled.'));
   return () => {
     if (active) active.discardRecovery = true;
-    stopRun('Run canceled because the key was cleared.');
+    stopRun(keyClearedReason);
   };
 }
 
@@ -949,8 +950,7 @@ for (const experiment of experiments) for (const example of experiment.querySele
     notes.value = example.querySelector('[data-example-input]').textContent;
     if (minutes && budget) minutes.value = budget;
     for (const field of editableFields) {
-      const key = field.dataset.caseField;
-      field.value = values[key] ?? field.defaultValue;
+      field.value = values[field.dataset.caseField] ?? field.defaultValue;
     }
     experiment.dispatchEvent(new Event('setup-changed'));
     experiment.dispatchEvent(new Event('example-loaded'));
