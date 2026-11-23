@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Compute answer keys for the canary shelf. Keys come from code, never from a model.
 
-  python3 scripts/canary-keys.py check                         # confirm the shipped keys
+  python3 scripts/canary-keys.py check                         # exercise the generators
+  (npm run check pipes the rendered catalog to `check --rendered` to confirm every shipped key)
   python3 scripts/canary-keys.py bridge 1,2,5,8 --forbid 1,2   # minimum crossing minutes
   python3 scripts/canary-keys.py jugs 4,9,14 --target 11       # minimum fill/empty/pour steps
   python3 scripts/canary-keys.py ledger --seed 42 --entries 150

@@ -193,7 +193,7 @@ Each of these workbenches isolates one prompting technique and grades the replie
 | [Three Answers, One Ballot](http://127.0.0.1:1313/#three-answers-one-ballot) | One answer, then a majority of three | First answer and majority against the key, plus reported usage | 3 |
 | [Can the Graph Read the Reply?](http://127.0.0.1:1313/#can-the-graph-read-the-reply) | The Teachback reviewer prompt alone, then with an enforced JSON schema | Usable route and reason, exact two-field JSON, expected route | 2 |
 
-**Can the Graph Read the Reply?** pins both calls to one OpenRouter provider so the only difference is the schema. Enter the provider slug and choose a specific model that supports structured output. Its preselected reviewer is a paid model. Replace it before running if you want to avoid charges. A requested router may choose different responding models, so inspect the model labels in the record. The reported totals include the responses that supply usage data. Where part of the usage is missing, the record shows the coverage.
+**Can the Graph Read the Reply?** pins both calls to one OpenRouter provider so the only difference is the schema. Enter the provider slug and choose a specific model that supports structured output; like the scored canaries, it rejects an `openrouter/` router and flags that choice in the call-budget line. Its preselected reviewer is a paid model. Replace it before running if you want to avoid charges. Inspect the model labels in the record, and note that the reported totals include the responses that supply usage data. Where part of the usage is missing, the record shows the coverage.
 
 ## Combine experiments
 
