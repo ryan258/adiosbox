@@ -6,10 +6,12 @@ Only send the visitor's key and inputs to OpenRouter when they explicitly run an
 
 Run focused checks. Staging, commits, pushes, deployment, publication, and domain changes each require Ryan's explicit authorization.
 
+CLAUDE.md imports this file, so the GitNexus section lives only here. Refresh the index with `node .gitnexus/run.cjs analyze --index-only`; a plain `analyze` rewrites both files and adds volatile counts unless given `--skip-agents-md --no-stats`.
+
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **adiosbox** (986 symbols, 3244 relationships, 80 execution flows).
+This project is indexed by GitNexus as **adiosbox**.
 
 > Index stale? Run `node .gitnexus/run.cjs analyze --index-only` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? Bootstrap with `npx`, `bunx`, or `pnpm dlx` — e.g. `bunx gitnexus@latest analyze` (npm 11 npx crash; #1939).
 
