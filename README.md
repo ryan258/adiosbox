@@ -2,7 +2,7 @@
 
 Ryan's AI playground is a shelf catalog of small experiments. Try a single prompt, compare two prompts or facts, run a two-step chain, or follow a branching LangGraph run. Every experiment has a share link, a written sample, and a beer-themed example you can read without a key. Open **Beer example** inside any workbench to see the input and written result, then load it when you want to try it. Open **Canary** for a harder case built to break that technique today, with a pass check you can read in the result. The Run and Pick-up actions show their own model picks and base call budgets. Free models can send up to two additional automatic retries per run.
 
-Start with [The Missing Manual](docs/the-missing-manual.md) for a walkthrough or [101 Ways to Use Adiosbox](docs/101-ways-to-use-this-project-for-fun-and-profit.md) for ideas. See [Agent companies: where they stand](docs/agent-companies-reality.md) for the evidence behind the reality-check shelf and [Canaries in the coal mine](docs/canaries-in-the-coal-mine.md) for how to run and log the scored canaries.
+New to it? Read [the ELI5 handbook](docs/eli5-handbook.md) first, then grab a ready-to-paste input from [Copy-and-paste examples](docs/copy-paste-examples.md). Start with [The Missing Manual](docs/the-missing-manual.md) for a walkthrough or [101 Ways to Use Adiosbox](docs/101-ways-to-use-this-project-for-fun-and-profit.md) for ideas. See [Agent companies: where they stand](docs/agent-companies-reality.md) for the evidence behind the reality-check shelf and [Canaries in the coal mine](docs/canaries-in-the-coal-mine.md) for how to run and log the scored canaries.
 
 ## Run locally
 
