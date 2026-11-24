@@ -3,18 +3,20 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import test from 'node:test';
-import { cleanCase, matchingCaseReceipt } from '../static/cases.js';
-import { redactTraceText, traceBody } from '../static/call-trace.js';
-import { checkRecall, checkStopCases, formatReportedUsage } from '../static/comparison-lab.js';
-import { checkFactPair, compareFactChecks, prepareFactInputs, sameFactScenario } from '../static/fact-test.js';
-import { parseInline, parseMarkdown } from '../static/markdown.js';
-import { enrich, readFields, sections, stepKind, toneFor } from '../static/layouts.js';
+import { cleanCase, matchingCaseReceipt } from '../assets/js/cases.js';
+import { redactTraceText, traceBody } from '../assets/js/call-trace.js';
+import { checkRecall, checkStopCases, formatReportedUsage, replayCalls } from '../assets/js/comparison-lab.js';
+import { checkFactPair, compareFactChecks, prepareFactInputs, sameFactScenario } from '../assets/js/fact-test.js';
+import { parseInline, parseMarkdown } from '../assets/js/markdown.js';
+import { enrich, readFields, sections, stepKind, toneFor, unmatched } from '../assets/js/layouts.js';
 import {
   CompletionError, completionBody, freeRetryLimit, readCompletion, withFreeRetries,
-} from '../static/completion-options.js';
-import { checkSchedule, gradeCanary, readVote, runPromptExperiment, validatePromptCase } from '../static/prompt-experiments.js';
-import { readExport } from '../static/run-export.js';
-import { beginRun, linkRunOutput, publicRunRecord, receipts, recordAttempt } from '../static/run-state.js';
+} from '../assets/js/completion-options.js';
+import { checkSchedule, gradeCanary, readVote, runPromptExperiment, validatePromptCase } from '../assets/js/prompt-experiments.js';
+import { readExport } from '../assets/js/run-export.js';
+import {
+  beginRun, keyClearedReason, linkRunOutput, publicRunRecord, receipts, recordAttempt, timeoutReason,
+} from '../assets/js/run-state.js';
 import { createExperimentGraph, requestLimits } from '../assets/graph-runtime.js';
 
 const root = new URL('../', import.meta.url);
@@ -285,7 +287,9 @@ test('clean builds expose the right setup and distinct call-budget controls', {
   const local = readFileSync(localHtml, 'utf8');
   assert.match(staging, /name="robots" content="noindex"/);
   const basePath = new URL(process.env.ADIOSBOX_STAGING_URL || 'https://example.invalid/adiosbox/').pathname;
-  assert.ok(staging.includes('src="' + basePath + 'app.js"'));
+  // One fingerprinted bundle, so a deploy can't mix module versions.
+  assert.match(staging, new RegExp(`<script type="module" src="${basePath}app\\.[0-9a-f]{64}\\.js"></script>`));
+  assert.equal(staging.match(/<script /g).length, 1);
   assert.match(staging, /id="api-key"/);
   assert.doesNotMatch(staging, /id="saved-cases"/);
   assert.match(local, /data-local-openrouter/);
@@ -718,6 +722,10 @@ test('fact-test helpers prepare pairs, grade JSON replies, and compare against s
   assert.equal(compareFactChecks(pass.checks, partial.checks), 'Regressed · Changed decision, Invariant in both answers');
   assert.equal(compareFactChecks(pass.checks, pass.checks), 'All three check outcomes match the saved run.');
 
+  // Spacing in the invariant is forgiven; its case is not.
+  assert.deepEqual(checkFactPair(expectations, reply('full credit', ' Mina  |  R184'), reply('no credit')).checks, [true, true, true]);
+  assert.deepEqual(checkFactPair(expectations, reply('full credit', 'mina | r184'), reply('no credit')).checks, [true, true, false]);
+
   const truncated = checkFactPair(expectations, { ...reply('full credit'), truncated: true }, reply('no credit'));
   assert.equal(truncated.verdict, 'Incomplete');
   const fields = { notes: 'a', 'fact:baseline': '1', 'fact:changed': '2', 'fact:baseline-decision': 'x', 'fact:changed-decision': 'y', 'fact:invariant': 'z' };
@@ -744,4 +752,74 @@ test('comparison-lab pure helpers grade stop cases, cold recall, and partial usa
     formatReportedUsage([{ total_tokens: 100, cost: 0.00025 }, { total_tokens: 50 }]),
     '2 completed requests · tokens 150 · cost in USD $0.00025 (1 of 2 responses reported)',
   );
+});
+
+test('difference highlighting marks an insertion without shifting the lines after it', () => {
+  const [left, right] = unmatched(['a', 'b', 'c', 'd'], ['a', 'new', 'b', 'c', 'd']);
+  assert.deepEqual([...left], []);
+  assert.deepEqual([...right], [1]);
+  const [changedLeft, changedRight] = unmatched(['a', 'b', 'c'], ['a', 'x', 'c']);
+  assert.deepEqual([[...changedLeft], [...changedRight]], [[1], [1]]);
+  assert.deepEqual(unmatched([], ['a']).map(set => [...set]), [[], [0]]);
+});
+
+test('lab pick-up replays finished replies and resends only failed or rejected calls', async () => {
+  const calls = replayCalls();
+  let sent = 0;
+  const ok = content => async () => { sent += 1; return { content, receipt: { id: content } }; };
+  const options = step => ({ step, modelId: 'test/model', prompt: 'p', input: 'i' });
+  await calls.call(options('one'), ok('first'));
+  await assert.rejects(calls.call(options('two'), async () => { sent += 1; throw new Error('down'); }));
+  assert.equal(calls.failed, 1);
+  assert.equal(calls.kept, 1);
+
+  calls.newAttempt();
+  assert.equal((await calls.call(options('one'), ok('again'))).content, 'first', 'a finished reply is replayed');
+  assert.equal((await calls.call(options('two'), ok('second'))).content, 'second');
+  assert.equal(sent, 3);
+  assert.equal(calls.failed, 0);
+
+  await calls.call(options('cut'), async () => ({ content: 'partial', truncated: true }));
+  assert.equal(calls.kept, 2, 'a partial reply is not kept');
+  calls.forget({ id: 'second' });
+  calls.forget({ id: 'second' });
+  assert.equal(calls.kept, 2, 'forget matches the receipt object, not its contents');
+  const { receipt } = await calls.call(options('two'), ok('unused'));
+  calls.forget(receipt);
+  assert.equal(calls.kept, 1, 'a reply that failed its check is sent again');
+  assert.equal((await calls.call({ ...options('one'), modelId: 'test/other' }, ok('other model'))).content, 'other model');
+  calls.clear();
+  assert.equal(calls.kept, 0);
+});
+
+test('saved fact-test receipts are not tied to one experiment slug', () => {
+  const record = {
+    id: '11111111-1111-4111-8111-111111111111', experiment: 'another-fact-test', savedAt: 1, name: 'Case',
+    expected: '', model: 'openrouter/free', revision: 'r', graphRevision: '', fields: { notes: 'x' }, receipt: [true, false, true],
+  };
+  assert.deepEqual(cleanCase(record).receipt, [true, false, true]);
+  assert.throws(() => cleanCase({ ...record, receipt: [true, false] }), /fact-test checks/);
+});
+
+test('stop reasons compare by identity and read as their message', () => {
+  assert.equal(String(timeoutReason), 'OpenRouter took too long.');
+  assert.equal(`${keyClearedReason}`, 'Run canceled because the key was cleared.');
+  const controller = new AbortController();
+  controller.abort(timeoutReason);
+  assert.equal(controller.signal.reason, timeoutReason);
+  assert.notEqual(controller.signal.reason, 'OpenRouter took too long.');
+});
+
+test('the launcher, browser, and graph runtime read the same limits file', () => {
+  const limits = JSON.parse(read('assets/limits.json'));
+  assert.deepEqual(requestLimits, limits.graphCalls);
+  assert.equal(completionBody({ modelId: 'test/paid', prompt: 'p', input: 'i' }).max_tokens, limits.completionTokens);
+  const launcher = JSON.parse(execFileSync('python3', ['-I', '-B', '-c', `
+import importlib.util, json, sys
+spec = importlib.util.spec_from_file_location('playground', 'scripts/playground.py')
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+print(json.dumps([module.MAX_REQUEST, module.COMPLETION_TOKEN_LIMIT, sorted(module.REASONING_CAPPED)]))
+`], { cwd: new URL('.', root) }));
+  assert.deepEqual(launcher, [limits.requestBytes, limits.completionTokens, [...limits.reasoningCappedModels].sort()]);
 });
