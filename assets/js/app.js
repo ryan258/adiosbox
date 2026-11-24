@@ -1,3 +1,5 @@
+import limits from '../limits.json' with { type: 'json' };
+import './run-export.js';
 import { setupModelPicker } from './model-picker.js';
 import { mayReplaceSetup, readCaseSetup, setupCases } from './cases.js';
 import { checkFactPair, compareFactChecks, prepareFactInputs, sameFactScenario } from './fact-test.js';
@@ -72,13 +74,13 @@ async function completeOnce({
   input, prompt, modelId, apiKey, signal, includeUsage = false, experiment, step, provider, enforceTeachbackSchema, visibility,
 }) {
   signal.throwIfAborted();
-  if (!prompt.trim() || prompt.length > 4000 || !input.trim() || input.length > 8000) {
-    throw new CompletionError('Use a prompt of up to 4,000 characters and an input of up to 8,000 characters.', false, 'edit-request');
+  if (!prompt.trim() || prompt.length > limits.promptChars || !input.trim() || input.length > limits.inputChars) {
+    throw new CompletionError(`Use a prompt of up to ${limits.promptChars.toLocaleString('en-US')} characters and an input of up to ${limits.inputChars.toLocaleString('en-US')} characters.`, false, 'edit-request');
   }
   const headers = { 'Content-Type': 'application/json' };
   if (!local) headers.Authorization = `Bearer ${apiKey}`;
   const body = JSON.stringify(completionBody({ modelId, prompt, input, includeUsage, provider, enforceTeachbackSchema }));
-  if (new TextEncoder().encode(body).length > 64 * 1024) {
+  if (new TextEncoder().encode(body).length > limits.requestBytes) {
     throw new CompletionError('The full request is too large. Shorten the input or prompt.', false, 'edit-request');
   }
   const request = traceBody(body, apiKey);
@@ -251,13 +253,6 @@ function setupExperiment(experiment) {
     for (const field of factFields.values()) field.value = field.defaultValue;
     experiment.dispatchEvent(new Event('setup-changed'));
     notes.focus();
-  });
-
-  part('share').addEventListener('click', () => {
-    const url = new URL(window.location.pathname, window.location.origin);
-    url.hash = experiment.id;
-    copy(url.href, part('share-status'), 'Example link copied.',
-      `Copy this example link: ${url.href}`);
   });
 
   for (const variant of variants) {
@@ -438,7 +433,7 @@ function setupExperiment(experiment) {
             return;
           }
           handoff = JSON.stringify({ originalInput: input, stepOne: content });
-          if (handoff.length > 8000) {
+          if (handoff.length > limits.inputChars) {
             next.meta.textContent = 'Step 2 did not run.';
             setStatus(runStatus, 'The input and step 1 result are too long to pass to step 2. Shorten the input and try again.', true);
             return;
@@ -506,11 +501,11 @@ function setupExperiment(experiment) {
       };
       if (request.signal.aborted) {
         if (request.signal.reason === keyClearedReason) {
-          showFailure(keyClearedReason, false);
+          showFailure(keyClearedReason.message, false);
           return;
         }
         const timedOut = request.signal.reason === timeoutReason;
-        showFailure(timedOut ? `${timeoutReason} Try again.` : 'Run canceled.', timedOut);
+        showFailure(timedOut ? `${timeoutReason.message} Try again.` : 'Run canceled.', timedOut);
         return;
       }
       showFailure(error instanceof CompletionError ? error.message : 'Could not read a response from OpenRouter. Check your connection and try again.');
@@ -626,8 +621,8 @@ function setupGraph(experiment) {
     }
     active.controller.abort(message);
     if (active.paused) {
-      record('Stopped at checkpoint', message);
-      setStatus(runStatus, message);
+      record('Stopped at checkpoint', String(message));
+      setStatus(runStatus, String(message));
       finishRun();
     }
   }
@@ -673,12 +668,13 @@ function setupGraph(experiment) {
     } catch (error) {
       const { signal } = active.controller;
       const canceled = signal.aborted;
-      const message = canceled ? signal.reason : error.message || 'An error stopped the graph.';
+      const reason = canceled ? signal.reason : error.message || 'An error stopped the graph.';
+      const message = String(reason);
       if (!canceled) active.controller.abort(message);
       record('Graph stopped', message);
-      setStatus(runStatus, message, !canceled || message === timeoutReason);
+      setStatus(runStatus, message, !canceled || reason === timeoutReason);
       // Finished steps are checkpointed, so offer to rerun only the step that failed.
-      const point = message !== keyClearedReason && error?.reason !== 'edit-request' &&
+      const point = reason !== keyClearedReason && error?.reason !== 'edit-request' &&
         await active.graph?.pickupPoint().catch(() => null);
       if (point && !active.discardRecovery && active.source === sourceInputs()) {
         active.failed = point;
@@ -706,12 +702,6 @@ function setupGraph(experiment) {
     invalidatePickup();
     experiment.dispatchEvent(new Event('setup-changed'));
     notes.focus();
-  });
-
-  part('share').addEventListener('click', () => {
-    const url = new URL(window.location.pathname, window.location.origin);
-    url.hash = experiment.id;
-    copy(url.href, part('share-status'), 'Example link copied.', `Copy this example link: ${url.href}`);
   });
 
   part('copy-trace').addEventListener('click', () => {
@@ -877,6 +867,16 @@ const labUI = {
   chooseModel, copy, describeModel, experiments, getApiKey: () => key?.value.trim(),
   local, model, modelIdPattern, revealField, setStatus, makeRunStatus, refreshCallTrace: callTrace.refresh,
 };
+// Every workbench shares only its public address and anchor.
+for (const experiment of experiments) {
+  experiment.querySelector('[data-part="share"]').addEventListener('click', () => {
+    const url = new URL(window.location.pathname, window.location.origin);
+    url.hash = experiment.id;
+    copy(url.href, experiment.querySelector('[data-part="share-status"]'), 'Example link copied.',
+      `Copy this example link: ${url.href}`);
+  });
+}
+
 const cancelRequests = experiments.map(experiment => {
   if (experiment.hasAttribute('data-lab')) {
     return setupLab(experiment, {

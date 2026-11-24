@@ -71,6 +71,37 @@ export function checkRecall(answers, expected) {
 
 const makeChecks = checks => checks.map(({ label, pass }) => `${label} · ${pass ? 'Pass' : 'Review'}`).join('\n');
 
+// Lab pick-up: keep each finished reply, keyed by the exact request, so a rerun of the same flow
+// replays finished calls and sends only the ones that failed. Partial replies are never kept.
+export function replayCalls() {
+  const done = new Map();
+  let failed = 0;
+  const keyOf = options => JSON.stringify([options.step, options.modelId, options.prompt, options.input,
+    options.provider ?? '', Boolean(options.enforceTeachbackSchema)]);
+  return {
+    get kept() { return done.size; },
+    get failed() { return failed; },
+    clear() { done.clear(); failed = 0; },
+    newAttempt() { failed = 0; },
+    async call(options, send) {
+      const key = keyOf(options);
+      if (done.has(key)) return done.get(key);
+      try {
+        const result = await send();
+        if (!result.truncated) done.set(key, result);
+        return result;
+      } catch (error) {
+        failed += 1;
+        throw error;
+      }
+    },
+    // A reply that failed its check is sent again on pick-up.
+    forget(receipt) {
+      for (const [key, result] of done) if (receipt && result.receipt === receipt) done.delete(key);
+    },
+  };
+}
+
 export function setupLab(experiment, ui) {
   const { complete, chooseModel, copy, describeModel, experiments, getApiKey, local, model, modelIdPattern, revealField,
     setStatus, makeRunStatus, refreshCallTrace } = ui;
@@ -99,6 +130,14 @@ export function setupLab(experiment, ui) {
   let repair;
   let blind;
   let cold;
+  const pickup = part('pickup');
+  const calls = replayCalls();
+  let retry;
+
+  function clearPickup() {
+    retry = undefined;
+    if (pickup) pickup.hidden = true;
+  }
 
   function budget() {
     const picks = (spec.roles ?? []).map(({ key, label }) => ({
@@ -128,6 +167,7 @@ export function setupLab(experiment, ui) {
   }
 
   function reset() {
+    clearPickup();
     repair = blind = cold = undefined;
     runRecord = undefined;
     linkRunOutput(recordOutput);
@@ -172,8 +212,10 @@ export function setupLab(experiment, ui) {
     active?.abort(message);
   }
 
-  async function withRun(button, task) {
+  async function withRun(button, task, prepare) {
     if (active) return;
+    clearPickup();
+    calls.newAttempt();
     const controller = new AbortController();
     active = controller;
     runRecord = beginRun(experiment, controller.signal, recordOutput, runRecord);
@@ -182,17 +224,24 @@ export function setupLab(experiment, ui) {
     const repairRun = part('repair-run');
     if (repairRun) repairRun.disabled = true;
     cancel.hidden = false;
-    if (document.activeElement === button) cancel.focus();
+    if (document.activeElement === button || document.activeElement === pickup) cancel.focus();
     try {
       await task(controller);
       controller.signal.throwIfAborted();
     } catch (error) {
       const reason = controller.signal.aborted ? controller.signal.reason : error.message;
       if (!controller.signal.aborted) controller.abort(reason);
-      setStatus(status, reason || 'The experiment stopped.', true);
+      setStatus(status, String(reason || 'The experiment stopped.'), true);
     } finally {
       active = undefined;
-      setRunActivity(experiment);
+      // Offer to rerun the same flow when a call failed and finished replies can be kept.
+      const recoverable = pickup && calls.failed && calls.kept && controller.signal.reason !== keyClearedReason;
+      if (recoverable) {
+        retry = { button, task, prepare };
+        pickup.hidden = false;
+        status.textContent += ` ${calls.kept} finished ${calls.kept === 1 ? 'call is' : 'calls are'} kept. Pick up to send only the unfinished calls.`;
+      }
+      setRunActivity(experiment, recoverable ? 'ready to pick up' : undefined);
       run.disabled = false;
       if (repairRun) repairRun.disabled = false;
       if (document.activeElement === cancel) button.focus();
@@ -201,7 +250,10 @@ export function setupLab(experiment, ui) {
   }
 
   async function request(controller, options) {
-    return withCallDeadline(controller, () => complete({ includeUsage: true, ...options, signal: controller.signal }));
+    // The key is read per call, so a pick-up uses the key on the page now.
+    return calls.call(options, () => withCallDeadline(controller, () => complete({
+      includeUsage: true, ...options, apiKey: getApiKey(), signal: controller.signal,
+    })));
   }
 
   function graphDefinition() {
@@ -216,6 +268,7 @@ export function setupLab(experiment, ui) {
     const graph = createExperimentGraph(graphDefinition(), {
       signal: controller.signal,
       record(heading, content, reported, requested, kind, receipt) {
+        if (kind === 'invalid' || kind === 'partial') calls.forget(receipt);
         record(tag + heading, content, reported, requested, kind, receipt);
       },
       async complete({ input, prompt, node }) {
@@ -410,8 +463,16 @@ export function setupLab(experiment, ui) {
     }
     const apiKey = getApiKey();
     if (!local && !apiKey) return validated(document.getElementById('api-key'), 'Enter your OpenRouter key to run the experiment.');
+    calls.clear();
     reset();
     resetTrace();
+    // A pick-up redraws the record from the kept replies, under the same run ID.
+    const prepare = () => {
+      const kept = runRecord;
+      reset();
+      runRecord = kept;
+      resetTrace();
+    };
     await withRun(run, async controller => {
       if (spec.mode === 'repair') await originalRepair(input, selectedModels, controller, apiKey);
       if (spec.mode === 'evidence') await followClaim(input, selectedModels, controller, apiKey);
@@ -444,7 +505,20 @@ export function setupLab(experiment, ui) {
           ? `${scorable} of ${received} replies were complete enough to check. Review the answers and checks in the run record.`
           : 'No call returned a reply. Each error is in the run record.', !scorable);
       }
-    });
+    }, prepare);
+  });
+
+  // Pick-up replays the original setup, so editing it means a fresh run.
+  form.addEventListener('input', event => {
+    if (event.target === notes || [...fields.values()].includes(event.target)) clearPickup();
+  });
+  pickup?.addEventListener('click', async () => {
+    if (!retry || active) return;
+    if (!local && !getApiKey()) return validated(document.getElementById('api-key'), 'Enter your OpenRouter key to pick up the run.');
+    const { button, task, prepare } = retry;
+    prepare?.();
+    setStatus(status, 'Picking up the unfinished calls…');
+    await withRun(button, task, prepare);
   });
 
   if (repairForm) {
@@ -544,11 +618,6 @@ export function setupLab(experiment, ui) {
     if (coldForm && !event.detail?.draft) startCold();
   });
 
-  part('share').addEventListener('click', () => {
-    const url = new URL(window.location.pathname, window.location.origin);
-    url.hash = experiment.id;
-    copy(url.href, part('share-status'), 'Example link copied.', `Copy this example link: ${url.href}`);
-  });
   part('copy-trace').addEventListener('click', () => {
     copy(runRecordText(trace), copyStatus, 'Run record copied.', 'Select the run record text and copy it.');
   });

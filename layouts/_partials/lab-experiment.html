@@ -72,7 +72,8 @@
         <p class="help" data-part="run-budget" id="{{ $slug }}-run-budget"></p>
         <div class="actions">
           <button type="submit" class="primary" data-part="run" aria-describedby="{{ $slug }}-run-budget">{{ $lab.runLabel }}</button>
-          {{ if ne $lab.mode "cold" }}<button type="button" class="secondary" data-part="cancel" hidden>Cancel</button>{{ end }}
+          {{ if ne $lab.mode "cold" }}<button type="button" class="secondary" data-part="cancel" hidden>Cancel</button>
+          <button type="button" class="secondary" data-part="pickup" hidden>Pick up unfinished calls</button>{{ end }}
         </div>
       </form>
       {{ if eq $lab.mode "repair" }}

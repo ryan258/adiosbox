@@ -1,5 +1,6 @@
 {{- $experiment := . -}}
 {{- $inputLimit := partial "input-limit.html" . -}}
+{{- $promptLimit := (partialCached "limits.html" "limits").promptChars -}}
 {{- $second := or $experiment.chain $experiment.comparison $experiment.factTest -}}
     <section data-experiment data-case-revision="{{ sha256 (jsonify $experiment) }}"{{ if $experiment.chain }} data-chain{{ end }}{{ if $experiment.factTest }} data-fact-test{{ end }}{{ if or $experiment.comparison $experiment.factTest }} data-versus{{ end }}{{ with $experiment.layout }} data-layout="{{ jsonify . }}"{{ end }} id="{{ $experiment.slug }}" class="experiment" tabindex="-1" aria-labelledby="{{ $experiment.slug }}-experiment-title">
       <header class="experiment-header">
@@ -30,10 +31,10 @@
           <details class="prompt-editor" data-part="prompt">
             <summary>{{ if $experiment.chain }}Peek at both step prompts{{ else if $experiment.comparison }}Peek at prompts A and B{{ else }}Peek at the prompt{{ end }}</summary>
             <label for="{{ $experiment.slug }}-instructions">{{ if $experiment.chain }}Step 1 · {{ $experiment.stageOne }}{{ else if $experiment.comparison }}Prompt A{{ else }}Instructions for the model{{ end }}</label>
-            <textarea id="{{ $experiment.slug }}-instructions" data-part="instructions" rows="6" maxlength="4000" required>{{ $experiment.instructions }}</textarea>
+            <textarea id="{{ $experiment.slug }}-instructions" data-part="instructions" rows="6" maxlength="{{ $promptLimit }}" required>{{ $experiment.instructions }}</textarea>
             {{ with (or $experiment.chain $experiment.comparison) }}
             <label for="{{ $experiment.slug }}-instructions-b">{{ if $experiment.chain }}Step 2 · {{ .title }}{{ else }}Prompt B{{ end }}</label>
-            <textarea id="{{ $experiment.slug }}-instructions-b" data-part="instructions-b" rows="6" maxlength="4000" required>{{ .instructions }}</textarea>
+            <textarea id="{{ $experiment.slug }}-instructions-b" data-part="instructions-b" rows="6" maxlength="{{ $promptLimit }}" required>{{ .instructions }}</textarea>
             {{ end }}
           </details>
 
@@ -91,7 +92,7 @@
           <summary>Download both results</summary>
           <div class="more-panel">{{ partial "export-actions.html" (dict "scope" "pair" "label" "both") }}</div>
         </details>
-        {{ if or $experiment.comparison $experiment.factTest }}<p class="help versus-note"><mark>Highlights</mark> compare text by position. An insertion can shift later highlights. <span data-part="difference-summary"></span></p>{{ end }}
+        {{ if or $experiment.comparison $experiment.factTest }}<p class="help versus-note"><mark>Highlights</mark> mark lines, rows, and fields that appear in only one result. <span data-part="difference-summary"></span></p>{{ end }}
         <div class="comparison-results">
           {{ if $experiment.factTest }}
           {{ partial "experiment-result.html" (dict "slug" $experiment.slug "sample" $experiment.sampleResult "suffix" "" "heading" "Baseline" "label" "baseline" "sampleNote" "Written baseline sample") }}

@@ -362,6 +362,27 @@ function leaves(element) {
   return [...element.querySelectorAll(selector)]
     .filter(node => !node.closest('.raw-result') && !node.querySelector(selector));
 }
+// Positions in each list that fall outside their longest common subsequence, so an insertion marks only itself.
+// ponytail: O(n·m) table; replies have a few hundred leaves at most.
+export function unmatched(a, b) {
+  const table = Array.from({ length: a.length + 1 }, () => new Uint16Array(b.length + 1));
+  for (let i = a.length - 1; i >= 0; i -= 1) {
+    for (let j = b.length - 1; j >= 0; j -= 1) {
+      table[i][j] = a[i] === b[j] ? table[i + 1][j + 1] + 1 : Math.max(table[i + 1][j], table[i][j + 1]);
+    }
+  }
+  const left = new Set(a.keys());
+  const right = new Set(b.keys());
+  for (let i = 0, j = 0; i < a.length && j < b.length;) {
+    if (a[i] === b[j]) {
+      left.delete(i++);
+      right.delete(j++);
+    } else if (table[i + 1][j] >= table[i][j + 1]) i += 1;
+    else j += 1;
+  }
+  return [left, right];
+}
+
 export function markDifferences(results) {
   for (const result of results) {
     result.querySelectorAll('.is-different').forEach(node => node.classList.remove('is-different'));
@@ -371,16 +392,15 @@ export function markDifferences(results) {
   if (summary) summary.textContent = '';
   if (results.length !== 2 || !results.every(result => result.dataset.source)) return;
   const pair = results.map(leaves);
-  const texts = pair.map(nodes => nodes.map(node => comparable(node.textContent)));
+  const different = unmatched(...pair.map(nodes => nodes.map(node => comparable(node.textContent))));
   if (summary) {
-    const count = Array.from({ length: Math.max(texts[0].length, texts[1].length) },
-      (_, position) => texts[0][position] !== texts[1][position]).filter(Boolean).length;
-    summary.textContent = count ? `${count} highlighted ${count === 1 ? 'position differs' : 'positions differ'} across the two results.`
+    const count = different[0].size + different[1].size;
+    summary.textContent = count ? `${count} highlighted ${count === 1 ? 'line appears' : 'lines appear'} in only one result.`
       : 'The compared text matches.';
   }
   for (const [index, nodes] of pair.entries()) {
     for (const [position, node] of nodes.entries()) {
-      if (texts[1 - index][position] === texts[index][position]) continue;
+      if (!different[index].has(position)) continue;
       node.classList.add('is-different');
       (node.tagName === 'TR' ? node.lastElementChild : node).append(el('span', 'visually-hidden diff-note', ' (differs from the other result)'));
     }

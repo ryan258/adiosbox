@@ -37,6 +37,8 @@ function parseFactResult(text) {
 }
 
 const normalizedDecision = value => value.trim().toLowerCase().replace(/\s+/g, ' ');
+// Identifiers in an invariant can be case-sensitive, so only spacing is forgiven.
+const normalizedInvariant = value => value.trim().replace(/\s+/g, ' ');
 
 export function checkFactPair(expectations, baseline, changed) {
   if (baseline.truncated || changed.truncated) {
@@ -50,7 +52,7 @@ export function checkFactPair(expectations, baseline, changed) {
   const checks = [
     normalizedDecision(left.decision) === normalizedDecision(expectations.baseline),
     normalizedDecision(right.decision) === normalizedDecision(expectations.changed),
-    left.invariant === expectations.invariant && right.invariant === expectations.invariant,
+    [left, right].every(answer => normalizedInvariant(answer.invariant) === normalizedInvariant(expectations.invariant)),
   ];
   const passed = checks.filter(Boolean).length;
   const text = checks.map((pass, index) => `${checkLabels[index]} · ${pass ? 'Pass' : 'Fail'}`).join('\n');

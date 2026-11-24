@@ -1,4 +1,4 @@
-{{- $limit := 8000 -}}
+{{- $limit := int (partialCached "limits.html" "limits").inputChars -}}
 {{- if .graph -}}
   {{- $limit = cond (in (slice "orchestrated" "orchestrated-subgraphs") .graph.mode) 2400 3000 -}}
 {{- else if .lab -}}

@@ -1,0 +1,3 @@
+{{- /* Limits shared with assets/js, assets/graph-runtime.js, and scripts/playground.py. */ -}}
+{{- $limits := resources.Get "limits.json" | transform.Unmarshal -}}
+{{- return $limits -}}

@@ -7,6 +7,7 @@
 {{- if ne (len $beer) (len $experiments) -}}{{- errorf "Adiosbox catalog: expected one beer example for every experiment" -}}{{- end -}}
 {{- if ne (len $canary) (len $experiments) -}}{{- errorf "Adiosbox catalog: expected one canary for every experiment" -}}{{- end -}}
 {{- $contract := partial "graph-contract.html" . -}}
+{{- $promptLimit := int (partialCached "limits.html" "limits").promptChars -}}
 {{- $labModes := slice "blind" "evidence" "repair" "stop" "cost" "cold" "prompt" -}}
 {{- $labRoles := dict "blind" (slice "first" "second") "evidence" (slice "extract" "rewrite") "repair" (slice "left" "right" "merge") "stop" (slice "classify" "proceed" "alternate") "cost" (slice "writer" "baseline" "challenger") "prompt" (slice "comparison") -}}
 {{- $graderFields := dict "boundary" (slice "expected" "cue") "placement" (slice "fact" "expected" "source") "ballot" (slice "expected") "canary" (slice "expected") "schema" (slice "provider" "expected" "cue") -}}
@@ -81,7 +82,7 @@
       {{- range after 1 . -}}
         {{- $node := index $graph.nodes . -}}
         {{- if not (and $node $node.title $node.prompt) -}}{{- errorf "Adiosbox catalog: %s needs graph node %s" $entry.slug . -}}{{- end -}}
-        {{- if gt (len (findRE `(?s).` ($node.prompt | default ""))) 4000 -}}{{- errorf "Adiosbox catalog: %s graph node %s exceeds the prompt limit" $entry.slug . -}}{{- end -}}
+        {{- if gt (len (findRE `(?s).` ($node.prompt | default ""))) $promptLimit -}}{{- errorf "Adiosbox catalog: %s graph node %s exceeds the prompt limit" $entry.slug . -}}{{- end -}}
       {{- end -}}
     {{- else -}}
       {{- errorf "Adiosbox catalog: unknown graph mode for %s" $entry.slug -}}
@@ -151,11 +152,11 @@
         {{- if not (and .title .text) -}}{{- errorf "Adiosbox catalog: %s has an incomplete graph step sample" $entry.slug -}}{{- end -}}
       {{- end -}}
     {{- else -}}
-      {{- if or (not (and .sampleNotes .sampleResult .instructions)) (gt (len (findRE `(?s).` (.sampleNotes | default ""))) $maxInput) (gt (len (findRE `(?s).` (.instructions | default ""))) 4000) -}}
+      {{- if or (not (and .sampleNotes .sampleResult .instructions)) (gt (len (findRE `(?s).` (.sampleNotes | default ""))) $maxInput) (gt (len (findRE `(?s).` (.instructions | default ""))) $promptLimit) -}}
         {{- errorf "Adiosbox catalog: %s needs a complete sample and prompt within the workbench limits" .slug -}}
       {{- end -}}
       {{- with (or .chain .comparison) -}}
-        {{- if or (not (and .instructions .sampleResult)) (gt (len (findRE `(?s).` (.instructions | default ""))) 4000) -}}
+        {{- if or (not (and .instructions .sampleResult)) (gt (len (findRE `(?s).` (.instructions | default ""))) $promptLimit) -}}
           {{- errorf "Adiosbox catalog: %s needs a second prompt and worked result" $entry.slug -}}
         {{- end -}}
       {{- end -}}

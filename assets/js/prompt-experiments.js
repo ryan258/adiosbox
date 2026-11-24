@@ -1,3 +1,4 @@
+import limits from '../limits.json' with { type: 'json' };
 import { providerSlug, teachbackRoutes } from './completion-options.js';
 
 const placementMarker = '{{fact}}';
@@ -189,7 +190,7 @@ export async function runPromptExperiment(spec, { input, values, request, record
   const results = [];
   async function run(label, userInput, prompt = spec.prompt, options = {}) {
     progress(`Running ${label.toLowerCase()}…`);
-    if (userInput.length > 8000) {
+    if (userInput.length > limits.inputChars) {
       record(label, 'This handoff exceeded the input limit. Try a shorter case.');
       return null;
     }

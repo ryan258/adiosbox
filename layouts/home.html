@@ -14,16 +14,10 @@
   <link rel="icon" href="{{ "mark.svg" | relURL }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ "styles.css" | relURL }}">
   {{ $graphModule := resources.Get "graph-runtime.js" | js.Build (dict "targetPath" "graph-runtime.js" "format" "esm" "target" "es2022" "minify" true) | fingerprint "sha256" }}
-  {{ $appFiles := slice -}}
-  {{ range readDir "static" -}}
-    {{ if hasSuffix .Name ".js" -}}
-      {{ $appFiles = $appFiles | append (sha256 (readFile (path.Join "static" .Name))) -}}
-    {{ end -}}
-  {{ end -}}
-  <script type="module" src="{{ "app.js" | relURL }}"></script>
-  <script type="module" src="{{ "run-export.js" | relURL }}"></script>
+  {{ $app := resources.Get "js/app.js" | js.Build (dict "targetPath" "app.js" "format" "esm" "target" "es2022" "minify" true) | fingerprint "sha256" }}
+  <script type="module" src="{{ $app.RelPermalink }}"></script>
 </head>
-<body data-graph-module="{{ $graphModule.RelPermalink }}" data-graph-revision="{{ $graphModule.Data.Integrity }}" data-app-revision="{{ sha256 (delimit $appFiles ":") }}"{{ if $local }} data-local-openrouter{{ end }}>
+<body data-graph-module="{{ $graphModule.RelPermalink }}" data-graph-revision="{{ $graphModule.Data.Integrity }}" data-app-revision="{{ $app.Data.Integrity }}"{{ if $local }} data-local-openrouter{{ end }}>
   <a class="skip-link" href="#experiments">Skip to experiments</a>
   <header class="site-header">
     <div class="shell header-inner">

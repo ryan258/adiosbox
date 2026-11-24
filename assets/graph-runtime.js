@@ -1,4 +1,5 @@
 import { Annotation, END, START, MemorySaver, StateGraph } from '@langchain/langgraph/web';
+import limits from './limits.json' with { type: 'json' };
 
 const State = Annotation.Root({
   input: Annotation(),
@@ -24,7 +25,7 @@ const State = Annotation.Root({
   specialistDraft: Annotation(),
 });
 
-export const requestLimits = { route: 2, revise: 4, ledger: 2, fork: 3, tree: 7, checkpoint: 2, evidence: 2, adaptive: 3, orchestrated: 5, 'orchestrated-subgraphs': 8 };
+export const requestLimits = limits.graphCalls;
 
 function parseRecord(text) {
   return JSON.parse(text.replace(/^\x60{3}(?:json)?\s*|\s*\x60{3}$/gi, '').trim());
@@ -181,7 +182,7 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
     if (calls >= requestLimits[spec.mode]) throw new Error('The model request limit was reached.');
     const node = spec.nodes[name];
     const input = typeof data === 'string' ? data : JSON.stringify(data);
-    if (input.length > 8000) {
+    if (input.length > limits.inputChars) {
       recoveryBlocked = true;
       throw new Error('A handoff exceeded the input limit. Try with shorter source material.');
     }
@@ -513,11 +514,11 @@ export function createExperimentGraph(spec, { complete, record, signal }) {
       if (!next.length || !failures.length || recoveryBlocked || (!approved && resumeNode && next.includes(resumeNode))) return null;
       return failures.length === 1 ? failures[0] : { ...failures[0], steps: [...failures] };
     },
-    // Rerun only the unfinished steps. Each pick-up gets the full request budget again; finished steps never rerun.
+    // Rerun only the unfinished steps. Each pick-up gets the remaining budget shown in the page; finished steps never rerun.
     async pickUp(nextSignal) {
       currentSignal = nextSignal;
       if (!(await this.pickupPoint())) throw new Error('There is nothing to pick up.');
-      calls = 0;
+      calls = completedCalls;
       failures.length = 0;
       return settle(await compiled.invoke(null, config()));
     },

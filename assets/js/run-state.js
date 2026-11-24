@@ -1,7 +1,13 @@
 export const receipts = new WeakMap();
-// Abort reasons double as status messages; pick-up and recovery logic compare against these.
-export const timeoutReason = 'OpenRouter took too long.';
-export const keyClearedReason = 'Run canceled because the key was cleared.';
+// Control-flow abort reasons. Recovery compares by identity, so the wording can change freely;
+// toString keeps them readable wherever a status or run record shows the abort reason.
+export class StopReason extends Error {
+  toString() {
+    return this.message;
+  }
+}
+export const timeoutReason = new StopReason('OpenRouter took too long.');
+export const keyClearedReason = new StopReason('Run canceled because the key was cleared.');
 
 export async function withCallDeadline(controller, task, reason = timeoutReason) {
   controller.signal.throwIfAborted();

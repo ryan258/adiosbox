@@ -1,3 +1,4 @@
+import limits from '../limits.json' with { type: 'json' };
 import { graphLabModes, isRunBusy } from './run-state.js';
 
 const prefix = 'adiosbox.case.1.';
@@ -23,7 +24,7 @@ export function cleanCase(value) {
   }
   const fields = Object.entries(value.fields);
   if (fields.length > 50 || fields.some(([name, value]) =>
-    !fieldName.test(name) || typeof value !== 'string' || value.length > 8000)) {
+    !fieldName.test(name) || typeof value !== 'string' || value.length > limits.inputChars)) {
     throw new Error('A saved input or model field has an invalid format.');
   }
   if ([value.name, value.expected, value.model, value.revision, value.graphRevision, ...fields.map(([, content]) => content)]
@@ -31,8 +32,8 @@ export function cleanCase(value) {
     throw new Error('Remove the OpenRouter key from the case before saving or importing.');
   }
   const receipt = value.receipt;
-  if (receipt != null && (value.experiment !== 'change-one-fact' ||
-      !Array.isArray(receipt) || receipt.length !== 3 || receipt.some(check => typeof check !== 'boolean'))) {
+  // Only fact-test workbenches produce receipts; restore shows one only on such a workbench.
+  if (receipt != null && (!Array.isArray(receipt) || receipt.length !== 3 || receipt.some(check => typeof check !== 'boolean'))) {
     throw new Error('The saved fact-test checks have an invalid format.');
   }
   const { id, experiment, name, expected, model, revision, graphRevision, savedAt } = value;
@@ -278,7 +279,7 @@ export function setupCases(experiments, model, openExperiment) {
     context.textContent = [
       draft ? 'Restored your latest draft.' : `Opened ${record.name}.`,
       record.expected && experiment.dataset.lab !== 'cold' && `Expected behavior · ${record.expected}`,
-      record.receipt && `Saved run · ${record.receipt.filter(Boolean).length} of 3 checks passed.`,
+      record.receipt && experiment.hasAttribute('data-fact-test') && `Saved run · ${record.receipt.filter(Boolean).length} of 3 checks passed.`,
       revisionChanged && 'This case was saved with a different experiment revision. A new run uses the current version.',
     ].filter(Boolean).join('\n');
     context.hidden = false;

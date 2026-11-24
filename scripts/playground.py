@@ -14,6 +14,8 @@ import tempfile
 from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parent.parent
+# Shared with the browser modules and Hugo templates.
+LIMITS = json.loads((ROOT / "assets/limits.json").read_text(encoding="utf-8"))
 HOST = "127.0.0.1"
 PORT = 1313
 ADDRESS = f"{HOST}:{PORT}"
@@ -21,13 +23,13 @@ LOCALHOST_ALIAS = f"localhost:{PORT}"
 ORIGIN = f"http://{ADDRESS}"
 MODEL_ID = re.compile(r"[\w.-]+/[\w.:@+-]+", re.ASCII)
 PROVIDER_SLUG = re.compile(r"[a-z0-9][a-z0-9-]*(?:/[a-z0-9][a-z0-9-]*){0,2}", re.ASCII)
-MAX_REQUEST = 64 * 1024
+MAX_REQUEST = LIMITS["requestBytes"]
 MAX_RESPONSE = 2 * 1024 * 1024
-COMPLETION_TOKEN_LIMIT = 2048
-REASONING_TOKEN_LIMIT = 1024
-REASONING_COMPLETION_TOKEN_LIMIT = 4096
-# Mirrors reasoningCapped and capsReasoning in static/completion-options.js.
-REASONING_CAPPED = {"nvidia/nemotron-3.5-super-vl", "nvidia/nemotron-3.5-super-vl:free"}
+COMPLETION_TOKEN_LIMIT = LIMITS["completionTokens"]
+REASONING_TOKEN_LIMIT = LIMITS["reasoningTokens"]
+REASONING_COMPLETION_TOKEN_LIMIT = LIMITS["reasoningCompletionTokens"]
+# Mirrors capsReasoning in assets/js/completion-options.js.
+REASONING_CAPPED = set(LIMITS["reasoningCappedModels"])
 MAX_RESPONSE_FORMAT = 4000
 
 
@@ -61,7 +63,7 @@ def completion_request(payload):
     if not isinstance(messages, list) or len(messages) != 2:
         raise ValueError
     clean_messages = []
-    for message, role, limit in zip(messages, ("system", "user"), (4000, 8000)):
+    for message, role, limit in zip(messages, ("system", "user"), (LIMITS["promptChars"], LIMITS["inputChars"])):
         if not isinstance(message, dict) or message.get("role") != role:
             raise ValueError
         content = message.get("content")

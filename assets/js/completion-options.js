@@ -1,10 +1,13 @@
+import limits from '../limits.json' with { type: 'json' };
+
 export const teachbackRoutes = ['proceed', 'revise', 'stop'];
 export const providerSlug = /^[a-z0-9][a-z0-9-]*(?:\/[a-z0-9][a-z0-9-]*){0,2}$/;
-export const completionTokenLimit = 2048;
-export const reasoningTokenLimit = 1024;
+// Limits shared with the Hugo templates and scripts/playground.py live in assets/limits.json.
+export const completionTokenLimit = limits.completionTokens;
+export const reasoningTokenLimit = limits.reasoningTokens;
 // A capped reasoning model gets extra room so the answer still fits if its endpoint ignores the cap.
-export const reasoningCompletionTokenLimit = 4096;
-const reasoningCapped = new Set(['nvidia/nemotron-3.5-super-vl', 'nvidia/nemotron-3.5-super-vl:free']);
+export const reasoningCompletionTokenLimit = limits.reasoningCompletionTokens;
+const reasoningCapped = new Set(limits.reasoningCappedModels);
 
 const teachbackFormat = {
   type: 'json_schema',

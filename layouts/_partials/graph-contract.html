@@ -1,11 +1,18 @@
-{{- return (dict
-  "route" (slice 2 "classify" "proceed" "alternate")
-  "fork" (slice 3 "left" "right" "merge")
-  "tree" (slice 7 "branchA" "branchB" "branchC" "prune" "childA" "childB" "finish")
-  "revise" (slice 4 "draft" "review")
-  "ledger" (slice 2 "draft")
-  "evidence" (slice 2 "extract" "rewrite")
-  "checkpoint" (slice 2 "prepare" "finish")
-  "adaptive" (slice 3 "profile" "execute" "review")
-  "orchestrated" (slice 5 "plan" "specialist" "assemble")
-  "orchestrated-subgraphs" (slice 8 "plan" "shape" "work" "assemble")) -}}
+{{- /* Each mode: its call budget from limits.json, then the nodes it needs. */ -}}
+{{- $calls := (partialCached "limits.html" "limits").graphCalls -}}
+{{- $nodes := dict
+  "route" (slice "classify" "proceed" "alternate")
+  "fork" (slice "left" "right" "merge")
+  "tree" (slice "branchA" "branchB" "branchC" "prune" "childA" "childB" "finish")
+  "revise" (slice "draft" "review")
+  "ledger" (slice "draft")
+  "evidence" (slice "extract" "rewrite")
+  "checkpoint" (slice "prepare" "finish")
+  "adaptive" (slice "profile" "execute" "review")
+  "orchestrated" (slice "plan" "specialist" "assemble")
+  "orchestrated-subgraphs" (slice "plan" "shape" "work" "assemble") -}}
+{{- $contract := dict -}}
+{{- range $mode, $list := $nodes -}}
+  {{- $contract = merge $contract (dict $mode (slice (int (index $calls $mode)) | append $list)) -}}
+{{- end -}}
+{{- return $contract -}}
