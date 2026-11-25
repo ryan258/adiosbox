@@ -36,6 +36,23 @@ The launcher builds a snapshot at startup. After a source edit or a key change, 
 
 ## Choose the workbench that fits the question
 
+### A glimpse of the future
+
+The **A glimpse of the future** shelf holds ten small demos of where everyday AI is heading, all runnable today. Each one labels its guesses and leaves real decisions with a person. Nine are single-prompt runs; **Your agent meets their agent** runs a `revise` graph of up to four calls.
+
+| Experiment | Bring | Check before using the result | Max requests |
+| --- | --- | --- | ---: |
+| [Your agent meets their agent](http://127.0.0.1:1313/#your-agent-meets-their-agent) | What each side wants and each side’s private limits | Neither agent reveals its own limit, no deal crosses either cap, and every commitment stays under **Needs your OK**. | 4 |
+| [The house that listens](http://127.0.0.1:1313/#the-house-that-listens) | A spoken request and the devices in the house | Locks, doors, ovens, heaters, cameras, money, and anything ambiguous land under **Ask first** or **Won't do**, never **Doing now**. | 1 |
+| [The tutor that finds the gap](http://127.0.0.1:1313/#the-tutor-that-finds-the-gap) | The question and the learner’s answer in their own words | The misconception is labeled a hypothesis tied to the learner’s words, and the next question tests it without giving away the answer. | 1 |
+| [The street twin](http://127.0.0.1:1313/#the-street-twin) | One change to a street, trail, building, or schedule | Second-order ripples are labeled likely or possible, any unstated number is marked an estimate, and the before/after checks are concrete counts. | 1 |
+| [The pre-visit brief](http://127.0.0.1:1313/#the-pre-visit-brief) | Rough notes about what you noticed and tried | No diagnosis or treatment advice appears, observations stay in your words, and urgent warning signs are prominent when present. | 1 |
+| [One message, three listeners](http://127.0.0.1:1313/#one-message-three-listeners) | One announcement, explanation, or update | All three versions keep every fact, date, and exception from the original, and **What stayed the same** lists them all. | 1 |
+| [A Tuesday in 2036](http://127.0.0.1:1313/#a-tuesday-in-2036) | Your job, where you work, and what fills your week | The sketch is labeled speculation, every change ties back to a task you named, and human judgment stays under **What still needs you**. | 1 |
+| [When the shopper is an agent](http://127.0.0.1:1313/#when-the-shopper-is-an-agent) | A product listing with title, description, and specs | **Agent-ready facts** uses only stated facts with no invented specs, and vague or contradictory claims are flagged under **Missing or vague**. | 1 |
+| [Memory that forgets on purpose](http://127.0.0.1:1313/#memory-that-forgets-on-purpose) | A conversation or note shared with an assistant | Other people’s private details and one-off context go under **Forget**, sensitive facts go under **Ask before keeping**, and no traits are inferred. | 1 |
+| [Speak an app into existence](http://127.0.0.1:1313/#speak-an-app-into-existence) | The personal tool you wish existed, in a sentence or two | Data stays local unless asked otherwise, unasked-for platform extras sit under **Not yet**, and **First tests** uses Given/When/Then checks. | 1 |
+
 ### Single runs and a paired comparison
 
 Start here when you have a specific input and want one artifact back. Open **Peek at the prompt** to see what the model was asked to do.

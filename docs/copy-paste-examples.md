@@ -66,7 +66,72 @@ For any other model, type its name in a model picker and choose it from the list
 
 ---
 
-## 1. Figure out what’s going on
+## 1. A glimpse of the future
+
+### Your agent meets their agent · [open](http://127.0.0.1:1313/#your-agent-meets-their-agent)
+
+```text
+Buyer’s agent knows: I want a used home espresso machine. I can pay up to $420. I want to see it pull a shot before paying, and I can pick it up Sunday afternoon. Don’t give out my phone number.
+Seller’s agent knows: Listed at $500 with a calibrated tamper and knock box. I won’t go below $380 for the set. I want it gone before I move Monday. Cash or Venmo, porch pickup after a quick demo.
+```
+
+### The house that listens · [open](http://127.0.0.1:1313/#the-house-that-listens)
+
+```text
+"Book club starts in an hour. Dim the dining room lights, cool the living room down a couple degrees, unlock the side gate for the caterer, and turn on the fireplace." Devices: dining room dimmer, living room thermostat, side gate smart lock, gas fireplace switch, kitchen speaker.
+```
+
+### The tutor that finds the gap · [open](http://127.0.0.1:1313/#the-tutor-that-finds-the-gap)
+
+```text
+Question: You ate 1/3 of a pizza and your friend ate 1/4 of the same pizza. How much of the pizza did you eat together? Learner: "1 plus 1 is 2, and 3 plus 4 is 7, so we ate 2/7 of the pizza."
+```
+
+### The street twin · [open](http://127.0.0.1:1313/#the-street-twin)
+
+```text
+Proposal: make the two-way street beside the elementary school one-way eastbound during drop-off (7:30–8:30 a.m.) and pick-up (2:45–3:45 p.m.) on school days. The block has 18 houses, a crossing guard at the east corner, and a city bus stop on the parallel avenue one block north.
+```
+
+### The pre-visit brief · [open](http://127.0.0.1:1313/#the-pre-visit-brief)
+
+```text
+Appointment next Thursday. For the past month I've been waking up with a dull headache behind my eyes three or four mornings a week, mostly on workdays. It usually fades by lunch after water and coffee. I started a new desk job with two bright monitors six weeks ago and haven't had my eyes checked in four years. Want to ask if it could be eyestrain or something else.
+```
+
+### One message, three listeners · [open](http://127.0.0.1:1313/#one-message-three-listeners)
+
+```text
+Starting May 15, the neighborhood library is switching to auto-renewals. Books will renew automatically up to two times for 14 days each, unless someone else has placed a hold. Late fines are eliminated, but items overdue by 30 days will pause borrowing until they are returned.
+```
+
+### A Tuesday in 2036 · [open](http://127.0.0.1:1313/#a-tuesday-in-2036)
+
+```text
+I'm a middle-school band director. My week is leading rehearsals, tuning instruments, writing concert programs, emailing parents about trip forms, grading playing tests, and fixing broken reeds and stuck valves before class.
+```
+
+### When the shopper is an agent · [open](http://127.0.0.1:1313/#when-the-shopper-is-an-agent)
+
+```text
+CloudStep Everyday Backpack. Ultra-lightweight, built to last a lifetime! Water-resistant recycled fabric, padded laptop sleeve fits most laptops, hidden passport pocket. Comfort-fit straps. Available in Charcoal and Olive. $78.
+```
+
+### Memory that forgets on purpose · [open](http://127.0.0.1:1313/#memory-that-forgets-on-purpose)
+
+```text
+Remember I prefer window seats on flights. Help me find a hotel near the Austin convention center for next Tuesday's conference. My travel buddy Marcus is paying out of pocket because his company froze travel after losing a big client, so keep it under $180 a night. I use a CPAP machine when I travel, so I need an outlet next to the bed.
+```
+
+### Speak an app into existence · [open](http://127.0.0.1:1313/#speak-an-app-into-existence)
+
+```text
+An app where I snap a photo of a plant in my yard, note when I last fertilized or pruned it, and get a reminder next spring before it's time to prune again.
+```
+
+---
+
+## 2. Figure out what’s going on
 
 ### Competing explanations · [open](http://127.0.0.1:1313/#competing-explanations)
 
@@ -98,7 +163,7 @@ Residents request a pothole repair through the city website. The request goes to
 
 ---
 
-## 2. Check before you claim
+## 3. Check before you claim
 
 ### Evidence audit · [open](http://127.0.0.1:1313/#evidence-audit)
 
@@ -172,7 +237,7 @@ Priya | K-552
 
 ---
 
-## 3. Plan it, then poke holes
+## 4. Plan it, then poke holes
 
 ### Rubric reversal · [open](http://127.0.0.1:1313/#rubric-reversal)
 
@@ -272,7 +337,7 @@ A plan exists that finishes exactly at minute 50.
 
 ---
 
-## 4. Explain it and hand it off
+## 5. Explain it and hand it off
 
 ### Rough notes to next steps · [open](http://127.0.0.1:1313/#rough-notes)
 
@@ -357,7 +422,7 @@ Save the case, reload, open it from **Saved cases**, and answer from the handoff
 
 ---
 
-## 5. Build a little AI team
+## 6. Build a little AI team
 
 ### Salvage and recombine · [open](http://127.0.0.1:1313/#salvage-and-recombine)
 
@@ -398,7 +463,7 @@ Constraints: one page, a short script for each call type, and when to get a staf
 
 ---
 
-## 6. Puzzle boxes
+## 7. Puzzle boxes
 
 ### The Last Ferry Before Dawn · [open](http://127.0.0.1:1313/#the-last-ferry-before-dawn)
 
@@ -441,7 +506,7 @@ Give one timed plan, a safe stopping point, and the first optional job to add if
 
 ---
 
-## 7. Put the AI on trial
+## 8. Put the AI on trial
 
 ### Prompt control group · [open](http://127.0.0.1:1313/#prompt-control-group)
 
@@ -627,7 +692,7 @@ The draft blames Earth's shadow, which is the classic wrong explanation for phas
 
 ---
 
-## 8. Run a tiny agent business
+## 9. Run a tiny agent business
 
 ### The agent front desk · [open](http://127.0.0.1:1313/#agent-front-desk)
 
@@ -680,7 +745,7 @@ Requests: a bar wants 10 cases of stout by Friday. A festival invited us to pour
 
 ---
 
-## 9. Agent companies, reality check
+## 10. Agent companies, reality check
 
 ### The report versus the log · [open](http://127.0.0.1:1313/#the-report-versus-the-log)
 
@@ -754,7 +819,7 @@ Limits we already have: the card has a $1,000 monthly cap for supplies. Refunds 
 
 ---
 
-## 10. Canaries in the coal mine
+## 11. Canaries in the coal mine
 
 Every canary **needs a specific model**, runs three attempts, and trips only if all three match the key. The keys below come from [canary-keys.py](../scripts/canary-keys.py) or plain arithmetic, never from a model.
 
