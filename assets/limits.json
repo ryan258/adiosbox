@@ -1,13 +1,24 @@
 {
-  "promptChars": 4000,
-  "inputChars": 8000,
+  "promptChars": 48000,
+  "inputChars": 48000,
   "requestBytes": 65536,
-  "completionTokens": 2048,
-  "reasoningTokens": 1024,
-  "reasoningCompletionTokens": 4096,
-  "reasoningCappedModels": ["nvidia/nemotron-3.5-super-vl", "nvidia/nemotron-3.5-super-vl:free"],
+  "completionTokens": 48000,
+  "reasoningTokens": 24000,
+  "reasoningCompletionTokens": 48000,
+  "reasoningCappedModels": [
+    "nvidia/nemotron-3.5-super-vl",
+    "nvidia/nemotron-3.5-super-vl:free"
+  ],
   "graphCalls": {
-    "route": 2, "revise": 4, "ledger": 2, "fork": 3, "tree": 7, "checkpoint": 2, "evidence": 2,
-    "adaptive": 3, "orchestrated": 5, "orchestrated-subgraphs": 8
+    "route": 2,
+    "revise": 4,
+    "ledger": 2,
+    "fork": 3,
+    "tree": 7,
+    "checkpoint": 2,
+    "evidence": 2,
+    "adaptive": 3,
+    "orchestrated": 5,
+    "orchestrated-subgraphs": 8
   }
 }
