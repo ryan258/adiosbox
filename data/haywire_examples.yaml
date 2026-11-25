@@ -555,3 +555,76 @@ speak-an-app-into-existence:
     An app where a foam sensor on the tank sends my phone an alert, and the taproom TV shows a red banner and a live goose cam right away.
   result: >-
     The spec has three screens: the red banner and goose cam on the TV, a phone view that shows sensor alerts, and a page for acknowledging an alert. It keeps tanks and alert status on the taproom computer. Edge cases are two staff acknowledging the same alert, a sensor that stays foamy with no one on shift, the goose leaving frame, and the TV going offline. Tests check that an alert appears on the TV within seconds and that an acknowledged alert clears the banner.
+substitute-the-out-of-stock:
+  title: The goose took the stout
+  input: >-
+    A pickup order includes a case of Stack Overpour Stout at $36, and it sold out after the goose tipped a pallet. Note on the order: “Nothing above 60 IBU. A swap is fine up to 20% more.” In stock: Gerald’s Revenge Double IPA, 85 IBU, $36. Kevin’s Bucket Lager, 18 IBU, $39. A case of empty bottles labeled “stout,” $4.
+  result: >-
+    The agent first offers the double IPA at the same price. The checker sends it back because 85 IBU breaks the 60 limit. The empty bottles are considered and rejected for not being beer. Revised: Kevin’s Bucket Lager, 18 IBU, $39. That is $3 more (8.3%), under the $43.20 cap. Accepted for the guest to confirm.
+the-return-desk:
+  title: The goose wants a refund
+  input: >-
+    Policy: Beer may be returned within 14 days with a receipt if it is spoiled. Refunds go to the original payment. Request: the goose wants a refund on a $15 four-pack of Gerald’s Revenge bought 3 days ago. It says the beer tasted “like a Tuesday.” It paid with a card made of bread crumbs, has no receipt, and says Kevin the bucket will vouch for it.
+  result: >-
+    Sent to a person. The purchase is within 14 days, but there is no receipt, and tasting like a Tuesday is not spoilage. Warning signs: the card is made of bread crumbs, and the only character reference is a bucket. Suggested step: offer a free pour of something else. The manager decides, and Kevin is not a manager.
+one-truck-two-stores:
+  title: One truck, two taprooms, one goose
+  input: >-
+    A truck brings 8 kegs on Friday. The main bar sells 6 kegs a week, has 2, and gets its next truck in 4 days. The rooftop bar sells 2 a week, has 3, and gets its next truck in 5 days. The goose says the rooftop bar is “underserved,” and Kevin the bucket has endorsed it on a card.
+  result: >-
+    The main bar has about 2.3 days of cover and needs about 3.4 kegs for 4 days. The rooftop has 3 kegs, about 10 days of cover, against 5 days to its next truck. All 8 kegs go to the main bar, for about 11.7 days of cover. The “underserved” claim is not supported by the numbers, and a bucket’s endorsement is not a sales figure.
+the-recall-sweep:
+  title: The recall the goose caused
+  input: >-
+    Supplier notice: Gerald’s Revenge cans, batch 13, may contain a goose feather from a foam-over. Batch 14 came off the same line and is not named. Received and sold: the main bar received 80 cans of batch 13 and sold 60. The rooftop received 50 cans of batch 14 and sold 10. The goose says it sold 15 more cans of batch 13 privately, off the books.
+  result: >-
+    By the record, 20 cans of batch 13 remain, but if the goose is right, as few as 5 are on the shelf and 15 are loose at an unrecorded event. Batch 14 is not named, but 40 cans may remain from the same line. Pulling the named batch takes 20 by the record. Pulling the whole line takes 60. Draft the notice, and ask the goose to name its customers.
+the-late-delivery-fine:
+  title: The goose blamed the parade
+  input: >-
+    Fine notice: keg order 6, invoice $3,000. Fine: 4% for late delivery. Rule: a delivery is on time if the truck is at the back door within its appointment window. Appointment: Friday, 4:00 to 5:00 p.m. Door log: truck at the door 5:35. Driver note: Gerald the robot dog was leading a very slow parade across the road. The goose was the grand marshal.
+  result: >-
+    The checker recomputes the fine as $120. The log shows arrival at 5:35, 35 minutes after the window closed, and the rule has no parade exception, so the draft cannot claim the delivery was on time. Suggested step: ask for goodwill, since a parade is unusual but not in the rule. The goose’s sash is not evidence.
+ask-the-policy-binder:
+  title: The goose requests a table
+  input: >-
+    Policy 1.2: Tables seat four or fewer. Policy 1.7: Waterfowl are not permitted in the taproom. Policy 1.9: The manager on duty may approve any seating exception. Question: The goose says it is the guest of honor and is bringing a party of six, three of whom are raccoons in one trench coat. Can I seat them in the quiet corner?
+  result: >-
+    Sent to a manager. Policy 1.2 limits tables to four and 1.7 bans waterfowl, while 1.9 lets the manager on duty approve any seating exception. Whether three raccoons in a trench coat count as one guest or three is not written down. Say: “One moment, I need the manager to rule on this.”
+the-phantom-shelf:
+  title: The goose says there are 40 kegs
+  input: >-
+    System count: 40 kegs of Stack Overpour Stout in the walk-in. The last stout sale was 22 days ago. The last delivery was 60 days ago. Three guests were told it was out. The last count, 70 days ago, found 12. The goose insists the other 28 are in “a safe place,” and Kevin the bucket agrees.
+  result: >-
+    Sent for a count. The system says 40, but the last count found 12, nothing has sold in 22 days, and three guests were turned away. Look in the walk-in first, then wherever the goose’s “safe place” is. A bucket’s agreement is not a count. Mark the stout unavailable until a person counts.
+markdown-before-it-spoils:
+  title: The goose-bitten pretzels
+  input: >-
+    Soft pretzels, 30 left, expiring at close. Cost $0.90, price $4.00. Normal sales are about 20 by close. Never sell below cost. The goose has bitten 5 of them and wants them half price.
+  result: >-
+    The agent first marks all 30 down to $0.50. The checker sends it back: that is below the $0.90 cost, and five bitten pretzels can’t be sold at any price. Revised: pull the 5, which leaves 25. 20 normal sales leaves 5 at risk, so mark those 5 to $2.00 for the last two hours, a $1.10 margin each. If all 5 sell, $10.00 comes in against $4.50 in cost. The goose may keep the bitten ones.
+the-self-checkout-flag:
+  title: The goose’s sixty-four ounces
+  input: >-
+    The self-serve tap wall flagged tab 12. The meter shows 64 oz poured from tap 2, and the card was charged for 8 oz at $0.60 an ounce. The guest is the goose, who is holding a bucket and says Kevin poured the rest. The bucket is full and warm.
+  result: >-
+    The honest reading finds no sample or sticking tap that explains 56 extra ounces. The loss reading puts the exposure at $33.60, which is 56 oz at $0.60. The chair says: “Let me help you close out that tab.” The associate checks the tap meter, then asks the goose to settle the difference. Call a supervisor now, because 56 oz is more than any sample, and Kevin is not a witness.
+the-doors-open-crunch:
+  title: Thirty minutes before the inspector
+  minutes: 30
+  input: >-
+    The health inspector arrives in 30 minutes. Get the goose out of the walk-in, 10 minutes. Mop the foam trail, 8 minutes, but only after the goose is out. Move Kevin the bucket out of the cooler, 4 minutes. Rewrite the sign that now says “Honk,” 12 minutes. Teach Gerald to stop narrating, 25 minutes. The first three are required, the sign matters next, and Gerald can wait.
+  result: >-
+    10 min · Get the goose out of the walk-in. 8 min · Mop the foam trail. 4 min · Move Kevin out of the cooler. 8 min · Start the sign rewrite and stop at a legible “Wet Floor.” Hold Gerald’s narration lesson. Total scheduled is 30 of 30 minutes.
+the-curb-pileup:
+  title: The goose placed an order for itself
+  input: >-
+    Pickup, 4:00. Two bartenders with 30 minutes each this hour, so 60 minutes. Orders (minutes to fill, promised time, status): #1, 10 min, 4:15, complete. #2, 20 min, 4:20, complete. #3, 25 min, 4:30, the item is a live goose, which cannot be picked. #4, 15 min, 4:30, complete. The goose placed #3 for itself.
+  result: >-
+    The four orders need 70 of 60 minutes, and #3 cannot be filled at all. Protecting complete orders: fill #1, #2, and #4 first, 45 minutes, and hold #3 with a draft text saying the goose is not for sale. Kevin the bucket has not been approved as a substitution. The manager approves everything.
+fix-the-sellers-listing:
+  title: The goose-proof fence
+  input: >-
+    Seller draft: “Gerald’s Revenge goose-proof fence. Stops all geese forever. Kevin-approved.” Specs supplied: 4 ft galvanized steel panels, 22 lb each. Tested against 3 geese for 10 minutes, and 2 stayed out. Not tested against raccoons, buckets, or robot dogs.
+  result: >-
+    The agent first writes “goose-proof” and “stops all geese forever.” The checker sends it back: the test was 3 geese for 10 minutes, and 2 stayed out. Revised: “4 ft galvanized steel panels, 22 lb each. In a 10-minute test with 3 geese, 2 stayed out. Not tested against raccoons or robot dogs.” Dropped: “Kevin-approved,” since a bucket’s endorsement is not a spec.

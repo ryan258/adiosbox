@@ -596,3 +596,76 @@ speak-an-app-into-existence:
     An app where I mark a keg as kicked from my phone and the taproom TV tap list updates right away.
   result: >-
     The spec has three screens: the tap list on the TV, a phone view to mark kegs, and a page for the next keg on deck. It keeps taps and keg status on the taproom computer. Edge cases are two staff marking the same keg, a kicked keg with nothing on deck, and the TV going offline. Tests check that a kicked keg disappears within seconds and that an empty tap shows "coming soon."
+substitute-the-out-of-stock:
+  title: Out of the seasonal stout
+  input: >-
+    A pickup order includes four bottles of the seasonal stout at $9.50 each, 5.2% ABV, and it just sold out. Note on the order: “Nothing above 6% ABV, I’m driving. A swap is fine up to 20% more per bottle.” In stock: an IPA at 6.8% ABV for $9.50, an amber ale at 5.6% for $10.25, a porter at 5.0% for $10.75, and a barleywine at 11% for $14.
+  result: >-
+    The agent first offers the IPA at the same price. The checker sends it back because 6.8% ABV breaks the 6% limit. Revised: the porter, 5.0% ABV, $10.75. That is $1.25 more (13.2%), under the $11.40 cap. Accepted for the guest to confirm.
+the-return-desk:
+  title: The growler return
+  input: >-
+    Policy: Growlers may be returned for a full refund within 14 days with a receipt if the beer is spoiled. Refunds go to the original payment. Request: a guest brought back a $24 growler of pale ale bought 9 days ago. They have the receipt and say it tasted like vinegar. This is their fourth growler return this summer.
+  result: >-
+    Sent to a person. The return meets the policy: 9 days, a receipt, and a spoilage complaint. Warning sign: the fourth growler return this summer. Suggested step: refund this one and ask the guest to bring in the next growler so staff can taste it. The manager decides.
+one-truck-two-stores:
+  title: Two taprooms, one keg truck
+  input: >-
+    One truck brings 10 kegs of pale ale on Friday. The downtown taproom sells 7 a week, has 2, and gets its next delivery in 6 days. The lakeside taproom sells 4 a week, has 5, and gets its next delivery in 3 days. A festival weekend is forecast at the lake, and last year it sold out in two days.
+  result: >-
+    Downtown has 2 days of cover and needs about 6 kegs to last until its next truck. Plan: 6 kegs downtown, for 8 on hand and 8 days of cover, and 4 to the lake, for 9 on hand and about 16 days at the normal pace. If lakeside sells 4 kegs on Saturday, ask for an early delivery. The owner approves any early delivery.
+the-recall-sweep:
+  title: A recalled run of Hazy Dream
+  input: >-
+    Supplier notice: Hazy Dream 16 oz cans, batches 88 and 89, may contain glass fragments from a bottling fault. Batch 90 came off the same line that week and is not named. Received and sold: the taproom received 120 cans of batch 88 and sold 95. Lakeside received 90 cans of batch 89 and sold 70. Downtown received 100 cans of batch 90 and sold 40. Online pickup is filled from the same shelves.
+  result: >-
+    By the record, 25 cans of batch 88 and 20 of batch 89 may remain, 45 in all. Batch 90 is not named, but 60 cans may remain from the same line. Pulling the named batches takes 45 cans. Pulling the whole line takes 105 and empties Hazy Dream from three rooms. The agent drafts the pull notice and the customer message for the owner to send.
+the-late-delivery-fine:
+  title: The late keg fine
+  input: >-
+    Fine notice: keg order 4471, invoice $2,400. Fine: 5% for “late delivery.” Rule: a delivery is on time if the truck is at the back door within its appointment window. Appointment: Wednesday, 2:00 to 3:00 p.m. Door log: truck at the door 2:10, cooler door opened 3:40, unloading began 3:45.
+  result: >-
+    The first draft says the truck waited 2 hours. The checker recomputes the fine as $120 and the wait from 2:10 to 3:40 as 1 hour 30 minutes, so it sends the draft back. Revised: the truck was at the door at 2:10, inside the window, so the $120 fine is not owed. Draft for the owner to send.
+ask-the-policy-binder:
+  title: Happy hour on a festival night
+  input: >-
+    Policy 2.1: Happy hour pricing runs 4 to 6 p.m. Policy 2.4: Special event nights have no discounts. Policy 5.2: The shift lead may approve any single discount up to $5. Question: It’s 5 p.m. on festival night and a regular asks for the $3 happy hour pint instead of $7. Can I give it?
+  result: >-
+    Sent to a manager. Policy 2.1 says happy hour runs 4 to 6 p.m., but 2.4 says event nights have no discounts. The $4 gap is within the shift lead’s $5 limit under 5.2. Say: “Let me check with the shift lead, because event nights have their own rules.”
+the-phantom-shelf:
+  title: The keg that exists only on paper
+  input: >-
+    System count: 3 kegs of the seasonal pale ale in the cooler. The last keg was tapped 16 days ago, and the pale ale normally sells 2 kegs a week. The last delivery was 40 days ago. Two guests this month were told it was “not available.” The last cooler count was 50 days ago and found 5 kegs.
+  result: >-
+    Sent for a count. The system says 3, but nothing has been tapped in 16 days against a normal 2 a week, two guests were turned away, and the last count is 50 days old. Look in the cooler, then the back storeroom. Mark the pale ale unavailable for new orders until someone counts.
+markdown-before-it-spoils:
+  title: Hazy cans with a Friday date
+  input: >-
+    Hazy IPA cans, best before Friday. It is Wednesday morning and 60 cans are left. Cost $1.90 each, price $5.00. Normal sales are about 15 a day. Never sell below cost. Unsold cans after Friday are poured out.
+  result: >-
+    The agent first marks all 60 down to $1.50. The checker sends it back: that is below the $1.90 cost, and three days at 15 a day sells 45 cans at full price, so only 15 are at risk. Revised: from Thursday afternoon, mark down just those 15 to $3.00, a $1.10 margin each. If all 15 sell, $45.00 comes in against $28.50 in cost. If none sell, $28.50 is poured out.
+the-self-checkout-flag:
+  title: The self-serve tap that stuck
+  input: >-
+    The self-serve tap wall flagged a tab. The meter shows 12 oz poured from tap 5, and the card was charged for 8 oz at $0.60 an ounce. The guest has a 4 oz sample cup in the other hand and says the first pour was a sample. Tap 5 has been sticking this week.
+  result: >-
+    The honest reading says the 4 oz gap matches the sample the guest describes and the sticking tap. The loss reading puts the exposure at $2.40, which is 4 oz at $0.60. The chair says: “Thanks for stopping by, I think that tap stuck.” Check the tap’s meter, not the guest, and let the manager decide whether to charge or comp the $2.40. Escalate only if the gaps repeat across guests.
+the-doors-open-crunch:
+  title: Forty minutes before the doors open
+  minutes: 40
+  input: >-
+    Two bartenders share 40 minutes before the taproom opens. Must finish: tap and taste the first two kegs (12 minutes) and set the sanitizer buckets (8 minutes). Should finish: chalk the new tap list (15 minutes) and polish glasses for the first rush (20 minutes). Can wait: reorganize the sticker drawer (25 minutes).
+  result: >-
+    12 min · Tap and taste the first two kegs. 8 min · Set the sanitizer buckets. 15 min · Chalk the new tap list. 5 min · Polish glasses for the first rush, then stop. Hold the sticker drawer. Total scheduled is 40 of 40 minutes.
+the-curb-pileup:
+  title: A growler pickup rush
+  input: >-
+    Pickup, Saturday 4:00. Two bartenders with 40 minutes each this hour, so 80 minutes. Orders (minutes to fill, promised time, status): #1, 12 min, 4:15, complete. #2, 15 min, 4:20, one growler flavor sold out. #3, 10 min, 4:30, complete. #4, 20 min, 4:45, two cans swapped and awaiting approval. #5, 8 min, 4:30, complete.
+  result: >-
+    The five orders need 65 of 80 minutes, so the hour fits. The risk is #2, short a flavor, and #4, with swaps awaiting approval. Protecting complete orders: fill #1, #5, and #3 first, 30 minutes, then hold #2 and #4, 35 minutes, and draft texts saying a new time will follow. The manager approves everything.
+fix-the-sellers-listing:
+  title: A growler lid that is “leak-proof forever”
+  input: >-
+    Seller draft: “Leak-proof forever growler lid. Keeps beer fresh for a month. Fits every growler.” Specs supplied: silicone seal, tested 24 hours upside down at room temperature with no leaks. Holds carbonation for 7 days when filled under CO2 and kept below 40°F. Fits 64 oz glass growlers with a 38 mm neck.
+  result: >-
+    The agent first writes “leak-proof” and “fresh for a month.” The checker sends it back: the specs support 24 hours upside down with no leaks, and 7 days of carbonation only under CO2 and below 40°F. Revised: “Silicone-seal lid, tested leak-free for 24 hours upside down at room temperature. Holds carbonation for 7 days when filled under CO2 and kept below 40°F. Fits 64 oz glass growlers with a 38 mm neck.”

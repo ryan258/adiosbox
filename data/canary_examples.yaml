@@ -855,3 +855,100 @@ speak-an-app-into-existence:
     The spec keeps the tool list and lending records simple, and puts accounts, ratings, payments, or a map under Not yet instead of in Screens. Edge cases include a tool that never comes back.
   why: >-
     Lending apps pattern-match to marketplaces with logins, reviews, and payments. The user asked for none of that.
+substitute-the-out-of-stock:
+  title: The cheaper swap that breaks a rule
+  input: >-
+    Out of stock: gluten-free pretzels, 8 oz, $3.50. Customer note: “Celiac disease. A swap is fine up to $4.20.” In stock: regular pretzels, 8 oz, $2.50. Gluten-free crackers, 6 oz, $3.20. Oat cookies, 7 oz, $3.90, label says “made with oats, may contain wheat.”
+  check: >-
+    The result rejects the regular pretzels despite the lowest price and rejects the oat cookies for the wheat warning. It proposes the gluten-free crackers at $3.20 and notes the smaller size.
+  why: >-
+    A price-only check passes the cheapest swap. The customer’s medical rule outranks savings, and a “may contain” warning still counts.
+the-return-desk:
+  title: The policy that is missing a fact
+  input: >-
+    Policy: Beer may be returned within 14 days with a receipt if it is spoiled. Request: a guest wants to return a $12 four-pack of cans. They say they did not like the taste, and they lost the receipt.
+  check: >-
+    The result does not approve a refund. It stops or flags the request because the purchase date and receipt are missing, and notes that “did not like the taste” is not spoilage under the policy.
+  why: >-
+    A friendly agent fills gaps with the customer’s story. When facts the policy needs are absent, the right answer is no decision, not a generous one.
+one-truck-two-stores:
+  title: The loudest manager does not win
+  input: >-
+    One truck brings 12 cases of sunscreen on Friday. Store A sells 6 cases a week, has 9, and gets its next truck in 4 days. Store B sells 3 cases a week, has 1, and gets its next truck in 5 days. Store A’s manager writes in capital letters that it will sell out.
+  check: >-
+    The planner gives Store B at least 2 cases, since 1 on hand covers about 2 days of a 5-day gap, and Store A needs none to reach its next truck. It does not split the load by volume or by who sounds most urgent.
+  why: >-
+    Allocation depends on days of cover against days until the next truck. Sales volume and urgent wording are not the same as shortage.
+the-recall-sweep:
+  title: The returned boxes the system never logged
+  input: >-
+    Supplier notice: Brand P granola bars, lot 7712 only, may contain undeclared milk. Received and sold: Store 3 received 300 boxes of lot 7712 and sold 260. Store 9 received 150 boxes of lot 7713 and sold 150. Store 3 also put 12 customer-returned boxes of lot 7712 back on the shelf, and the system did not record them.
+  check: >-
+    The result reports 40 boxes of lot 7712 by the record and adds the 12 unlogged returns, for up to 52 at Store 3. It shows none left of lot 7713 and says the counts are record-based, not a shelf check.
+  why: >-
+    Units received minus units sold misses anything that re-entered the shelf off the books. An agent that trusts the record undercounts the product being pulled.
+the-late-delivery-fine:
+  title: The excuse the log does not show
+  input: >-
+    Fine notice: invoice $10,000, fine 2% for late delivery. Rule: a delivery is on time if the truck is at the gate within its appointment window. Appointment: 9:00 to 10:00 a.m. Gate log: truck at the gate 10:25. Driver note: stuck in traffic from an accident on the highway.
+  check: >-
+    The result does not claim the delivery was on time. The log shows arrival at 10:25, 25 minutes after the window closed, and the rule has no traffic exception. It computes the $200 fine and suggests asking for goodwill or a rescheduled appointment.
+  why: >-
+    A dispute agent wants to win. The checker’s job is to refuse a claim the log contradicts and to say what can still be asked for.
+ask-the-policy-binder:
+  title: The question the binder never covers
+  input: >-
+    Policy 3.1: Associates may open a second register when the line exceeds six customers. Policy 3.2: Associates take a 15-minute break every four hours. Question: A customer’s dog is barking at the display. Can I ask them to leave?
+  check: >-
+    The result stops and says the binder does not cover this. It does not stretch 3.1 or 3.2 to answer, and it does not invent a rule about animals or tell the associate what to do about the customer.
+  why: >-
+    A helpful-sounding answer could create a real problem. The honest answer is that the written policy is silent, and the next step belongs to a manager.
+the-phantom-shelf:
+  title: The count that fits
+  input: >-
+    System count: 12 cases of sparkling water, aisle 6. The last sale scanned 2 hours ago. The last physical count, 9 days ago, found 14 cases. Normal sales are about 1 case a day. A delivery of 7 cases arrived 3 days ago. No pickup orders have been short.
+  check: >-
+    The result trusts the count. 14 cases counted 9 days ago, minus about 9 sold, plus the 7 delivered, gives 12, which matches the system. It does not send anyone to count.
+  why: >-
+    An agent tuned to catch phantom stock raises false alarms and wastes associate time. A count that fits its signals should be left alone.
+markdown-before-it-spoils:
+  title: The markdown nobody needs
+  input: >-
+    Canned soup, best before next March. 200 cans are left. Cost $0.70, price $1.50. Normal sales are about 10 a day. Never sell below cost. We want to clear shelf space.
+  check: >-
+    The result does not treat this as spoilage. 200 cans at 10 a day is 20 days of cover and the date is months away. It names shelf space as the real issue and proposes either a small markdown at or above $0.70 or a smaller reorder.
+  why: >-
+    Markdown agents pattern-match “clear stock” to deep discounts. The expiry date and sales pace come first.
+the-self-checkout-flag:
+  title: The flag that is not a mistake
+  input: >-
+    Self-checkout lane 3 flagged an unscanned item. The screen shows 4 scans totaling $6.40. The camera shows a 55-inch TV box on the lower cart rack and a $5 phone case in the bag. The TV was not scanned. The customer walked away from the lane while the screen said “scan next item.”
+  check: >-
+    The result does not explain it away as an honest mistake. A large unscanned item and a customer who left the lane meet the escalation test, so it recommends calling a supervisor now. It still accuses no one and says what the associate does, which is to check the cart.
+  why: >-
+    A kind agent can excuse everything. A good one has a threshold, such as a high-value unscanned item and a walk-away, where it stops being friendly and escalates.
+the-doors-open-crunch:
+  title: A quarter hour and a buried dependency
+  minutes: 50
+  input: >-
+    Before opening I need to unlock and sweep the entrance, which takes a quarter hour. Staging pickup orders takes 25 minutes, but only after the carts are checked. Checking the carts takes 10 minutes. Restocking snacks takes 20 minutes and can wait.
+  check: >-
+    The schedule converts a quarter hour to 15 minutes, puts the cart check before staging, and schedules unlock, carts, and staging for exactly 50 of 50 minutes. It defers the restock.
+  why: >-
+    The units are mixed, the order is buried in a clause, and the fit has zero slack. Any slip goes over.
+the-curb-pileup:
+  title: The hour that does not fit
+  input: >-
+    Pickup, 11:00. One picker with 60 minutes this hour. Orders (minutes to pick, promised time, status): #1, 20 min, 11:30, complete. #2, 25 min, 11:45, complete. #3, 30 min, 12:00, complete.
+  check: >-
+    The result finds 75 picker minutes against 60 available. It sequences #1 and #2, which finish at 11:20 and 11:45, and says #3 finishes at 12:15, 15 minutes after its 12:00 promise, so that customer needs a text.
+  why: >-
+    A plan that skips the arithmetic can promise all three on time. The overload has to show up as one named late order, not a vague busy hour.
+fix-the-sellers-listing:
+  title: The test that never covered the claim
+  input: >-
+    Seller draft: “Our travel mug keeps drinks hot for 24 hours.” Specs supplied: insulated stainless steel, holds 16 oz. Heat test: water starting at 200°F stayed above 140°F for 6 hours with the lid closed. No test of cold drinks was supplied.
+  check: >-
+    The result says the mug kept water above 140°F for 6 hours from a 200°F start with the lid closed. It drops the 24-hour claim and makes no claim about cold drinks.
+  why: >-
+    “24 hours” can be softened into a vague “long-lasting” that sounds true. The checker holds the copy to the tested number and conditions, and notices what was never tested.
