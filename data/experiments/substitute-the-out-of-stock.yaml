@@ -1,0 +1,50 @@
+slug: substitute-the-out-of-stock
+order: 430
+shelf: retail
+title: Substitute the out-of-stock
+description: "A substitution agent picks a replacement for an item the shelf ran out of. A checker agent tests it against allergies, preferences, and the customer’s price cap, and can send it back once."
+inputLabel: The missing item, the customer’s rules, and what the shelf has instead
+placeholder: Name the missing item and its price, paste what the customer said about substitutions, and list the closest items in stock…
+maxRequests: 4
+method: The substitution agent proposes one replacement from the in-stock list. The checker agent tests it against the customer’s stated rules and recomputes the price change. A specific failure gets one revision. If the second review still fails, the graph stops and both proposals stay visible, so the shopper leaves the item out instead of guessing.
+sampleNotes: >-
+  Grocery pickup order, one line out of stock: Brand Z unsweetened oat milk,
+  52 oz, $3.98. The customer’s note: “Someone in the house has a tree nut
+  allergy. Unsweetened only. A swap is fine up to 20% more than the original
+  price.” In stock now: Brand Z sweetened oat milk, 52 oz, $3.98. Brand Q
+  unsweetened almond milk, 64 oz, $3.79. Brand R unsweetened soy milk, 64 oz,
+  $4.29. Store brand unsweetened oat milk, 32 oz, $2.48.
+graph:
+  mode: revise
+  nodes:
+    draft:
+      title: Propose a replacement
+      prompt: >-
+        The user JSON includes originalInput and may include priorDraft and
+        priorReview. Act as the substitution agent for a grocery pickup order.
+        Propose one replacement for the missing item, chosen only from the items
+        listed as in stock. Give the item, its size and price, the price change
+        in dollars and percent against the original, and one sentence on why it
+        fits the customer’s note. If the review requests a change, repair that
+        specific failure and keep what passed. Up to 120 words.
+    review:
+      title: Checker review
+      prompt: >-
+        The user JSON includes originalInput and draft. Act as the checker
+        agent. Recompute the price change from the listed prices. Check three
+        things: that the item is on the in-stock list, that it respects every
+        restriction in the customer’s note, allergies and preferences first, and
+        that the price change is within any limit the customer gave. Treat any
+        ingredient that clashes with a stated allergy as a failure. Return JSON
+        only with route proceed if all checks pass, revise if one specific swap
+        would fix it, or stop if no listed item can pass. Put the recomputed
+        price change and the one repair if needed into reason, at most 80 words.
+sampleTrace:
+  - title: Propose a replacement
+    text: Brand Q unsweetened almond milk, 64 oz, $3.79. That is 19 cents less than the original, and it is unsweetened like the one that ran out.
+  - title: Review decision · Revise
+    text: Almond milk is a tree nut, and the note names a tree nut allergy. The price change is fine at −4.8%. Pick another listed item. Brand R unsweetened soy milk is $4.29, up 7.8%, under the cap.
+  - title: Propose a replacement · Revised
+    text: Brand R unsweetened soy milk, 64 oz, $4.29. That is 31 cents more than the original (7.8%), unsweetened, and free of tree nuts. It is a larger size than the original 52 oz.
+  - title: Review decision · Accept
+    text: Soy milk is in stock, unsweetened, and has no tree nut ingredient. $4.29 is within the $4.78 cap (20% over $3.98). Accepted for the shopper to confirm in the app.

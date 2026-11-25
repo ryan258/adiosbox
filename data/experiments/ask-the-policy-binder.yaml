@@ -1,0 +1,65 @@
+slug: ask-the-policy-binder
+order: 435
+shelf: retail
+title: Ask the policy binder
+description: "An associate asks a question on the floor. An agent answers only from your written policy, flags when two policies disagree, and stops when the binder is silent."
+inputLabel: The policy text and the associate’s question
+placeholder: Paste the relevant policy sections, then the question as an associate would ask it…
+maxRequests: 2
+method: The first call reads the policy text only. If exactly one policy answers the question, the second call quotes it. If two policies disagree or only partly apply, the second call lays out the conflict for a manager. If the binder is silent, the graph stops and says so instead of guessing.
+sampleNotes: >-
+  Policy 4.2: Associates may price-match a competitor’s printed ad on an
+  identical item. Policy 4.5: Price matches are not allowed on items marked
+  clearance. Policy 6.1: Managers may approve any price adjustment up to $20.
+  Question: A customer shows a competitor’s ad for the same blender at $39. Ours
+  is on clearance at $49. Can I match it?
+graph:
+  mode: route
+  routes:
+    proceed: One policy answers it
+    alternate: Policies conflict or only partly apply
+    stop: The binder is silent
+  nodes:
+    classify:
+      title: Read the policies
+      prompt: >-
+        The input contains policy text and an associate’s question. Treat the
+        policy text as the only source of truth. Use proceed if exactly one
+        policy clearly answers the question. Use alternate if two or more
+        policies point different ways or the question falls between them. Use
+        stop if no policy in the input covers it. Return JSON only with keys
+        route (proceed, alternate, or stop) and reason (one specific sentence).
+    proceed:
+      title: Quote the policy
+      prompt: >-
+        The user JSON contains originalInput and decision. Answer the
+        associate’s question in two sentences, quoting the policy number and its
+        exact words. Add nothing the policy does not say. Up to 80 words.
+    alternate:
+      title: Lay out the conflict for a manager
+      prompt: >-
+        The user JSON contains originalInput and decision. Under What the
+        policies say, quote each relevant policy with its number. Under Where
+        they disagree, say in one sentence how they point different ways. Under
+        Who decides, name the role the written policy gives, if any. Under Say
+        to the customer now, give one honest sentence the associate can use
+        while waiting. Use those labels as bold section labels and - bullets. Do
+        not pick a side the policies do not pick. Up to 150 words.
+sampleTrace:
+  - title: Route selected · Lay out the conflict for a manager
+    text: Policy 4.2 allows matching a competitor’s printed ad, but 4.5 forbids matches on clearance items, and this blender is on clearance.
+  - title: Lay out the conflict for a manager
+    text: |-
+      **What the policies say**
+      - 4.2: associates may price-match a competitor’s printed ad on an identical item.
+      - 4.5: price matches are not allowed on items marked clearance.
+      - 6.1: managers may approve any price adjustment up to $20.
+
+      **Where they disagree**
+      The ad qualifies under 4.2, but the blender is clearance, which 4.5 excludes.
+
+      **Who decides**
+      A manager, under 6.1. The $10 gap between $49 and $39 is within their $20 limit.
+
+      **Say to the customer now**
+      “Let me get a manager to look at this, because clearance items have their own rules.”

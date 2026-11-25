@@ -1,0 +1,65 @@
+slug: one-truck-two-stores
+order: 432
+shelf: retail
+title: One truck, two stores
+description: "Two store agents each argue for the same truck. A planner agent splits the load by days of cover and says which number would change the split."
+inputLabel: The truck, each store’s stock and sales pace, and when the next delivery lands
+placeholder: Give the truck’s contents, then each store’s stock on hand, weekly sales, and days until its next truck…
+maxRequests: 3
+method: Two calls read the same numbers in parallel, one for each store, and do not see each other’s case. The planner gets both cases and splits the truck so neither store runs out before its next delivery, shows each store’s days of cover, and names the number that would change the split. Moving stock between stores or ordering another truck is left to a person.
+sampleNotes: >-
+  One truck arrives Friday with 20 pallets of box fans. Store A, a busy
+  suburban store, sells 14 pallets a week, has 4 on hand, and gets its next
+  truck in 6 days. Store B, a rural store, sells 9 pallets a week, has 10 on
+  hand, and gets its next truck in 3 days. The forecast is 95°F on Saturday and
+  Sunday. Store B’s manager says the last heat wave emptied their fan aisle in
+  two days.
+graph:
+  mode: fork
+  nodes:
+    left:
+      title: Store A’s case
+      prompt: >-
+        Act as the agent for Store A. Using only the supplied numbers, make the
+        strongest case for Store A’s share of the truck. Show Store A’s days of
+        cover now and what it needs to last until its next delivery, with your
+        arithmetic. Name the one assumption that must hold. Do not invent
+        figures. Up to 120 plain-text words.
+    right:
+      title: Store B’s case
+      prompt: >-
+        Act as the agent for Store B. Using only the supplied numbers, make the
+        strongest case for Store B’s share of the truck. Show Store B’s days of
+        cover now and what it needs to last until its next delivery, with your
+        arithmetic. Name the one assumption that must hold. Do not invent
+        figures. Up to 120 plain-text words.
+    merge:
+      title: Planner’s split
+      prompt: >-
+        The user JSON contains originalInput and two independent readings, left
+        and right. Act as the distribution planner agent. Under Where they
+        agree, state the shared facts. Under Split of the truck, give pallets
+        for each store, with each store’s days of cover after the split, and
+        make the pallets add up to the truck. Under What would change it, give
+        the one observed number that would shift the split. Under Owner signs
+        off on, list anything that needs a person’s approval, such as moving
+        stock between stores or an extra truck. Use those labels as bold section
+        labels. No invented figures. Up to 180 words.
+sampleTrace:
+  - title: Store A’s case
+    text: Store A sells about 2 pallets a day and has 4, so 2 days of cover. Its next truck is 6 days out, so it needs 12 pallets to bridge the gap before any heat-wave lift. The assumption is that weekend heat does not reduce foot traffic.
+  - title: Store B’s case
+    text: Store B sells about 1.3 pallets a day and has 10, about 7.8 days of cover, which looks safe. But the last heat wave emptied its fans in two days, and a 95°F weekend could do it again. The assumption is that this heat wave behaves like the last.
+  - title: Planner’s split
+    text: |-
+      **Where they agree**
+      Store A is short now, Store B has more cover on paper, and both are facing the same weekend heat.
+
+      **Split of the truck**
+      Store A gets 16 pallets, for 20 on hand and about 10 days of cover. Store B gets 4, for 14 on hand and about 10.9 days of cover. That is 20 pallets in all.
+
+      **What would change it**
+      Store B’s Saturday sales. If it sells more than 5 pallets that day, 14 pallets would last under 3 days, and an early extra delivery should be requested.
+
+      **Owner signs off on**
+      Any early delivery or moving pallets from one store to the other.

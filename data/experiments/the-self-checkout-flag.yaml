@@ -1,0 +1,64 @@
+slug: the-self-checkout-flag
+order: 438
+shelf: painpoints
+title: The self-checkout flag
+description: "The pain point: self-checkout flags catch real losses and also stop honest customers. The proof of concept: two agents read the same flag as a mistake and as a loss risk, and a chair writes what the associate says without accusing anyone."
+inputLabel: The flag, the basket, and what the scanner recorded
+placeholder: Paste what the lane flagged and what the scale, scanner, and receipt show…
+maxRequests: 3
+method: Two calls read the same record in parallel, one looking for an honest explanation and one looking for loss, and do not see each other’s case. The chair gets both and writes what the associate says and does, in words that accuse no one, and the fact that would justify calling a supervisor. Any policy action is left to a person.
+sampleNotes: >-
+  Self-checkout lane 6 flagged an unexpected item in the bagging area. The
+  cart holds 14 items and the scanner recorded 13 scans. A 12-pack of soda sits
+  on the lower cart rack and was not scanned. The bananas were weighed at 2.1 lb
+  and keyed as organic, which costs $0.89 more per pound, but they look
+  conventional. The customer has been at the lane for 4 minutes and is holding a
+  toddler.
+graph:
+  mode: fork
+  nodes:
+    left:
+      title: Honest-mistake reading
+      prompt: >-
+        Act as the honest-mistake agent. Using only the supplied record, give
+        the most likely innocent explanation for each mismatch. For each, say
+        what would confirm it, such as the item’s location on the cart. Do not
+        invent facts. Up to 120 plain-text words.
+    right:
+      title: Loss-risk reading
+      prompt: >-
+        Act as the loss-risk agent. Using only the supplied record, say which
+        mismatches would cost the store money if they were not mistakes, and
+        which would cost the customer. Give the dollar or unit exposure where
+        the record allows, and the cheapest check that would settle it without
+        confronting the customer. Do not invent facts. Up to 120 plain-text
+        words.
+    merge:
+      title: Chair’s response for the associate
+      prompt: >-
+        The user JSON contains originalInput and two independent readings, left
+        and right. Act as the chair agent. Under What the record shows, state
+        the facts both readings share. Under What the associate says, write one
+        sentence that offers help and accuses no one. Under What the associate
+        does, give the one quick step that settles it, such as scanning the item
+        together. Under When to call a supervisor, say which fact would justify
+        escalating. Use those labels as bold section labels. No invented
+        figures. Up to 160 words.
+sampleTrace:
+  - title: Honest-mistake reading
+    text: An unscanned 12-pack on the lower rack is a common miss, since the rack is easy to forget. The organic banana code may be a mis-tap on the produce screen, where the icons look alike. Scanning the soda together would confirm it. The customer is holding a toddler, which makes both mistakes more likely.
+  - title: Loss-risk reading
+    text: The unscanned soda is one missing scan of unknown price, and it is the only open exposure to the store. The organic banana code costs the customer, not the store, about $1.87 extra (2.1 lb at $0.89). The cheapest check is to scan the soda together, not to open the bags.
+  - title: Chair’s response for the associate
+    text: |-
+      **What the record shows**
+      13 scans for 14 items, with a 12-pack of soda unscanned on the cart rack. The bananas were keyed as organic and look conventional, which overcharges the customer by about $1.87.
+
+      **What the associate says**
+      “Let me help you finish up. That’s a lot to juggle with your little one.”
+
+      **What the associate does**
+      Scan the 12-pack together and correct the banana code, then clear the flag.
+
+      **When to call a supervisor**
+      Only if the customer declines to scan the soda, or more unscanned items turn up.

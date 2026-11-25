@@ -1,0 +1,42 @@
+slug: the-doors-open-crunch
+order: 439
+shelf: painpoints
+title: The doors-open crunch
+description: "The pain point: more has to happen before opening than the staff minutes allow. The proof of concept: an agent drafts a plan from your task times, and code checks that the minutes add up to the budget."
+inputLabel: The pre-open tasks, their times, and which ones must finish
+placeholder: List each task with its time, mark the ones that must finish, and say what can wait…
+sampleMinutes: 60
+maxRequests: 2
+method: Code checks whole-minute durations and the sum against your budget. If a draft goes over or the record is malformed, the graph routes back with the exact issue. The check verifies arithmetic. The task times are the ones you gave, and the agent only decides what goes first, what shrinks, and what waits.
+sampleNotes: >-
+  Two associates share 60 minutes before the store opens. Must finish: unlock
+  and walk the entrance and carts (10 minutes), and stage the first 8 pickup
+  orders (25 minutes). Should finish: restock the front-end snacks (15 minutes)
+  and reset the endcap for the weekend ad (30 minutes). Can wait until after
+  opening: clean the break room (20 minutes).
+graph:
+  mode: ledger
+  nodes:
+    draft:
+      title: Propose a time budget
+      prompt: >-
+        The user JSON contains originalInput, minutes, and maybe priorDraft and
+        priorReview. Fit the prioritized work into the exact available-minute
+        ceiling. Keep every must-finish task whole and use the times the user
+        gave. Include a useful stopping checkpoint in each task name. Shrink or
+        drop lower-priority work if needed. Return only JSON matching
+        {"items":[{"task":"short task and checkpoint","minutes":5}]}. Use
+        positive whole minutes, at most eight tasks. Apply any arithmetic or
+        format correction from priorReview before returning the new record.
+sampleTrace:
+  - title: Propose a time budget
+    text: Unlock and walk the entrance (10 min), stage pickup orders (25 min), restock front-end snacks (15 min), reset the weekend endcap (30 min).
+  - title: Check the minutes
+    text: The tasks total 80 minutes and the budget is 60.
+  - title: Checked plan
+    text: |-
+      10 min · Unlock, walk the entrance, and check the carts.
+      25 min · Stage the first 8 pickup orders.
+      15 min · Restock the front-end snacks and leave a note of what is short.
+      10 min · Pull the endcap fixtures and stage the new signs, then stop.
+      60 of 60 minutes assigned. The break room waits until after opening.

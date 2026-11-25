@@ -1,0 +1,69 @@
+slug: the-return-desk
+order: 431
+shelf: retail
+title: The return desk
+description: "A returns agent checks a request against your written policy. Clean ones get a refund note, odd ones go to a person with the flags listed, and missing details stop the graph."
+inputLabel: Your return policy and the customer’s request
+placeholder: Paste the policy, then what the customer is returning, when they bought it, and why…
+maxRequests: 2
+method: The first call checks the request against the written policy only. A clean match gets a refund note for an associate to issue. A request that breaks a rule or carries a warning sign goes to a person with the flags listed. If the request leaves out something the policy needs, the graph stops and names what is missing. The agent never issues the refund.
+sampleNotes: >-
+  Policy: Electronics may be returned within 30 days with a receipt. Opened
+  items are refundable if they are defective. Refunds go to the original
+  payment. Request: a customer wants to return a $79 Bluetooth speaker bought
+  34 days ago. They have the receipt. They say it stopped charging. Our record
+  shows this is their third speaker return since March.
+graph:
+  mode: route
+  routes:
+    proceed: Within policy, no flags
+    alternate: Send to a person with the flags
+    stop: Details missing
+  nodes:
+    classify:
+      title: Check the request against the policy
+      prompt: >-
+        The input contains a return policy and a customer’s request. Treat the
+        policy text as the only rules. Use proceed if the request clearly meets
+        every rule and nothing in the input suggests a problem. Use alternate if
+        the request breaks a rule, falls in a gray area, or carries a warning
+        sign such as repeated returns. Use stop if the policy or the request
+        leaves out something needed to decide, such as the purchase date or
+        whether there is a receipt. Return JSON only with keys route (proceed,
+        alternate, or stop) and reason (one specific sentence).
+    proceed:
+      title: Write the refund note
+      prompt: >-
+        The user JSON contains originalInput and decision. Write a short note
+        for the associate to issue the refund. Name the refund amount, the
+        payment it goes back to, and the policy lines that make it eligible. Do
+        not claim the refund was issued. Up to 90 words.
+    alternate:
+      title: Hand it to a person with the flags
+      prompt: >-
+        The user JSON contains originalInput and decision. Under Meets the
+        policy, list the rules the request clearly meets. Under Breaks or
+        strains the policy, list each rule it misses, with the number of days or
+        dollars off. Under Warning signs, list anything that deserves a look.
+        Under Suggested next step, give one option the person could choose, such
+        as store credit or a one-time exception, and say the decision is theirs.
+        Use those labels as bold section labels and - bullets. Count exactly
+        from the input. Up to 150 words.
+sampleTrace:
+  - title: Route selected · Send to a person with the flags
+    text: The speaker was bought 34 days ago against a 30-day limit, and it is the customer’s third speaker return since March.
+  - title: Hand it to a person with the flags
+    text: |-
+      **Meets the policy**
+      - Receipt in hand.
+      - Defect claimed: it stopped charging.
+      - The refund would go to the original payment.
+
+      **Breaks or strains the policy**
+      - Bought 34 days ago, 4 days past the 30-day limit.
+
+      **Warning signs**
+      - Third speaker return since March.
+
+      **Suggested next step**
+      Offer store credit or a one-time exception. Whether to bend the 30-day rule is the manager’s call.

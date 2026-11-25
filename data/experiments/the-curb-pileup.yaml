@@ -1,0 +1,60 @@
+slug: the-curb-pileup
+order: 440
+shelf: painpoints
+title: The curb pileup
+description: "The pain point: pickup orders stack up and promised times slip. The proof of concept: a dispatch agent maps the backlog, then waits for you to choose what the next hour protects before it drafts the plan."
+inputLabel: The pickup queue, the pickers on shift, and each order’s status
+placeholder: List each order with its picking minutes, promised time, and anything missing, then the picker minutes available…
+maxRequests: 2
+checkpointQuestion: What should the next hour protect?
+method: LangGraph saves a checkpoint after the dispatch agent maps the backlog against the picker minutes. Your choice becomes the instruction for the picking order and the customer texts. The agent drafts them for the manager to approve, and never sends a text itself. You can also stop after the map.
+sampleNotes: >-
+  Pickup, Saturday 11:00. Two pickers with 60 minutes each this hour, so 120
+  picker minutes. Orders (minutes to pick, promised time, status): #101, 18
+  min, 11:20, complete. #102, 25 min, 11:30, one item not found. #103, 22 min,
+  11:40, complete. #104, 30 min, 12:00, two substitutions awaiting the
+  customer’s approval. #105, 15 min, 11:45, complete.
+graph:
+  mode: checkpoint
+  options:
+    - id: promise
+      label: Protect promise times
+      instruction: Sequence the orders by promised time. Accept that an order may go out with an item missing rather than late, and draft a customer text for each order that will be short.
+    - id: complete
+      label: Protect complete orders
+      instruction: Sequence the complete orders first. Hold any order that is missing an item or waiting on a substitution approval until it is resolved, and draft a customer text for each held order that says a new time will follow, with the reason.
+  nodes:
+    prepare:
+      title: Map the backlog against the pickers
+      prompt: >-
+        Act as the dispatch agent. From the order list, add up the picking
+        minutes needed and compare them with the picker minutes available. Name
+        the orders that cannot be ready by their promised time and the orders
+        that depend on a missing item or a substitution approval. Describe what
+        protecting promise times costs and what protecting complete orders
+        costs. Do not choose for the manager. Up to 160 words.
+    finish:
+      title: Draft the plan for the manager to approve
+      prompt: >-
+        The user JSON contains originalInput, assessment, and choice. Draft the
+        picking order for the next hour that follows the manager’s choice, with
+        the order numbers in sequence and the picker minutes used against the
+        minutes available. Then draft a short customer text for each affected
+        order, promising no time the input does not give. Mark everything as a
+        draft for the manager to approve. Do not claim a text was sent. Up to
+        220 words.
+sampleTrace:
+  - title: Map the backlog against the pickers
+    text: The five orders need 110 of the 120 picker minutes, so the hour fits on paper. The risk is #102, short one item, and #104, with two substitutions awaiting approval. Protecting promise times hands those two over incomplete or with unapproved swaps. Protecting complete orders holds them and moves their times. Orders #101, #103, and #105 are complete and can go on time either way.
+  - title: Paused for your choice
+    text: Protect promise times, protect complete orders, or stop here.
+  - title: Sample path · Protect complete orders
+    text: |-
+      **Picking order (draft)**
+      #101, #105, #103 first, 55 picker minutes, all on time. Then #102 and #104 once the item is found and the substitutions are approved, 55 more minutes. 110 of 120 minutes used.
+
+      **Customer texts (draft)**
+      #102: “We’re finishing your order and still locating one item. We’ll text you the new pickup time shortly.”
+      #104: “Please approve the two substitutions we’ve suggested so we can finish your order. We’ll text you the new pickup time shortly.”
+
+      Drafts for the manager to approve. Nothing has been sent.

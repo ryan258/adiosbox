@@ -1,0 +1,49 @@
+slug: the-late-delivery-fine
+order: 434
+shelf: retail
+title: The late-delivery fine
+description: "A supplier’s agent drafts a reply to an on-time delivery fine. A checker agent tests every claim against the gate and dock log, and can send it back once."
+inputLabel: The fine, the rule it cites, and the gate and dock log
+placeholder: Paste the fine notice, the delivery rule it cites, and the timestamps from the gate and dock log…
+maxRequests: 4
+method: The supplier’s agent drafts a dispute using only the log. The checker agent recomputes the fine from the stated rate, tests each claim against a timestamp or figure, and flags anything the log does not show. A specific failure gets one revision. If the second review still fails, the graph stops and both drafts stay visible. The draft is for the owner to send, and the agent never sends it.
+sampleNotes: >-
+  Fine notice: Brand Z hot sauce, order 5530, invoice $48,000. Fine: 3% of the
+  invoice for “late delivery.” Rule: a delivery is on time if the truck is at
+  the gate within its appointment window. Appointment: Tuesday, 8:00 to 9:00
+  a.m. Gate log: truck at the gate 7:52, checked in 8:05. Dock log: door
+  assigned 10:35, unloading began 10:50, finished 11:40. Driver note: waited in
+  the dock queue behind two other trucks.
+graph:
+  mode: revise
+  nodes:
+    draft:
+      title: Draft the dispute
+      prompt: >-
+        The user JSON includes originalInput and may include priorDraft and
+        priorReview. Act as the supplier’s dispute agent. Draft a short reply to
+        the fine. Use only the timestamps and figures in the log, quote the rule
+        it relies on, and state the fine amount you are disputing. If the review
+        requests a change, repair that specific failure and keep what passed. Do
+        not claim intent or blame the log does not show. Mark it as a draft for
+        the owner to send. Up to 150 words.
+    review:
+      title: Checker review
+      prompt: >-
+        The user JSON includes originalInput and draft. Act as the checker
+        agent. Recompute the fine from the stated rate and invoice. Check every
+        claim in the draft against a timestamp or figure in the input, including
+        any duration or total you must compute yourself. Check the draft against
+        the rule’s exact wording. Return JSON only with route proceed if all
+        claims and numbers match, revise if specific claims can be repaired, or
+        stop if the log is missing what the rule needs. Put the recomputed fine
+        and each failed claim into reason, at most 90 words.
+sampleTrace:
+  - title: Draft the dispute
+    text: The truck was at the gate at 7:52, inside its appointment window, then waited 3 hours for a door. The rule says delivery is on time if the truck is at the gate within the window, so the $1,440 fine is not owed. Draft for the owner to send.
+  - title: Review decision · Revise
+    text: The fine checks out, 3% of $48,000 is $1,440. Two claims fail. The wait from check-in at 8:05 to the door at 10:35 is 2 hours 30 minutes, not 3 hours. And 7:52 is before the 8:00 window opens, so lead with the 8:05 check-in.
+  - title: Draft the dispute · Revised
+    text: The truck checked in at 8:05, inside its 8:00 to 9:00 window, after reaching the gate at 7:52. It then waited 2 hours 30 minutes for a door, assigned at 10:35. The rule says delivery is on time if the truck is at the gate within the window, so the $1,440 fine (3% of $48,000) is not owed. Draft for the owner to send.
+  - title: Review decision · Accept
+    text: Every claim matches the log, with check-in at 8:05, the door at 10:35, and a 2 hour 30 minute wait. 3% of $48,000 is $1,440. The draft claims nothing the log does not show.

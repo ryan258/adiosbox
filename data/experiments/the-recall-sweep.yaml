@@ -1,0 +1,62 @@
+slug: the-recall-sweep
+order: 433
+shelf: retail
+title: The recall sweep
+description: "A recall agent maps which lots reached which stores and how much may still be on shelves, then waits for you to choose how wide to sweep before it drafts the notices."
+inputLabel: The supplier’s recall notice and where the product went
+placeholder: Paste the supplier’s notice, the lots received, which stores got them, and the units received and sold…
+maxRequests: 2
+checkpointQuestion: How wide should the sweep be?
+method: LangGraph saves a checkpoint after the recall agent maps lots, stores, and units. Your choice becomes the instruction for the notices. The agent drafts a store pull notice and a customer message for you to send, and never sends them or claims anything was removed. You can also stop after the map.
+sampleNotes: >-
+  Supplier notice: Brand K peanut butter, 16 oz jars, lots 2417 and 2418 may
+  carry Salmonella. Lot 2419 came off the same line the same week and is not
+  named. Received and sold: Store 12 received 240 jars of lot 2417 and sold
+  190. Store 31 received 180 jars of lot 2418 and sold 150. Store 44 received
+  200 jars of lot 2419 and sold 120. Online pickup orders at all three stores
+  are filled from the same shelves.
+graph:
+  mode: checkpoint
+  options:
+    - id: lots
+      label: Pull the named lots
+      instruction: Pull only the lots named in the supplier’s notice. Draft the store pull notice with lot numbers, units to remove by store, and where to look. Say which received lots are not named and what leaving them out risks.
+    - id: line
+      label: Pull the whole product line
+      instruction: Pull every unit of the product, whatever the lot, until the supplier confirms the affected range. Draft the store pull notice for all units by store, say how many units outside the named lots are pulled as a precaution, and what the shelf gaps cost.
+  nodes:
+    prepare:
+      title: Map lots, stores, and units
+      prompt: >-
+        Act as the recall agent. From the supplier’s notice and the shipment
+        record, list the named lots and any received lots that are not named.
+        For each store, estimate units that may still be on hand as units
+        received minus units sold, and say clearly that this counts the system
+        record, not a shelf check. Give the totals for the named lots and for
+        all lots. Describe what pulling only the named lots risks and what
+        pulling the whole line costs. Do not choose for the owner. Up to 170
+        words.
+    finish:
+      title: Draft the notices for the owner to send
+      prompt: >-
+        The user JSON contains originalInput, assessment, and choice. Draft two
+        items that follow the owner’s choice. First, a store pull notice with
+        lot numbers, units to remove by store, and where to check, including
+        shelves, backrooms, and online pickup totes. Second, a customer message
+        that says what to look for and what to do, with no health claims beyond
+        the supplier’s notice. Mark both as drafts for the owner to send. Do not
+        claim anything was sent or removed. Up to 220 words.
+sampleTrace:
+  - title: Map lots, stores, and units
+    text: By the record, 50 jars of lot 2417 may remain at Store 12 and 30 jars of lot 2418 at Store 31, 80 in all. Lot 2419 is not named, but it came off the same line the same week, and 80 jars may remain at Store 44. Pulling only the named lots takes 80 jars. Pulling the whole line takes 160 and empties the product from three stores until the supplier says more. These counts come from the system record, not a shelf check, and sold jars may already be in customers’ homes.
+  - title: Paused for your choice
+    text: Pull the named lots, pull the whole line, or stop here.
+  - title: Sample path · Pull the whole line
+    text: |-
+      **Store pull notice (draft)**
+      Remove all Brand K 16 oz peanut butter. Store 12: lot 2417, about 50 jars. Store 31: lot 2418, about 30 jars. Store 44: lot 2419, about 80 jars, a precaution because it is not named. Check shelves, backrooms, and online pickup totes.
+
+      **Customer message (draft)**
+      The supplier has recalled Brand K 16 oz peanut butter, lots 2417 and 2418. Check the lot number on your jar and return it for a refund.
+
+      Drafts for the owner to send. Nothing has been sent or removed.

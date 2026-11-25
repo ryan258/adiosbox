@@ -1,0 +1,66 @@
+slug: the-phantom-shelf
+order: 436
+shelf: painpoints
+title: The phantom shelf
+description: "The pain point: the system says 4 are in stock and the shelf is empty. The proof of concept: an agent weighs the count against sales and receiving signals, and sends an associate to count only when the record looks wrong."
+inputLabel: The system’s stock count and the signals around it
+placeholder: Paste the system count, the last sale and delivery, recent pickup shorts, and the last physical count…
+maxRequests: 2
+method: The first call treats the system count as a claim and every other signal as evidence. A count that fits the signals is left alone. A count the signals contradict gets a targeted count request for an associate, with where to look. With no signals besides the count, the graph stops, because a count alone proves nothing. The agent never edits the inventory.
+sampleNotes: >-
+  System count: 4 units of Brand M 12-pack paper towels, aisle 14, bay 3.
+  Signals: the last sale scanned 19 days ago, and the item normally sells about
+  5 a week. The last delivery was 31 days ago. Three pickup orders this month
+  were cancelled as “could not find.” The last physical count was 52 days ago.
+graph:
+  mode: route
+  routes:
+    proceed: Count fits the signals
+    alternate: Likely phantom stock, send a count
+    stop: No signals to check
+  nodes:
+    classify:
+      title: Test the count against the signals
+      prompt: >-
+        The input has a system stock count and other signals about the same
+        item. Treat the count as a claim and the signals as the only evidence.
+        Use proceed if recent sales, deliveries, and counts fit the system
+        number. Use alternate if signals contradict it, such as no sales for far
+        longer than normal, repeated pickup shorts, or an old count. Use stop if
+        the input has no signals besides the count. Return JSON only with keys
+        route (proceed, alternate, or stop) and reason (one specific sentence).
+    proceed:
+      title: Confirm the count
+      prompt: >-
+        The user JSON contains originalInput and decision. Write a one-line note
+        that the count fits the signals, citing the two signals that support it.
+        Do not change the count. Up to 50 words.
+    alternate:
+      title: Send an associate to count
+      prompt: >-
+        The user JSON contains originalInput and decision. Under Why it looks
+        wrong, give the two or three signals that contradict the count, with
+        their numbers. Under Where to look, list the shelf location and the most
+        likely other places, such as an overstock slot or a nearby bay. Under
+        Count request, write one sentence for the associate’s handheld. Under
+        Until it is counted, say what to do with new orders for this item. Use
+        those labels as bold section labels and - bullets. Do not change the
+        system count. Up to 140 words.
+sampleTrace:
+  - title: Route selected · Send an associate to count
+    text: The system says 4, but the last sale was 19 days ago against about 5 a week, three pickup orders were cancelled as not found, and the last count is 52 days old.
+  - title: Send an associate to count
+    text: |-
+      **Why it looks wrong**
+      - No sale in 19 days for an item that normally sells about 5 a week.
+      - 3 pickup orders this month were cancelled as “could not find.”
+      - The last physical count was 52 days ago.
+
+      **Where to look**
+      Aisle 14, bay 3, then the overstock slot above it and the neighboring bays.
+
+      **Count request**
+      “Count Brand M 12-pack paper towels in aisle 14 and nearby, and report how many you find.”
+
+      **Until it is counted**
+      Show the item as unavailable for new pickup orders. Leave the system count alone until a person counts.

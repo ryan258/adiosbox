@@ -28,6 +28,12 @@ shelves:
   - key: business
     title: Run a tiny agent business
     blurb: Agents work the front desk, the books, and the launch plan. Money, hiring, and anything sent to customers still wait for the owner.
+  - key: retail
+    title: Retail at scale
+    blurb: Substitutions, returns, recalls, truck splits, supplier fines, and the policy binder. The agent works from your numbers and your written rules, and anything that touches money, a customer, or a shelf waits for a person.
+  - key: painpoints
+    title: Retail pain points, solved small
+    blurb: Six everyday big-box problems, each raised and then solved as a small proof of concept. Phantom stock, spoiling food, self-checkout flags, the pre-open crunch, curb pileups, and messy seller listings. Every fix shows its arithmetic and leaves the decision to a person.
   - key: reality
     title: Agent companies, reality check
     blurb: The pitch says agents run the company. Check what they actually did, which jobs return to you, what checking costs, and how much autonomy is safe.

@@ -1,0 +1,47 @@
+slug: markdown-before-it-spoils
+order: 437
+shelf: painpoints
+title: Markdown before it spoils
+description: "The pain point: fresh food is thrown out because the markdown came too late or went too deep. The proof of concept: a markdown agent proposes a price and timing, and a checker tests it against cost, expiry, and what the store can sell."
+inputLabel: What expires, what it cost, and how fast it sells
+placeholder: List the item, units left, expiry, cost, price, daily sales, and the lowest price you allow…
+maxRequests: 4
+method: The markdown agent proposes one price and timing for only the units at risk. The checker agent recomputes how many units would spoil, the margin at the new price, and whether it respects your floor. A specific failure gets one revision. If the second review still fails, the graph stops and both drafts stay visible. The agent proposes, and a person sets the price.
+sampleNotes: >-
+  Bakery case, Thursday morning. 40 loaves of artisan bread, expiring at the end
+  of Friday. Cost $1.80 each, price $4.50. Normal sales are about 12 loaves a
+  day. Never sell below cost. Anything unsold after Friday is thrown away.
+graph:
+  mode: revise
+  nodes:
+    draft:
+      title: Propose a markdown
+      prompt: >-
+        The user JSON includes originalInput and may include priorDraft and
+        priorReview. Act as the markdown agent. Propose one markdown with its
+        exact price, when it starts, and how many units it covers. Show how many
+        units are expected to sell at full price before expiry and how many are
+        at risk. Show the margin per marked-down unit and what is thrown away if
+        none of them sell. If the review requests a change, repair that specific
+        failure and keep what passed. Do not invent demand figures. Up to 130
+        words.
+    review:
+      title: Checker review
+      prompt: >-
+        The user JSON includes originalInput and draft. Act as the checker
+        agent. Recompute the units expected to sell at full price until expiry
+        and the units at risk. Check that the markdown covers only the units at
+        risk, that the price respects the stated floor, and that the margin and
+        waste figures match the cost and price. Return JSON only with route
+        proceed if all checks pass, revise if a specific repair is possible, or
+        stop if the figures needed are missing. Put the recomputed units and one
+        repair if needed into reason, at most 90 words.
+sampleTrace:
+  - title: Propose a markdown
+    text: Mark every loaf down to $1.50 until Friday close, so the 16 loaves that would otherwise spoil still sell.
+  - title: Review decision · Revise
+    text: $1.50 is below the $1.80 cost floor. Two days at 12 a day sells 24 loaves at full price, so only 16 are at risk. Mark down just those 16, at or above $1.80.
+  - title: Propose a markdown · Revised
+    text: From 2 p.m. Thursday, mark down 16 loaves to $2.70 (40% off) and keep the other 24 at $4.50. That is $0.90 margin on each marked loaf. If all 16 sell, $43.20 comes in against $28.80 in cost. If none sell, $28.80 is thrown away.
+  - title: Review decision · Accept
+    text: 40 loaves minus 24 expected full-price sales leaves 16 at risk. $2.70 is above the $1.80 floor, with $0.90 margin per loaf. The revenue and waste figures match.

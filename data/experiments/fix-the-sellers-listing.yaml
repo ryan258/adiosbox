@@ -1,0 +1,48 @@
+slug: fix-the-sellers-listing
+order: 441
+shelf: painpoints
+title: Fix the seller’s listing
+description: "The pain point: marketplace listings promise things the product can’t do, and the returns land on the store. The proof of concept: a listing agent rewrites the copy from the seller’s own specs, and a checker removes every claim the specs don’t support."
+inputLabel: The seller’s draft listing and the specs they supplied
+placeholder: Paste the listing text, then the spec sheet or label details the seller gave…
+maxRequests: 4
+method: The listing agent rewrites the copy using only the supplied specs. The checker agent ties every claim to a spec line, checks the numbers, units, and conditions, and treats absolute words as failures unless a spec states them. A specific failure gets one revision. If the second review still fails, the graph stops and both drafts stay visible. Nothing is published, and a person approves the draft.
+sampleNotes: >-
+  Seller draft: “Waterproof, indestructible Bluetooth speaker. 40-hour battery.
+  Fits any phone. Best sound ever.” Specs supplied: IPX5 rating, which resists
+  water jets but not submersion. Battery: 12 hours at 50% volume. Bluetooth 5.0.
+  Weight 540 g. Drop test: 1 meter onto wood, passed.
+graph:
+  mode: revise
+  nodes:
+    draft:
+      title: Rewrite the listing
+      prompt: >-
+        The user JSON includes originalInput and may include priorDraft and
+        priorReview. Act as the listing agent. Rewrite the seller’s listing as a
+        one-sentence description and three or four bullet points. Use only
+        claims the supplied specs support, and state each spec with its units and
+        conditions. Drop any claim the specs do not support. If the review
+        requests a change, repair that specific failure and keep what passed.
+        Mark it as a draft for a person to approve. Up to 120 words.
+    review:
+      title: Checker review
+      prompt: >-
+        The user JSON includes originalInput and draft. Act as the checker
+        agent. Tie every claim in the draft to one line in the specs. Check
+        numbers, units, and conditions, such as the volume level a battery
+        rating assumes. Treat superlatives and absolute words such as waterproof
+        or any as failures unless a spec states them. Return JSON only with
+        route proceed if every claim ties to a spec, revise if specific claims
+        can be fixed, or stop if the specs are too thin to write a listing. Put
+        each failed claim and the spec that limits it into reason, at most 90
+        words.
+sampleTrace:
+  - title: Rewrite the listing
+    text: A rugged Bluetooth speaker for the beach. IPX5 means it is waterproof. 12-hour battery. Bluetooth 5.0, 540 g. Passed a 1 meter drop test. Draft for a person to approve.
+  - title: Review decision · Revise
+    text: “Waterproof” goes beyond IPX5, which resists water jets, not submersion. The 12-hour battery drops its condition, which is 50% volume. The other claims tie to specs.
+  - title: Rewrite the listing · Revised
+    text: A Bluetooth speaker that resists water jets and passed a drop test. IPX5, which resists water jets and not submersion. 12 hours of battery at 50% volume. Passed a 1 meter drop onto wood. Bluetooth 5.0, 540 g. Draft for a person to approve.
+  - title: Review decision · Accept
+    text: Every claim ties to a spec line with its condition. “Waterproof,” “indestructible,” and “best sound ever” are gone, and the 40-hour battery and “fits any phone” claims were dropped for lack of specs.
