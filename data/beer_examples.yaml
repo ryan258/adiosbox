@@ -535,3 +535,64 @@ the-agent-run-brewery:
     Need: this week’s plan, plus a name and a tap-list line for the new beer.
   result: >-
     Purchasing orders 200 lb for $240. It arrives Wednesday, so the brewmaster brews the wheat beer Wednesday in FV1, ready about 10 days later, well inside 3 weeks. Marketing gives it an automation-pun name in the brand voice and writes a tap-list line with no health claim. Cash is $1,760 after the order and $260 after rent. The owner approves the $240 order, the café’s yes, and the name. Brewing and kegging stay with a person.
+your-agent-meets-their-agent:
+  title: Haggling over a used kegerator
+  input: |-
+    Buyer’s agent knows: I want a used two-tap kegerator for the taproom’s back patio. I can pay up to $500. It must hold temperature overnight and come with a CO2 tank. I can pick it up Thursday with the brewery van. Don’t share the brewery’s bank details.
+    Seller’s agent knows: A bar that’s closing is selling it, listed at $600. The CO2 tank is $60 extra. Won’t go below $450 for the kegerator alone. It has to be gone by Thursday. Cash or app only.
+  result: >-
+    The buyer’s agent offers $440 with the tank after an overnight temperature check, picked up Thursday. The seller’s agent counters at $510 including the tank. The buyer’s agent meets it at $495 with the tank, paid by app at pickup, and flags the price and payment for your OK. The seller’s agent accepts.
+the-house-that-listens:
+  title: Closing up the taproom
+  input: >-
+    "Closing up, back at six tomorrow. Keep the cooler cold, make the patio look open for the late crowd walking by, and let the delivery driver drop the malt at the back." Devices: patio string lights, walk-in cooler thermostat, back door smart lock, security camera, taproom TV.
+  result: >-
+    Doing now: patio lights on until midnight and the cooler held at 36°F. Ask first: should the driver get a one-time back door code that expires after the delivery window, and should the camera send you a clip when the door opens? Won't do: leave the TV on all night, since no one is there to watch it.
+the-tutor-that-finds-the-gap:
+  title: Scaling the recipe
+  input: >-
+    Question: A recipe makes 5 gallons with 10 lb of malt. How much malt for 15 gallons? Learner: "15 minus 5 is 10 more gallons, so add 10 more pounds. 20 lb."
+  result: >-
+    The learner correctly saw the batch gets bigger and malt has to grow with it. The likely gap is adding the difference instead of scaling by the ratio. Next question: how many 5-gallon batches fit in 15 gallons? Three means the ratio idea is there, so ask for 3 × 10. Anything else means start from one batch.
+the-street-twin:
+  title: A taproom patio in two parking spaces
+  input: >-
+    Proposal: turn two street parking spaces in front of the taproom into a patio from May through September, open until 10 p.m. The block has a barber shop, a bakery that opens at 6 a.m., and apartments upstairs. A bike rack sits at the corner.
+  result: >-
+    Direct effects are two fewer parking spaces and more outdoor seats. Likely ripples are evening noise for the upstairs apartments and more bikes at the corner rack. A possible ripple is bakery customers circling for parking at 6 a.m. if the patio blocks loading. Measure evening sound outside the apartments and count early-morning parking turnover, before and during.
+the-pre-visit-brief:
+  title: The brewer's sore wrist
+  input: >-
+    Doctor appointment Friday. Right wrist has ached for two weeks, since we started hand-capping bottles for the holiday release. Worse when I twist a cap, fine at rest. Some tingling in two fingers in the morning. I've been wearing a drugstore brace at night.
+  result: >-
+    The brief puts the two weeks in order: the aching started with hand-capping, it is worse when twisting, and there is morning tingling in two fingers. It suggests asking what could cause tingling with twisting pain, whether to change how the capping is done, and how long to use the brace. Bring the brace and a count of bottles capped per shift. Get urgent care for sudden weakness or numbness that spreads.
+one-message-three-listeners:
+  title: The new ID check
+  input: >-
+    Starting Friday, the taproom scans every ID at the door, even for regulars, because of a new state rule. Bring a physical ID; phone photos won't be accepted. Guests under 21 can still come in with an adult for the food menu but can't sit at the bar.
+  result: >-
+    The grandparent version explains the new rule warmly and reminds guests to bring the real card. The teenager version says under-21s can still come for food with an adult but can't sit at the bar. The engineer version lists the scan requirement, the no-photo rule, and the age condition. All three keep Friday, the physical ID, and the bar limit.
+a-tuesday-in-2036:
+  title: The head brewer's week
+  input: >-
+    I'm head brewer at a small brewery in Rogers. My week is planning brew days, checking fermentation readings, ordering hops and malt, cleaning tanks, and tasting every batch before it goes on tap.
+  result: >-
+    In this speculation, sensors and an agent watch fermentation and draft the ingredient orders, while the brewer approves the orders and calls when a batch looks off. Tasting stays human, and so does deciding a beer is ready. New on the plate is setting the limits the ordering agent works within. Start this year by writing down how you decide a batch is ready to tap.
+when-the-shopper-is-an-agent:
+  title: A six-pack listing
+  input: >-
+    Pale Algorithm Pale Ale, 6-pack of 12 oz cans. Bright, crushable, and loaded with citrus hops! Brewed locally in small batches. 5.4% ABV. Award-winning. $13.99.
+  result: >-
+    A shopping agent would ask which hops, which award and when, how many calories, and whether the cans are dated. "Crushable" and "loaded" can't be compared. The agent-ready facts are 6 × 12 oz cans, 5.4% ABV, pale ale, and $13.99. Drop "award-winning" unless you name the award.
+memory-that-forgets-on-purpose:
+  title: Planning the anniversary party
+  input: >-
+    I only drink alcohol-free beer now, so plan around that. Help me order kegs for the brewery's anniversary party Saturday. My business partner is going through a divorce, so keep him off the setup crew. I usually order from the distributor in Springdale.
+  result: >-
+    Remember that you only drink alcohol-free beer. Forget Saturday's keg order once it's done, and forget the partner's divorce, since it is his private news. Ask before keeping which distributor you use.
+speak-an-app-into-existence:
+  title: The tap list that updates itself
+  input: >-
+    An app where I mark a keg as kicked from my phone and the taproom TV tap list updates right away.
+  result: >-
+    The spec has three screens: the tap list on the TV, a phone view to mark kegs, and a page for the next keg on deck. It keeps taps and keg status on the taproom computer. Edge cases are two staff marking the same keg, a kicked keg with nothing on deck, and the TV going offline. Tests check that a kicked keg disappears within seconds and that an empty tap shows "coming soon."

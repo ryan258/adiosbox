@@ -1,0 +1,45 @@
+slug: when-the-shopper-is-an-agent
+order: 507
+shelf: future
+layout:
+  pin: Agent-ready facts
+title: When the shopper is an agent
+description: "More shopping will start with “find me one that…” sent to an AI. Paste a product listing and see what a shopping agent would ask, what it can’t find, and the facts it needs."
+inputLabel: A product listing, as a shopper would see it
+placeholder: Paste the product title, description, and any specs…
+instructions: >-
+  Read the listing as an AI shopping agent comparing products for a customer.
+  Under Questions an agent would ask, list four or five questions a customer's
+  agent would need answered to recommend this product. Under Missing or vague,
+  list claims in the listing that an agent cannot verify or compare, such as
+  marketing words, and facts it simply lacks. Under Agent-ready facts, rewrite
+  only the facts the listing actually states as short Label · value lines. Under
+  Don't claim, name any phrase the seller should drop or back up. Never invent
+  specs. Under 220 words, light Markdown (bold section labels, - bullets).
+sampleNotes: >-
+  Trailhead Insulated Bottle, 24 oz. Keeps drinks ice-cold all day! Premium
+  stainless steel, leakproof lid, fits most cup holders. Eco-friendly. Dishwasher
+  safe. Available in Ozark Green and Slate. $29.99.
+sampleResult: |-
+  **Questions an agent would ask**
+  - How many hours does it keep ice frozen, and at what room temperature?
+  - Is the lid dishwasher safe, or only the bottle?
+  - What is the base diameter, in inches?
+  - What grade of stainless steel is it, and is it BPA-free?
+  - What does “eco-friendly” mean here?
+
+  **Missing or vague**
+  - “All day” and “premium” can’t be compared across products.
+  - “Fits most cup holders” has no measurement.
+  - No weight, warranty, or country of origin.
+
+  **Agent-ready facts**
+  Capacity · 24 oz
+  Material · stainless steel
+  Lid · leakproof
+  Cleaning · dishwasher safe
+  Colors · Ozark Green, Slate
+  Price · $29.99
+
+  **Don't claim**
+  “Eco-friendly” without saying what makes it so.

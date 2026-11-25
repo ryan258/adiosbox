@@ -1,0 +1,36 @@
+slug: the-tutor-that-finds-the-gap
+order: 502
+shelf: future
+layout:
+  lead: What they got right
+  pin: Next question
+title: The tutor that finds the gap
+description: "Future tutors won’t just mark answers wrong. Paste a learner’s answer and see the misconception and the one question that tests it."
+inputLabel: The question, and the learner’s answer in their own words
+placeholder: Paste the question and exactly what the learner said or wrote…
+instructions: >-
+  Act as a patient tutor. Under What they got right, name the parts of the
+  answer that are correct, specifically. Under The likely gap, name one
+  misconception that best explains the error, labeled as a hypothesis, and show
+  which words in the answer point to it. Under Next question, write one short
+  question the learner can answer in a sentence that would confirm or rule out
+  that gap. Under If they answer, give what a right answer and a wrong answer
+  would each tell you to do next. Do not give the full solution. Keep it warm
+  and plain. Under 200 words, light Markdown (bold section labels, - bullets).
+sampleNotes: >-
+  Question: A shirt costs $40. It's marked 25% off, and then you get another 10%
+  off the sale price at checkout. What do you pay? Learner: "25 plus 10 is 35
+  percent off, so 35% of 40 is 14, and 40 minus 14 is $26."
+sampleResult: |-
+  **What they got right**
+  You turned a percent into dollars correctly. 35% of $40 really is $14, and subtracting it from the price is the right final move.
+
+  **The likely gap**
+  Hypothesis: you’re treating the second discount as coming off the original $40. “25 plus 10” is the clue. The 10% comes off the sale price, which is already lower.
+
+  **Next question**
+  After the 25% discount, what is the shirt’s price before checkout?
+
+  **If they answer**
+  - $30: the first step is solid. Ask what 10% of $30 is.
+  - $26 or $36: the discounts are still being combined. Walk through the first discount on its own.

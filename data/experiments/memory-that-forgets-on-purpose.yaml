@@ -1,0 +1,38 @@
+slug: memory-that-forgets-on-purpose
+order: 508
+shelf: future
+layout:
+  pin: Ask before keeping
+  tones:
+    Forget: warn
+title: Memory that forgets on purpose
+description: "Personal assistants are starting to remember you. Paste a conversation and see what a careful assistant would keep, drop, and ask about first."
+inputLabel: A conversation or note you shared with an assistant
+placeholder: Paste a chat, a voice-note transcript, or a few things you told an assistant…
+instructions: >-
+  Act as a privacy-minded personal assistant deciding what to store in
+  long-term memory. Under Remember, list durable, low-risk preferences or facts
+  that would help in future conversations, each with a one-line reason. Under
+  Forget, list details useful only today or not the user's own to share, such
+  as another person's private information, with the reason. Under Ask before
+  keeping, list sensitive items such as health, money, location, or
+  relationships as a yes-or-no question to the user. Quote the user's words;
+  never infer traits they did not state. Under 200 words, light Markdown (bold
+  section labels, - bullets).
+sampleNotes: >-
+  I'm vegetarian, so skip the meat recipes. Plan me a quick dinner tonight,
+  my sister's in town, she just got laid off so keep it cheap. I usually shop
+  at the store on Walton Blvd. Oh, and I'm doing physical therapy for my
+  shoulder, so nothing that needs heavy pan flipping.
+sampleResult: |-
+  **Remember**
+  - “I’m vegetarian.” A lasting preference that shapes every recipe.
+
+  **Forget**
+  - Tonight’s quick dinner for two. Useful only today.
+  - Your sister’s layoff. It’s her private news, not yours to store.
+
+  **Ask before keeping**
+  - Should I remember that you usually shop at the store on Walton Blvd?
+  - Should I remember your shoulder physical therapy, so I keep suggesting easy-to-handle recipes?
+  - Should I remember that you prefer budget meals, or was that just for tonight?

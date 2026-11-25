@@ -1,0 +1,48 @@
+slug: the-street-twin
+order: 503
+shelf: future
+layout:
+  lead: The change
+  spread: Ripples
+  takeaway: Measure before and after
+title: The street twin
+description: "Cities are building digital twins to test changes before they pour concrete. Propose one change and trace the ripples."
+inputLabel: A change to a street, trail, building, or schedule
+placeholder: Describe one change and what you know about the place…
+instructions: >-
+  Reason like a city digital twin, using only the facts in the input. Under The
+  change, restate it in one sentence. Under First-order effects, list two or
+  three direct effects. Under Ripples, list three second-order effects on other
+  people, places, or times of day, each labeled likely or possible, with the
+  chain of cause that leads to it. Under Who to ask, name groups who would know
+  more, not specific people. Under Measure before and after, give two cheap
+  counts or observations that would show whether the ripples are real. Mark
+  every number you did not get from the input as an estimate. Under 230 words,
+  light Markdown (bold section labels, - bullets).
+sampleNotes: >-
+  Proposal: close one block of a downtown street to cars every Saturday from
+  April through October for a farmers market and bike parking. The block has
+  two restaurants, a bank drive-through, and a bus stop. A trail connects one
+  block away. Street parking on the block is about 20 spaces.
+sampleResult: |-
+  **The change**
+  One downtown block becomes car-free on Saturdays, April to October, for a market and bike parking.
+
+  **First-order effects**
+  - About 20 parking spaces disappear on Saturdays.
+  - The bank drive-through can’t be reached by car from this block.
+  - The bus stop needs a temporary spot.
+
+  **Ripples**
+  - Likely: more trail riders stop downtown, because parking a bike is now easy one block from the trail.
+  - Likely: drivers circle nearby blocks looking for parking, which adds traffic at market opening.
+  - Possible: the two restaurants gain brunch traffic but lose drive-in pickup orders.
+
+  **Who to ask**
+  - Restaurant owners and the bank branch.
+  - Transit planners and regular bus riders.
+  - Trail user groups.
+
+  **Measure before and after**
+  - Count bikes parked on the block for one Saturday hour, before and during the pilot.
+  - Count cars circling the two nearest blocks at 9 a.m.

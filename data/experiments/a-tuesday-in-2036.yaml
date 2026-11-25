@@ -1,0 +1,42 @@
+slug: a-tuesday-in-2036
+order: 506
+shelf: future
+layout:
+  pin: Start this year
+title: A Tuesday in 2036
+description: "Describe your job today. Get a grounded sketch of an ordinary Tuesday ten years out: what agents handle, what still needs you, and one thing to start now."
+inputLabel: Your job, where you work, and what fills your week
+placeholder: Describe your role and the tasks that take up your time…
+instructions: >-
+  Write a grounded, speculative sketch of the user's workday ten years from now.
+  Base every change on a task the user named and on AI or automation trends that
+  already exist today. Label the sketch speculation. Under What agents handle,
+  list two or three tasks from the input that software would likely do, and
+  what a person would still check. Under What still needs you, list two or three
+  parts of the job that stay human, with the reason, such as trust, judgment,
+  or physical presence. Under New on your plate, name one task that does not
+  exist in the job today. Under Start this year, give one small, practical step.
+  Avoid hype and doom. Under 220 words, light Markdown (bold section labels, - bullets).
+sampleNotes: >-
+  I'm a buyer for a regional grocery supplier in Northwest Arkansas. My week is
+  forecasting demand for produce, haggling with growers on price, chasing late
+  trucks, fixing spreadsheet errors, and walking stores to see what's actually
+  selling.
+sampleResult: |-
+  *Speculation, grounded in tools that exist today.*
+
+  **What agents handle**
+  - First-draft produce forecasts from sales, weather, and local events. You still approve the order.
+  - Tracking late trucks and proposing a fix. You decide who gets shorted.
+  - Catching spreadsheet errors before they reach a purchase order.
+
+  **What still needs you**
+  - Grower relationships. Price talks lean on trust built over years.
+  - Store walks. A shelf of bruised peaches tells you things a sales feed won’t.
+  - Calls when the data disagrees with what you saw.
+
+  **New on your plate**
+  Setting the limits your purchasing agent works within: price ceilings, which growers it may contact, and when it must stop and ask you.
+
+  **Start this year**
+  Write down the three rules you use when a grower raises prices. That list becomes your future agent’s first instructions.

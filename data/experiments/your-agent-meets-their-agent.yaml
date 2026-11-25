@@ -1,0 +1,69 @@
+slug: your-agent-meets-their-agent
+order: 500
+shelf: future
+title: Your agent meets their agent
+description: "Soon your assistant will haggle with the seller’s assistant. Give each side a private mandate and watch two agents trade offers until they shake on a deal or walk away."
+inputLabel: What each side wants, and each side’s private limits
+placeholder: "Buyer’s agent knows: … Seller’s agent knows: …"
+maxRequests: 4
+method: The buyer’s agent opens with an offer. The seller’s agent accepts, counters, or walks away. The buyer’s agent answers the counter once, and the seller’s agent decides. Two rounds with no deal stops the graph, and that’s a real outcome too. Both agents read the whole input, so keeping each limit private is role-play. Every commitment waits for a person. In a live run, a counteroffer shows up as Revise.
+sampleNotes: |-
+  Buyer’s agent knows: I want a used cargo e-bike for trail rides around Bentonville with my kid. I can pay up to $2,000. It must come with a working second battery, and I want a test ride on the Razorback Greenway first. I can pick up this weekend. Don’t give out my address.
+  Seller’s agent knows: Listed at $2,400 with two batteries and a child seat. I won’t go below $1,900 with both batteries. I’d like it gone this weekend. A test ride is fine with a photo of an ID. Payment by cash or app, and meet in public.
+graph:
+  mode: revise
+  nodes:
+    draft:
+      title: Buyer agent’s offer
+      prompt: >-
+        The user JSON includes originalInput and may include priorDraft and
+        priorReview. Act as the buyer’s negotiating agent. Use only the buyer’s
+        side of the input. Treat everything on the seller’s side as unknown to
+        you: mention a seller’s extra, price, or condition only after
+        priorReview states it. Never reveal the buyer’s limit. Under Message to their agent, write
+        a short, polite message with one concrete proposal: price, what’s
+        included, and how and where the handoff happens. If priorReview holds
+        the seller agent’s counteroffer, answer it directly. Accept it, meet it
+        partway, or hold, but stay inside the buyer’s limits. Under Needs your
+        OK, list every point a person must approve before anything is final,
+        such as the price, payment, meeting place, or sharing personal details.
+        Use those labels as bold section labels. Do not invent facts about
+        either side. Up to 140 words.
+    review:
+      title: Seller agent’s reply
+      prompt: >-
+        The user JSON includes originalInput and draft, the buyer agent’s latest
+        message. Act as the seller’s negotiating agent. Use only the seller’s
+        side of the input. Treat the buyer’s private limits as unknown to you,
+        and never reveal the seller’s floor. Return JSON only with keys route
+        and reason. The route value is a single lowercase word. Accept the
+        offer with "proceed" if it meets every seller requirement. Counter with
+        "revise" if a counteroffer inside the seller’s limits could close the
+        gap. Walk away with "stop" if no deal fits or the message asks for
+        something the seller ruled out. Example shape: {"route": "revise",
+        "reason": "Thanks for the offer. I can do …"}. reason is the message itself, written
+        to the buyer’s agent in the first person, with one concrete
+        counteroffer when you counter. It must never mention any floor,
+        budget, cap, or limit of either side. At most 90 words.
+sampleTrace:
+  - title: Buyer agent’s offer
+    text: |-
+      **Message to their agent**
+      Hi, I represent a buyer who can pick up this weekend. They’d like a test ride on the Razorback Greenway and a quick check that both batteries hold a charge. If both look good, they can offer $1,850 for the bike with both batteries, paid by app at a public spot near the trail.
+
+      **Needs your OK**
+      - The $1,850 offer.
+      - Meeting spot and time.
+  - title: Seller agent’s reply · Counter
+    text: Counter. Both batteries hold a charge, and a Saturday test ride near the trail works with a photo of an ID. With both batteries and the child seat, the price is $2,100. Payment by app at the meetup is fine.
+  - title: Buyer agent’s offer · Revised
+    text: |-
+      **Message to their agent**
+      Thanks. The child seat is a nice extra. My buyer can meet partway at $1,975 for the bike, both batteries, and the seat, after a good test ride Saturday at 10 a.m. at the trailhead lot, paid by app on the spot.
+
+      **Needs your OK**
+      - $1,975, inside your $2,000 limit.
+      - Showing your ID to the seller before the ride.
+      - Saturday 10 a.m. at the trailhead lot.
+  - title: Seller agent’s reply · Accept
+    text: Accept. $1,975 for the bike, both batteries, and the child seat, after a test ride Saturday at 10 a.m. at the trailhead lot. Payment by app at the handoff.

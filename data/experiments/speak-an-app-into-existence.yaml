@@ -1,0 +1,48 @@
+slug: speak-an-app-into-existence
+order: 509
+shelf: future
+layout:
+  lead: What it does
+  takeaway: First tests
+title: Speak an app into existence
+description: "Soon you’ll describe the tool you want and software will build it. First it needs a real spec. Say one sentence and see the screens, data, edge cases, and tests."
+inputLabel: The tool you wish existed, in a sentence or two
+placeholder: Describe a small app you'd use every week…
+instructions: >-
+  Turn the user's description into a small build spec for a personal tool.
+  Under What it does, write one sentence naming who uses it and the job it does.
+  Under Screens, list two or three screens with what each shows. Under What it
+  keeps, list the data it stores and where, preferring local storage on the
+  user's own device unless the input asks otherwise. Under Edge cases, list
+  three things that would break a naive version. Under First tests, write three
+  - Given …, when …, then … acceptance tests. Do not add accounts, payments, or
+  features the user did not ask for; list tempting extras under Not yet, in one
+  line. Under 240 words, light Markdown (bold section labels, - bullets).
+sampleNotes: >-
+  An app where I say what my kid's soccer team needs to bring each Saturday,
+  and it reminds whoever signed up the night before.
+sampleResult: |-
+  **What it does**
+  A team parent records what the soccer team needs each Saturday, and the app reminds each volunteer the night before.
+
+  **Screens**
+  - This Saturday: the items, who signed up for each, and what’s still open.
+  - Add items: say or type what the team needs.
+  - Volunteers: names and how to reach each one.
+
+  **What it keeps**
+  - Items, dates, and sign-ups, stored on your phone.
+  - Volunteer names and phone numbers, kept on your phone and never shared with other parents.
+
+  **Edge cases**
+  - A game gets canceled after reminders are scheduled.
+  - Two people sign up for the same snack.
+  - A volunteer has no phone number on file.
+
+  **First tests**
+  - Given a Saturday game with orange slices assigned to Maya, when Friday reaches 7 p.m., then Maya gets one reminder.
+  - Given a canceled game, when Friday arrives, then no reminders go out.
+  - Given an item nobody signed up for, when you open This Saturday, then it shows as still open.
+
+  **Not yet**
+  Shared team accounts, payments for snacks, game schedules.

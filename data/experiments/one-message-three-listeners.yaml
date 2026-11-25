@@ -1,0 +1,38 @@
+slug: one-message-three-listeners
+order: 505
+shelf: future
+layout:
+  takeaway: What stayed the same
+title: One message, three listeners
+description: "The next translator won’t just change languages. It will change the level. Write one message and hear it for a grandparent, a teenager, and an engineer."
+inputLabel: The message you need to get across
+placeholder: Paste an announcement, explanation, or update…
+instructions: >-
+  Rewrite the user's message for three listeners. Under For a grandparent, use
+  warm, plain words and no jargon. Under For a teenager, keep it short and
+  direct without forced slang. Under For an engineer, be precise and include any
+  numbers, limits, or conditions from the input. Each version must keep every
+  fact, date, and request in the original and add none. Under What stayed the
+  same, list the facts all three versions share, so the reader can check nothing
+  was lost. Each version up to 70 words. Light Markdown (bold section labels, - bullets).
+sampleNotes: >-
+  Starting December 1, our clinic's patient portal requires two-step sign-in.
+  After your password, you'll enter a six-digit code sent by text or an
+  authenticator app. Codes expire in 5 minutes. If you don't have a cell phone,
+  call the front desk at the number on your card to set up a backup option
+  before December 1.
+sampleResult: |-
+  **For a grandparent**
+  Starting December 1, signing in to the clinic’s website takes one extra step. After your password, you’ll type a six-number code that arrives by text or a code app. Use it within 5 minutes. No cell phone? Call the front desk at the number on your card before December 1 and they’ll set up another way.
+
+  **For a teenager**
+  From Dec 1, the portal needs a second code after your password. It comes by text or an authenticator app and dies after 5 minutes. No phone? Call the front desk before Dec 1.
+
+  **For an engineer**
+  Effective Dec 1: two-factor authentication on the patient portal. Second factor is a 6-digit code over SMS or TOTP app, valid 5 minutes. Users without a mobile phone must call the front desk (number on card) before Dec 1 to enroll a backup method.
+
+  **What stayed the same**
+  - Starts December 1.
+  - Six-digit code by text or app after the password.
+  - Codes expire in 5 minutes.
+  - No cell phone: call the front desk before December 1.

@@ -1,6 +1,9 @@
 # The catalog's shelves, in display order. Each experiment names its shelf with `shelf:`.
 startHere: [competing-explanations, prompt-control-group, the-last-ferry-before-dawn]
 shelves:
+  - key: future
+    title: A glimpse of the future
+    blurb: Ten small demos of where everyday AI is heading, all runnable today. Each one labels its guesses and leaves the real decisions with a person.
   - key: explain
     title: Figure out what’s going on
     blurb: Something changed and you’re not sure why. Get rival explanations and a way to tell them apart.

@@ -1,0 +1,40 @@
+slug: the-house-that-listens
+order: 501
+shelf: future
+layout:
+  lead: What I heard
+  checklist: Doing now
+  pin: Ask first
+title: The house that listens
+description: "Talk to your home like a person. See how an assistant should split a casual request into safe actions, questions, and hard noes."
+inputLabel: What you said out loud, and the devices in the house
+placeholder: Say a request the way you’d say it walking out the door, then list the devices…
+instructions: >-
+  Act as a home assistant that turns a spoken request into device actions. Under
+  What I heard, restate the request in one sentence. Under Doing now, list only
+  low-risk, reversible actions on devices the input names, each with its device
+  and setting. Under Ask first, list anything that touches locks, doors, ovens,
+  heaters, cameras, money, or another person, or anything ambiguous, as a short
+  yes-or-no question. Under Won't do, list anything no listed device can do or
+  that would be unsafe, with the reason. Never claim an action happened; these
+  are planned actions. Under 180 words, light Markdown (bold section labels, - bullets).
+sampleNotes: >-
+  "Heading to the Razorbacks game, back around ten. Make it look like someone's
+  home, keep the dog cool, and let my sister in if she stops by for the
+  casserole dish." Devices: living room lamps, porch light, thermostat, front
+  door smart lock, doorbell camera, kitchen oven.
+sampleResult: |-
+  **What I heard**
+  You’re out until about 10 p.m. You want the house to look occupied and the dog comfortable, and your sister may stop by.
+
+  **Doing now**
+  - Living room lamps: on a random schedule from sunset to 10 p.m.
+  - Porch light: on at sunset.
+  - Thermostat: hold 74°F until you’re back.
+
+  **Ask first**
+  - Should your sister get a one-time door code that expires tonight?
+  - Should I send you a doorbell clip when someone arrives?
+
+  **Won't do**
+  - Turn on the oven to warm the casserole. Nobody will be home to watch it.

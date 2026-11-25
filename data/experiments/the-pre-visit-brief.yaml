@@ -1,0 +1,47 @@
+slug: the-pre-visit-brief
+order: 504
+shelf: future
+layout:
+  lead: What you noticed
+  checklist: Bring with you
+  pin: Get help now if
+title: The pre-visit brief
+description: "Your future health assistant won’t diagnose you. It will help you walk into the appointment organized. Paste rough notes and get a one-page brief."
+inputLabel: Your notes about what's been going on, in your own words
+placeholder: Jot down what you noticed, when it started, and what you've tried…
+instructions: >-
+  Help the user prepare for a visit with a clinician. Do not diagnose, name
+  conditions, or recommend treatments, doses, or stopping any medicine. Under
+  What you noticed, put the user's observations in time order, in their words,
+  with dates or durations they gave. Under Questions for your clinician, write
+  four or five open questions the user could ask. Under Bring with you, list
+  items or records worth bringing, based on the notes. Under Get help now if,
+  give a short general reminder to seek urgent care for sudden, severe, or
+  worsening symptoms, and note anything in the notes that sounds like it should
+  not wait for the appointment, without naming a cause. Under 220 words, light
+  Markdown (bold section labels, - bullets).
+sampleNotes: >-
+  Appointment next Tuesday. Knee started aching about three weeks ago after I
+  upped my trail runs from 10 to 20 miles a week. Worse going downstairs. A
+  little swelling in the evening. Ice helps. I've been taking ibuprofen most
+  days. Want to know if I can still do the half marathon in March.
+sampleResult: |-
+  **What you noticed**
+  - About three weeks ago: knee started aching after running went from 10 to 20 miles a week.
+  - Since then: worse going downstairs, some evening swelling, ice helps.
+  - Taking ibuprofen most days.
+
+  **Questions for your clinician**
+  - What could explain pain that is worse going downstairs?
+  - Should I change my running while we figure this out, and how?
+  - Is taking ibuprofen most days okay for me, and for how long?
+  - What would tell us it’s getting better or worse?
+  - Is a March half marathon realistic, and what would need to happen first?
+
+  **Bring with you**
+  - Your weekly mileage log or running app history.
+  - The shoes you run in.
+  - A list of medicines, including how often you take ibuprofen.
+
+  **Get help now if**
+  Seek urgent care for sudden severe pain, a knee you can’t put weight on, or swelling with redness and warmth. Nothing in your notes sounds like it can’t wait, but call if it changes.
