@@ -209,6 +209,8 @@ input { min-width: 0; }
 .more-panel { position: absolute; right: 0; top: calc(100% + .25rem); z-index: 3; display: grid; gap: .15rem; width: max-content; max-width: min(18rem, 80vw); padding: .45rem; border: 1px solid var(--line); border-radius: .2rem; background: var(--paper); box-shadow: 0 .5rem 1.5rem rgb(30 35 33 / .14); }
 .more-panel .text-button { display: block; width: 100%; padding: .45rem .55rem; border-radius: .2rem; text-align: left; text-decoration: none; }
 .more-panel .text-button:hover { background: var(--tint); }
+/* ponytail: the experiment card clips overflow, so the bottom run-record menu renders inline instead of floating. */
+.experiment > .more > .more-panel { position: static; width: auto; max-width: none; margin-top: .25rem; box-shadow: none; }
 .more-group { display: grid; gap: .15rem; }
 .more-group .status:not(:empty) { margin: .2rem .55rem; }
 .step-more { margin-top: .25rem; display: flex; justify-content: flex-end; }

@@ -131,7 +131,9 @@ globalThis.document?.addEventListener('click', event => {
   }
   status.textContent = '';
   if (!available.length) {
-    status.textContent = 'There is no output to export yet.';
+    status.textContent = controls.dataset.exportScope === 'run'
+      ? 'No live run yet. Run this experiment with your key to create a run record.'
+      : 'There is no output to export yet.';
     return;
   }
 
