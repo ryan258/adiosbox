@@ -16,6 +16,7 @@
       </header>
     {{ partial "beer-example.html" (dict "slug" .slug "kind" "beer") }}
     {{ partial "beer-example.html" (dict "slug" .slug "kind" "canary") }}
+    {{ partial "beer-example.html" (dict "slug" .slug "kind" "haywire") }}
       {{ if and (eq hugo.Environment "local") (hasPrefix site.BaseURL "http://127.0.0.1:") }}<p data-case-context class="case-context help" hidden></p>{{ end }}
       <div class="workbench{{ if $second }} workbench--comparison{{ end }}">
         <form data-part="experiment-form" class="inputs" autocomplete="off" novalidate>

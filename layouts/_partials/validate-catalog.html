@@ -4,8 +4,10 @@
 {{- $orders := slice -}}
 {{- $beer := hugo.Data.beer_examples -}}
 {{- $canary := hugo.Data.canary_examples -}}
+{{- $haywire := hugo.Data.haywire_examples -}}
 {{- if ne (len $beer) (len $experiments) -}}{{- errorf "Adiosbox catalog: expected one beer example for every experiment" -}}{{- end -}}
 {{- if ne (len $canary) (len $experiments) -}}{{- errorf "Adiosbox catalog: expected one canary for every experiment" -}}{{- end -}}
+{{- if ne (len $haywire) (len $experiments) -}}{{- errorf "Adiosbox catalog: expected one brewery mishap for every experiment" -}}{{- end -}}
 {{- $contract := partial "graph-contract.html" . -}}
 {{- $promptLimit := int (partialCached "limits.html" "limits").promptChars -}}
 {{- $labModes := slice "blind" "evidence" "repair" "stop" "cost" "cold" "prompt" -}}
@@ -30,7 +32,7 @@
   {{- $entry := . -}}
   {{- $graphMode := index (.graph | default dict) "mode" | default "" -}}
   {{- $maxInput := partial "input-limit.html" . -}}
-  {{- range $kind, $set := dict "beer" $beer "canary" $canary -}}
+  {{- range $kind, $set := dict "beer" $beer "canary" $canary "haywire" $haywire -}}
     {{- $example := index $set $entry.slug -}}
     {{- $complete := cond (eq $kind "canary") (and $example $example.title $example.input $example.check $example.why) (and $example $example.title $example.input $example.result) -}}
     {{- if not $complete -}}{{- errorf "Adiosbox catalog: %s needs a complete %s example" $entry.slug $kind -}}{{- end -}}

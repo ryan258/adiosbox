@@ -204,7 +204,7 @@ class Catalog(HTMLParser):
         super().__init__()
         self.specs = []
         self.experiments = {}
-        self.examples = {"beer": {}, "canary": {}}
+        self.examples = {"beer": {}, "canary": {}, "haywire": {}}
         self.kind = None
         self.current = None
         self.spec = None
@@ -250,13 +250,13 @@ class Catalog(HTMLParser):
             self.beer_setup = None
 catalog = Catalog()
 catalog.feed(sys.stdin.read())
-print(json.dumps([catalog.specs, catalog.experiments, catalog.examples["beer"], catalog.examples["canary"]]))
+print(json.dumps([catalog.specs, catalog.experiments, catalog.examples["beer"], catalog.examples["canary"], catalog.examples["haywire"]]))
 `], { input: readFileSync(stagingHtml, 'utf8') });
-  const [specs, experiments, beer, canary] = JSON.parse(parsed);
+  const [specs, experiments, beer, canary, haywire] = JSON.parse(parsed);
   const labs = specs.filter(([attrs]) => attrs['data-lab'] === 'prompt');
   assert.ok(labs.length, 'the rendered catalog contains prompt experiments');
   execFileSync('python3', ['-I', 'scripts/canary-keys.py', 'check', '--rendered'], { input: parsed });
-  for (const set of [beer, canary]) {
+  for (const set of [beer, canary, haywire]) {
     assert.deepEqual(Object.keys(set).sort(), Object.keys(experiments).sort());
     for (const example of Object.values(set)) assert.ok(example.input.trim());
     const fact = set['change-one-fact'];
@@ -271,7 +271,7 @@ print(json.dumps([catalog.specs, catalog.experiments, catalog.examples["beer"], 
     assert.equal(Number(attrs['data-base-calls']), expectedCalls, attrs.id);
     const defaults = Object.fromEntries((spec.fields ?? []).map(field => [field.key, field.sample ?? '']));
     const model = spec.roles[0].defaultModel || 'test/canary-model';
-    const examples = [...spec.cases, ...[['beer example', beer], ['canary', canary]]
+    const examples = [...spec.cases, ...[['beer example', beer], ['canary', canary], ['brewery mishap', haywire]]
       .filter(([, set]) => set[attrs.id]).map(([title, set]) => ({ title, ...set[attrs.id] }))];
     for (const sample of examples) {
       const issue = validatePromptCase(spec.technique, sample.input, { ...defaults, ...sample.fields }, model, spec.answerKind);
@@ -311,18 +311,19 @@ import playground
 try: print(json.dumps(playground.completion_request(json.load(sys.stdin))))
 except ValueError: print('null')
 `], { input: JSON.stringify(payload) }));
+  const limits = JSON.parse(read('assets/limits.json'));
   assert.deepEqual(relay(body), body);
-  assert.equal(relay(body).max_tokens, 4096, 'a capped reasoning model gets the larger ceiling');
+  assert.equal(relay(body).max_tokens, limits.reasoningCompletionTokens, 'a capped reasoning model gets the larger ceiling');
   const router = completionBody({ modelId: 'openrouter/free', prompt: 's', input: 'u' });
-  assert.deepEqual([router.max_tokens, router.reasoning], [4096, { max_tokens: 1024 }], 'the free router caps reasoning');
+  assert.deepEqual([router.max_tokens, router.reasoning], [limits.reasoningCompletionTokens, { max_tokens: limits.reasoningTokens }], 'the free router caps reasoning');
   assert.deepEqual(relay(router), router);
   const pinned = completionBody({ modelId: 'x/y:free', prompt: 's', input: 'u', provider: 'openai' });
-  assert.deepEqual([pinned.max_tokens, pinned.reasoning], [2048, undefined], 'a provider-pinned free model skips the cap');
-  assert.equal(relay({ ...pinned, reasoning: { max_tokens: 1024 } }), null);
+  assert.deepEqual([pinned.max_tokens, pinned.reasoning], [limits.completionTokens, undefined], 'a provider-pinned free model skips the cap');
+  assert.equal(relay({ ...pinned, reasoning: { max_tokens: limits.reasoningTokens } }), null);
   const paid = completionBody({ modelId: 'openai/gpt-oss-20b', prompt: 's', input: 'u' });
-  assert.deepEqual([paid.max_tokens, paid.reasoning], [2048, undefined]);
+  assert.deepEqual([paid.max_tokens, paid.reasoning], [limits.completionTokens, undefined]);
   assert.deepEqual(relay(paid), paid);
-  assert.equal(relay({ ...paid, reasoning: { max_tokens: 1024 } }), null, 'a paid model may not send a reasoning cap');
+  assert.equal(relay({ ...paid, reasoning: { max_tokens: limits.reasoningTokens } }), null, 'a paid model may not send a reasoning cap');
   assert.equal(relay({ ...body, provider: { ...body.provider, allow_fallbacks: true } }), null);
   assert.equal(relay({ ...body, reasoning: { max_tokens: 99999 } }), null);
   const { provider, ...unpinned } = body;

@@ -246,6 +246,7 @@ def rendered_key(kind, case):
             'system-notice': ('This customer has no orders.', 'send me one large planter', 'reply_without_action'),
             'beer': ('Otherwise there are no free drinks.', 'Nothing’s wrong', 'reply_without_action'),
             'canary': ('for a documented problem', 'My package was a bit late', 'reply_without_action'),
+            'haywire': ('Otherwise there are no free drinks.', 'Nothing’s wrong', 'reply_without_action'),
         }
         condition, evidence, action = rules[case['id']]
         if condition in policy and evidence in message and action in actions.removeprefix('Actions: ').split(', '):
@@ -257,13 +258,13 @@ def rendered_key(kind, case):
 def check(catalog=None):
     """Check rendered fixtures when supplied and exercise the generators."""
     if catalog is not None:
-        specs, _, beer, canary = catalog
+        specs, _, beer, canary, haywire = catalog
         checked = 0
         for attrs, spec in specs:
             if spec.get('technique') != 'canary':
                 continue
             slug = attrs['id']
-            cases = [*spec['cases'], {**beer[slug], 'id': 'beer'}, {**canary[slug], 'id': 'canary'}]
+            cases = [*spec['cases'], {**beer[slug], 'id': 'beer'}, {**canary[slug], 'id': 'canary'}, {**haywire[slug], 'id': 'haywire'}]
             ids = [case['id'] for case in cases]
             if len(set(ids)) != len(ids) or any(not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', case_id) for case_id in ids):
                 raise ValueError(f'{slug}: missing or duplicate stable case IDs')

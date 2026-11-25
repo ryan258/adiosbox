@@ -933,7 +933,7 @@ setupHandoff(experiments, openExperiment);
 if (local) setupCases(experiments, model, openExperiment);
 
 for (const experiment of experiments) for (const example of experiment.querySelectorAll('[data-example]')) {
-  const name = example.dataset.example === 'canary' ? 'canary' : 'beer example';
+  const name = { canary: 'canary', haywire: 'brewery mishap' }[example.dataset.example] ?? 'beer example';
   const button = example.querySelector('[data-load-example]');
   button.hidden = false;
   button.addEventListener('click', () => {
@@ -956,6 +956,22 @@ for (const experiment of experiments) for (const example of experiment.querySele
     experiment.dispatchEvent(new Event('example-loaded'));
     setStatus(status, `${name[0].toUpperCase()}${name.slice(1)} loaded. Review the input and model picks before running.`);
     notes.focus();
+  });
+}
+
+// Full screen for the run record: a fixed-position overlay, so it works on every device. Esc closes it.
+for (const record of document.querySelectorAll('[data-handoff-record]')) {
+  const button = record.querySelector('[data-part="fullscreen"]');
+  if (!button) continue;
+  const set = on => {
+    record.classList.toggle('is-fullscreen', on);
+    button.setAttribute('aria-pressed', on);
+    button.firstChild.textContent = on ? 'Exit full screen' : 'Full screen';
+  };
+  button.hidden = false;
+  button.addEventListener('click', () => set(!record.classList.contains('is-fullscreen')));
+  record.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && record.classList.contains('is-fullscreen') && !event.defaultPrevented) { set(false); button.focus(); }
   });
 }
 

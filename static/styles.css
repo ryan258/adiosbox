@@ -80,10 +80,11 @@ h1, h2, h3, h4, h5, label, legend, summary, button, .wordmark, .header-link, .ch
   .title-block { min-width: 0; }
 }
 
-.example-panel { padding: .75rem 1.5rem; border-bottom: 1px solid var(--line); }
+.example-panel { padding: .75rem 1.5rem; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: flex-start; }
+.example-panel details { flex: 1 1 16rem; min-width: 0; }
 .example-panel summary { cursor: pointer; }
 .example-panel pre { font: inherit; }
-.example-panel button { margin-top: .75rem; }
+.example-panel .status { flex-basis: 100%; margin: 0; }
 
 .experiment { border: 1.5px solid var(--ink); border-radius: .2rem; background: var(--paper); overflow: hidden; scroll-margin-top: 1rem; }
 .experiment-header { padding: 1.35rem 1.5rem; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: .65rem 1rem; align-items: center; justify-content: space-between; }
@@ -280,6 +281,8 @@ main { padding-bottom: 2rem; }
 .graph-trace li + li { margin-top: .95rem; }
 .graph-trace .result { margin-top: .35rem; padding: .7rem; }
 
+.output.is-fullscreen { position: fixed; inset: 0; z-index: 20; overflow: auto; border: 0; padding: 1.5rem clamp(1rem, 8vw, 6rem); }
+body:has(.output.is-fullscreen) { overflow: hidden; }
 .result-actions { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .85rem; }
 .output:has(> [data-handoff-text]:empty) .more,
 .output:has(> [data-part="trace"]:empty) .more { display: none; }
