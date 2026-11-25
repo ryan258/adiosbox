@@ -117,6 +117,28 @@ The **Run a tiny agent business** shelf puts these graph shapes to work in one s
 | [Launch with an agent crew](http://127.0.0.1:1313/#launch-with-an-agent-crew) | An orchestrator plans the launch jobs, you approve them, specialists do one job each, and the kit lists what the owner must approve. | 5 |
 | [The agent-run brewery](http://127.0.0.1:1313/#the-agent-run-brewery) | A general-manager agent picks two or three of a fixed roster (brewmaster, purchasing, taproom, marketing and brand, bookkeeper) and plans their jobs. You approve the plan. The week plan lists the owner’s approvals and the work only a person can do. | 5 |
 
+The **Retail at scale** shelf puts those same guardrails on everyday store and supply-chain decisions. The agent works from your numbers and your written rules, and anything that touches money, a customer, or a shelf waits for a person.
+
+| Experiment | How it decides what happens next | Max requests |
+| --- | --- | ---: |
+| [Substitute the out-of-stock](http://127.0.0.1:1313/#substitute-the-out-of-stock) | A substitution agent proposes one replacement from in-stock items. A checker tests allergies, rules, and price caps, and can send it back once. | 4 |
+| [The return desk](http://127.0.0.1:1313/#the-return-desk) | A clean match to written policy gets a refund note for an associate. Rule breaks or warning signs go to a person; missing facts stop the graph. | 2 |
+| [One truck, two stores](http://127.0.0.1:1313/#one-truck-two-stores) | Two parallel calls read each store’s numbers independently. A planner splits the truck, shows days of cover, and names the number that would change the split. | 3 |
+| [The recall sweep](http://127.0.0.1:1313/#the-recall-sweep) | The agent maps affected lots, stores, and units, then pauses at a checkpoint. Your choice guides the draft pull notice and customer message. | 2 |
+| [The late-delivery fine](http://127.0.0.1:1313/#the-late-delivery-fine) | An agent drafts a fine dispute from the door log. A checker recomputes the fine and timestamps and can send it back once. | 4 |
+| [Ask the policy binder](http://127.0.0.1:1313/#ask-the-policy-binder) | One clear policy gets quoted. Conflicting or partial policies get laid out for a manager; silence stops the graph instead of guessing. | 2 |
+
+The **Retail pain points, solved small** shelf tackles six everyday big-box problems as bounded proofs of concept. Every fix shows its arithmetic and leaves the decision to a person.
+
+| Experiment | How it decides what happens next | Max requests |
+| --- | --- | ---: |
+| [The phantom shelf](http://127.0.0.1:1313/#the-phantom-shelf) | Weighs the system stock count against sales, deliveries, and shorts. Contradictions trigger a targeted count request; no signals stops the graph. | 2 |
+| [Markdown before it spoils](http://127.0.0.1:1313/#markdown-before-it-spoils) | Proposes a markdown for only the units at risk. A checker recomputes spoilage, margin, and your floor, and can send it back once. | 4 |
+| [The self-checkout flag](http://127.0.0.1:1313/#the-self-checkout-flag) | Parallel honest and loss readings inspect the same record. A chair writes neutral associate steps and the fact that justifies a supervisor. | 3 |
+| [The doors-open crunch](http://127.0.0.1:1313/#the-doors-open-crunch) | Code checks whole-minute durations and the sum against your budget. Over-budget or malformed plans route back for one correction. | 2 |
+| [The curb pileup](http://127.0.0.1:1313/#the-curb-pileup) | Maps the pickup backlog against picker minutes and pauses. Your choice sets the picking order and draft customer texts for manager approval. | 2 |
+| [Fix the seller’s listing](http://127.0.0.1:1313/#fix-the-sellers-listing) | Rewrites seller copy from supplied specs only. A checker ties each claim to a spec, rejects unsupported absolutes, and can send it back once. | 4 |
+
 The **Agent companies, reality check** shelf tests the pitch. Each experiment exposes where today’s agents still need a person: claims without evidence, exceptions in a real week, jobs that need access or hands, review time, and the autonomy line. [Agent companies: where they stand](agent-companies-reality.md) collects the sourced evidence behind it.
 
 | Experiment | What it shows | Max requests |

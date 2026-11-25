@@ -745,7 +745,121 @@ Requests: a bar wants 10 cases of stout by Friday. A festival invited us to pour
 
 ---
 
-## 10. Agent companies, reality check
+## 10. Retail at scale
+
+### Substitute the out-of-stock · [open](http://127.0.0.1:1313/#substitute-the-out-of-stock)
+
+```text
+Out of stock: Green Valley organic strawberries, 16 oz, $4.99.
+Customer note: "Organic only. No frozen fruit. Up to 25% more per item is fine."
+In stock:
+- BerryBest conventional strawberries, 16 oz, $3.99
+- Green Valley frozen organic strawberries, 16 oz, $4.49
+- SunField organic strawberries, 16 oz, $5.99
+- OrchardPick organic blueberries, 18 oz, $6.99
+```
+
+### The return desk · [open](http://127.0.0.1:1313/#the-return-desk)
+
+```text
+Policy: Appliances may be returned within 30 days with a receipt if unopened or defective. Opened non-defective appliances have a 15% restocking fee. Refunds over $150 require a manager.
+Request: Customer brought back a $120 espresso grinder bought 12 days ago with a receipt. Box is opened; customer says it never powered on. No prior returns on file.
+```
+
+### One truck, two stores · [open](http://127.0.0.1:1313/#one-truck-two-stores)
+
+```text
+Truck load: 18 cases of 24-pack bottled water arriving Tuesday morning.
+North store: 12 cases on hand, sells 6 cases a day, next truck in 4 days.
+South store: 5 cases on hand, sells 7 cases a day, next truck in 3 days. Road race near South store this Saturday.
+```
+
+### The recall sweep · [open](http://127.0.0.1:1313/#the-recall-sweep)
+
+```text
+Recall notice: BrightBite peanut butter crackers, 12-pack, lot L408, undeclared sesame. Lot L409 ran on the same line that afternoon and is not named.
+Records: West store received 60 boxes of L408 and sold 42. East store received 40 boxes of L409 and sold 15. Both stores ship online orders from the same shelves.
+```
+
+### The late-delivery fine · [open](http://127.0.0.1:1313/#the-late-delivery-fine)
+
+```text
+Fine notice: PO 8821, invoice $4,000. Fine: 3% for late arrival.
+Contract rule: On time if the carrier checks in at the guard shack within the 6:00–7:00 a.m. window.
+Gate log: carrier checked in at 6:48 a.m.; dock bay assigned at 7:20 a.m.; unloading began at 7:35 a.m.
+```
+
+### Ask the policy binder · [open](http://127.0.0.1:1313/#ask-the-policy-binder)
+
+```text
+Policy 3.1: Price matches apply to identical in-stock items from local competitors within 7 days.
+Policy 3.4: Clearance items marked "Final Sale" are excluded from all price matches.
+Policy 6.2: Department leads may approve price matches up to $20.
+Question: A shopper asks for a $12 price match on a toaster marked "Final Sale" that they bought yesterday. Can the associate approve it?
+```
+
+---
+
+## 11. Retail pain points, solved small
+
+### The phantom shelf · [open](http://127.0.0.1:1313/#the-phantom-shelf)
+
+```text
+System count: 6 units of SparkClean dish pods, 42-count, aisle 7, shelf 2.
+Signals: last POS scan was 14 days ago (normal velocity is 8 units a week). Last delivery was 21 days ago. Two pickup orders this week were shorted as "not on shelf." Last physical cycle count was 68 days ago.
+```
+
+### Markdown before it spoils · [open](http://127.0.0.1:1313/#markdown-before-it-spoils)
+
+```text
+Fresh salsa tubs: 24 left, sell-by tonight. Cost $1.80, regular price $4.50. Normal evening sales: about 14 tubs. Rule: never mark down below cost.
+```
+
+### The self-checkout flag · [open](http://127.0.0.1:1313/#the-self-checkout-flag)
+
+```text
+Lane 4 alert: scale weight is 3.2 lb heavier than scanned items. Cart shows two 12-packs of soda scanned, plus a loose bag of potatoes sitting on the bagging scale. Customer says they forgot to weigh the potatoes first.
+```
+
+### The doors-open crunch · [open](http://127.0.0.1:1313/#the-doors-open-crunch)
+
+Available minutes:
+
+```text
+30
+```
+
+Input:
+
+```text
+Doors open in 30 minutes.
+- Unlock registers and count tills: 10 minutes (required)
+- Sweep front entrance glass and floor: 8 minutes (required)
+- Restock impulse candy rack: 12 minutes (can shrink to 6 minutes)
+- Put out promotional endcap signs: 10 minutes (nice to have, can wait)
+```
+
+### The curb pileup · [open](http://127.0.0.1:1313/#the-curb-pileup)
+
+```text
+4:00 p.m. wave: 2 pickers with 25 minutes each (50 picker minutes total).
+Orders:
+- #201 (15 min, promised 4:10, all items in stock)
+- #202 (20 min, promised 4:15, 1 item out of stock needing customer approval)
+- #203 (15 min, promised 4:20, all items in stock)
+- #204 (15 min, promised 4:25, all items in stock)
+```
+
+### Fix the seller’s listing · [open](http://127.0.0.1:1313/#fix-the-sellers-listing)
+
+```text
+Seller draft: "UltraQuiet HEPA Air Purifier — eliminates 100% of all allergens, viruses, and odors forever! Hospital-grade silence."
+Specs supplied: 3-stage filter with True HEPA (captures 99.97% of 0.3-micron particles in lab test of 200 sq ft room); noise level 24 dB on sleep mode, 52 dB on turbo. Not tested for odors or viruses.
+```
+
+---
+
+## 12. Agent companies, reality check
 
 ### The report versus the log · [open](http://127.0.0.1:1313/#the-report-versus-the-log)
 
@@ -819,7 +933,7 @@ Limits we already have: the card has a $1,000 monthly cap for supplies. Refunds 
 
 ---
 
-## 11. Canaries in the coal mine
+## 13. Canaries in the coal mine
 
 Every canary **needs a specific model**, runs three attempts, and trips only if all three match the key. The keys below come from [canary-keys.py](../scripts/canary-keys.py) or plain arithmetic, never from a model.
 
