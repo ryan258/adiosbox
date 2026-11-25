@@ -28,10 +28,11 @@ Imagine a science fair. Every table has one experiment, a card that explains it,
 | **Shelf** | A group of experiments that do similar jobs, like "Check before you claim." |
 | **Beer example** | A silly, friendly practice case for every experiment. Free to read. |
 | **Canary** | A hard case built to trip the AI up. If the AI suddenly passes it, something got smarter. |
+| **Brewery mishap** | A funny case where the brewery goes haywire, shaped like the beer example. Free to read. |
 
 ## What you can do
 
-1. **Read.** Open any experiment and read its sample, beer example, and canary. No key needed.
+1. **Read.** Open any experiment and read its sample, beer example, canary, and brewery mishap. No key needed.
 2. **Try.** Pick a model, load the sample or type your own input, and press **Run**.
 3. **Compare.** Some experiments run two versions side by side. Highlights show lines that appear in only one answer.
 4. **Chain.** Some experiments pass one answer into the next step, like a relay race.
@@ -77,7 +78,7 @@ If a run keeps failing, try a specific model instead of the free router, or shor
 
 For the slightly older five-year-old.
 
-1. **Recipes.** Each experiment is a YAML file in [data/experiments](../data/experiments). Shelves live in [data/shelves.yaml](../data/shelves.yaml). Beer and canary examples live next to them.
+1. **Recipes.** Each experiment is a YAML file in [data/experiments](../data/experiments). Shelves live in [data/shelves.yaml](../data/shelves.yaml). Beer examples, canaries, and brewery mishaps live next to them.
 2. **Baking.** Hugo reads the recipes and bakes one web page. Before baking, a checker makes sure every experiment has its samples, a valid shelf, and a call budget that matches its graph. A bad recipe stops the bake with a message.
 3. **Rules in one place.** [assets/limits.json](../assets/limits.json) holds the shared limits: input and prompt length, token caps, and how many calls each graph may make. The page, the browser code, and the Python helper all read it.
 4. **Browser code.** [assets/js/app.js](../assets/js/app.js) wires up every workbench. Hugo bundles it with its helper modules into one file. Graphs run on LangGraph in [assets/graph-runtime.js](../assets/graph-runtime.js), which loads the first time you run a graph.
@@ -88,7 +89,7 @@ For the slightly older five-year-old.
 
 1. Copy an experiment YAML of the same kind and give it a new `slug`, `order`, and `shelf`.
 2. Write the input, the prompt, and a sample result together.
-3. Add a beer example and a canary under the same slug.
+3. Add a beer example, a canary, and a brewery mishap under the same slug.
 4. Run `npm run check` and fix anything it names.
 
 The [Missing Manual](the-missing-manual.md#add-an-experiment) has the full field list.

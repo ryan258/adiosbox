@@ -1,6 +1,6 @@
 # Copy-and-Paste Examples
 
-Fresh inputs for every experiment, ready to paste. Each one is different from the built-in sample, beer example, and canary, so you get a new case to try.
+Fresh inputs for every experiment, ready to paste. Each one is different from the built-in sample, beer example, canary, and brewery mishap, so you get a new case to try.
 
 **How to use one:** open the experiment with its link, paste the block into the input box, paste any extra fields into the boxes with the same names, pick a model, and run. The links open the [local playground](http://127.0.0.1:1313/#experiments). In a hosted copy, search the catalog for the same title.
 
